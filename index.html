@@ -321,7 +321,7 @@
 
             return (
                 <div className="relative w-screen h-screen overflow-hidden" style={{
-                    backgroundImage: `url(${imagePath}background.jpg)`,
+                    backgroundImage: `url(${imagePath}background.png)`,
                     backgroundSize: 'cover',
                     backgroundPosition: '55% center',
                     backgroundRepeat: 'no-repeat'
@@ -335,7 +335,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}team1-logo.png`}
+                                src={`${imagePath}BeefwithaQ.png`}
                                 alt="Team 1 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
@@ -355,7 +355,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}team2-logo.png`}
+                                src={`${imagePath}BearEssentials.png`}
                                 alt="Team 2 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
@@ -626,4 +626,4 @@
         ReactDOM.render(<TriviaGame />, document.getElementById('root'));
     </script>
 </body>
-</html>index.html
+</html>
