@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hometown Trivia League Host</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        html, body, #root {
+            width: 100%;
+            height: 100%;
+        }
+        .powerup-inactive {
+            filter: grayscale(100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .powerup-active {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .powerup-active:hover {
+            transform: scale(1.1);
+        }
+        .team-logo-transition {
+            transition: all 0.8s ease-in-out;
+        }
+        .team-glow {
+            filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 40px rgba(251, 191, 36, 0.6));
+        }
+        .team-inactive {
+            filter: grayscale(50%);
+        }
+        .score-text {
+            -webkit-text-stroke: 6px white;
+            text-stroke: 6px white;
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function TriviaGame() {
+            const [team1Score, setTeam1Score] = useState(0);
+            const [team2Score, setTeam2Score] = useState(0);
+            const [currentRound, setCurrentRound] = useState(1);
+            const [currentQuestion, setCurrentQuestion] = useState(1);
+            const [showQuestion, setShowQuestion] = useState(false);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [activeTeam, setActiveTeam] = useState(1);
+            const [stealAttempted, setStealAttempted] = useState(false);
+            
+            // Timer states
+            const [team1Time, setTeam1Time] = useState(30);
+            const [team2Time, setTeam2Time] = useState(15);
+            const [timerRunning, setTimerRunning] = useState(false);
+            const [activeTimer, setActiveTimer] = useState(1);
+            
+            const questionTextRef = useRef(null);
+            
+            // Powerups state
+            const [team1Powerups, setTeam1Powerups] = useState({
+                extraTime: true,
+                pointDoubler: true,
+                doubleDip: true
+            });
+            
+            const [team2Powerups, setTeam2Powerups] = useState({
+                extraTime: true,
+                pointDoubler: true,
+                doubleDip: true
+            });
+
+            const [currentPointValue, setCurrentPointValue] = useState(1);
+
+            // Round data with questions and answers
+            const rounds = [
+                { 
+                    category: "BOARD GAMES", 
+                    question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
+                    answer1: "Scythe",
+                    question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
+                    answer2: "Risk"
+                },
+                { 
+                    category: "SCIENCE", 
+                    question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
+                    answer1: "Higgs Boson",
+                    question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
+                    answer2: "Jupiter"
+                },
+                { 
+                    category: "MUSIC", 
+                    question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
+                    answer1: "Bohemian Rhapsody",
+                    question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
+                    answer2: "Beyoncé"
+                },
+                { 
+                    category: "MOVIES", 
+                    question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
+                    answer1: "The Shawshank Redemption",
+                    question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
+                    answer2: "John Ford"
+                },
+                { 
+                    category: "GEOGRAPHY", 
+                    question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
+                    answer1: "South Africa",
+                    question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
+                    answer2: "Istanbul"
+                },
+                { 
+                    category: "SPORTS", 
+                    question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
+                    answer1: "Michael Phelps",
+                    question2: "This is the only sport to have been played on the moon.",
+                    answer2: "Golf"
+                },
+                { 
+                    category: "HISTORY", 
+                    question1: "This ancient wonder of the world is the only one still standing today.",
+                    answer1: "Great Pyramid of Giza",
+                    question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
+                    answer2: "The Hundred Years' War"
+                },
+                { 
+                    category: "LITERATURE", 
+                    question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
+                    answer1: "Leo Tolstoy",
+                    question2: "This Shakespeare play is his longest, with over 4,000 lines.",
+                    answer2: "Hamlet"
+                },
+                { 
+                    category: "FOOD & DRINK", 
+                    question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
+                    answer1: "Saffron",
+                    question2: "This fruit is technically a berry, while strawberries are not.",
+                    answer2: "Banana"
+                },
+                { 
+                    category: "TECHNOLOGY", 
+                    question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
+                    answer1: "Python",
+                    question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
+                    answer2: "Intel"
+                },
+                { 
+                    category: "ART", 
+                    question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
+                    answer1: "Vincent van Gogh",
+                    question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
+                    answer2: "Michelangelo"
+                },
+                { 
+                    category: "NATURE", 
+                    question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
+                    answer1: "Great Barrier Reef",
+                    question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
+                    answer2: "Elephant"
+                }
+            ];
+
+            const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/HTL/';
+
+            // Auto-resize text to fit container
+            useEffect(() => {
+                if (showQuestion && questionTextRef.current) {
+                    const container = questionTextRef.current.parentElement;
+                    const containerHeight = container.clientHeight;
+                    const containerWidth = container.clientWidth - 40;
+                    
+                    let fontSize = 48;
+                    questionTextRef.current.style.fontSize = fontSize + 'px';
+                    
+                    while ((questionTextRef.current.scrollHeight > containerHeight || 
+                            questionTextRef.current.scrollWidth > containerWidth) && 
+                           fontSize > 20) {
+                        fontSize -= 2;
+                        questionTextRef.current.style.fontSize = fontSize + 'px';
+                    }
+                }
+            }, [showQuestion, currentQuestion, currentRound]);
+
+            // Timer countdown
+            useEffect(() => {
+                let interval;
+                if (timerRunning) {
+                    interval = setInterval(() => {
+                        if (activeTimer === 1) {
+                            setTeam1Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        } else {
+                            setTeam2Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        }
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [timerRunning, activeTimer]);
+
+            const handleRevealQuestion = () => {
+                setShowQuestion(true);
+            };
+
+            const handleStartTimer = () => {
+                setTimerRunning(true);
+            };
+
+            const handleCorrect = () => {
+                setShowAnswer(true);
+                setTimerRunning(false);
+                if (activeTeam === 1) {
+                    setTeam1Score(team1Score + currentPointValue);
+                } else {
+                    setTeam2Score(team2Score + currentPointValue);
+                }
+            };
+
+            const handleIncorrect = () => {
+                if (!stealAttempted) {
+                    setStealAttempted(true);
+                    setActiveTeam(activeTeam === 1 ? 2 : 1);
+                    setActiveTimer(activeTeam === 1 ? 2 : 1);
+                    setTimerRunning(true);
+                } else {
+                    setShowAnswer(true);
+                    setTimerRunning(false);
+                }
+            };
+
+            const handleSteal = () => {
+                setShowAnswer(true);
+                setTimerRunning(false);
+                if (activeTeam === 1) {
+                    setTeam1Score(team1Score + currentPointValue);
+                } else {
+                    setTeam2Score(team2Score + currentPointValue);
+                }
+            };
+
+            const handleNext = () => {
+                if (currentQuestion === 1) {
+                    setCurrentQuestion(2);
+                    setActiveTeam(2);
+                    setActiveTimer(2);
+                    setTeam1Time(15);
+                    setTeam2Time(30);
+                } else {
+                    if (currentRound < 12) {
+                        setCurrentRound(currentRound + 1);
+                        setCurrentQuestion(1);
+                        setActiveTeam(1);
+                        setActiveTimer(1);
+                        setTeam1Time(30);
+                        setTeam2Time(15);
+                    }
+                }
+                setShowQuestion(false);
+                setShowAnswer(false);
+                setStealAttempted(false);
+                setCurrentPointValue(1);
+                setTimerRunning(false);
+            };
+
+            const handlePowerup = (team, powerup) => {
+                if (team === 1 && currentQuestion === 1) {
+                    if (powerup === 'pointDoubler' && team1Powerups.pointDoubler) {
+                        setTeam1Powerups({...team1Powerups, pointDoubler: false});
+                        setCurrentPointValue(2);
+                    } else if (powerup === 'extraTime' && team1Powerups.extraTime) {
+                        setTeam1Powerups({...team1Powerups, extraTime: false});
+                        setTeam1Time(45);
+                    } else if (powerup === 'doubleDip' && team1Powerups.doubleDip) {
+                        setTeam1Powerups({...team1Powerups, doubleDip: false});
+                    }
+                } else if (team === 2 && currentQuestion === 2) {
+                    if (powerup === 'pointDoubler' && team2Powerups.pointDoubler) {
+                        setTeam2Powerups({...team2Powerups, pointDoubler: false});
+                        setCurrentPointValue(2);
+                    } else if (powerup === 'extraTime' && team2Powerups.extraTime) {
+                        setTeam2Powerups({...team2Powerups, extraTime: false});
+                        setTeam2Time(45);
+                    } else if (powerup === 'doubleDip' && team2Powerups.doubleDip) {
+                        setTeam2Powerups({...team2Powerups, doubleDip: false});
+                    }
+                }
+            };
+
+            const currentRoundData = rounds[currentRound - 1];
+            const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
+            const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
+
+            return (
+                <div className="relative w-screen h-screen overflow-hidden" style={{
+                    backgroundImage: `url(${imagePath}background.jpg)`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: '55% center',
+                    backgroundRepeat: 'no-repeat'
+                }}>
+                    {/* Team Logos - Behind everything with perspective */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        {/* Team 1 Logo */}
+                        <div className="absolute team-logo-transition" style={{
+                            left: '5%',
+                            top: '50%',
+                            transform: 'translateY(-50%)'
+                        }}>
+                            <img 
+                                src={`${imagePath}team1-logo.png`}
+                                alt="Team 1 Background Logo" 
+                                className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'}`}
+                                style={{
+                                    transform: 'perspective(1000px) rotateY(15deg)',
+                                    width: '800px',
+                                    height: '800px',
+                                    objectFit: 'contain',
+                                    opacity: activeTeam === 1 ? 0.9 : 0.1
+                                }}
+                            />
+                        </div>
+                        
+                        {/* Team 2 Logo */}
+                        <div className="absolute team-logo-transition" style={{
+                            right: '5%',
+                            top: '50%',
+                            transform: 'translateY(-50%)'
+                        }}>
+                            <img 
+                                src={`${imagePath}team2-logo.png`}
+                                alt="Team 2 Background Logo" 
+                                className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'}`}
+                                style={{
+                                    transform: 'perspective(1000px) rotateY(-15deg)',
+                                    width: '800px',
+                                    height: '800px',
+                                    objectFit: 'contain',
+                                    opacity: activeTeam === 2 ? 0.9 : 0.1
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Main Content Container */}
+                    <div className="relative z-10 flex flex-col items-center justify-start h-full p-8">
+                        {/* HTL Logo and Scores */}
+                        <div className="relative flex items-center justify-center mb-6" style={{height: '560px'}}>
+                            {/* Team 1 Score - Absolutely positioned */}
+                            <div className="absolute score-text font-black text-black" style={{
+                                left: '10%',
+                                fontSize: '560px',
+                                lineHeight: '560px',
+                                textShadow: '12px 12px 24px rgba(6, 182, 212, 0.8)'
+                            }}>
+                                {team1Score}
+                            </div>
+
+                            {/* HTL Logo - Centered */}
+                            <img 
+                                src={`${imagePath}htl-logo.png`}
+                                alt="HTL - Hometown Trivia League" 
+                                className="object-contain"
+                                style={{height: '560px'}}
+                            />
+
+                            {/* Team 2 Score - Absolutely positioned */}
+                            <div className="absolute score-text font-black text-black" style={{
+                                right: '10%',
+                                fontSize: '560px',
+                                lineHeight: '560px',
+                                textShadow: '12px 12px 24px rgba(249, 115, 22, 0.8)'
+                            }}>
+                                {team2Score}
+                            </div>
+                        </div>
+                        
+                        {/* Round Title with Timers */}
+                        <div className="flex items-center justify-center mb-8 gap-4">
+                            {/* Team 1 Timer */}
+                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                borderColor: '#7d3ad4',
+                                backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                                width: '150px',
+                                height: '200px',
+                                opacity: activeTeam === 1 ? 1 : 0.3
+                            }}>
+                                <div className="text-8xl font-black text-white">
+                                    {team1Time}
+                                </div>
+                            </div>
+
+                            {/* Round Title */}
+                            <div className="bg-gray-900 rounded-2xl border-8" style={{
+                                borderColor: '#7d3ad4',
+                                padding: '16px 48px',
+                                minWidth: '800px',
+                                textAlign: 'center',
+                                height: '100px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <h2 className="text-5xl font-bold text-white">
+                                    ROUND {currentRound}: {currentRoundData.category}
+                                </h2>
+                            </div>
+
+                            {/* Team 2 Timer */}
+                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                borderColor: '#7d3ad4',
+                                backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                                width: '150px',
+                                height: '200px',
+                                opacity: activeTeam === 2 ? 1 : 0.3
+                            }}>
+                                <div className="text-8xl font-black text-white">
+                                    {team2Time}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Question Display Area - FIXED SIZE */}
+                        <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
+                            borderColor: '#7d3ad4',
+                            width: '1400px',
+                            height: '500px',
+                            padding: '48px'
+                        }}>
+                            <div className="text-center h-full flex flex-col">
+                                <div className="text-cyan-400 font-bold text-4xl mb-6">
+                                    QUESTION {currentQuestion} - TEAM {currentQuestion}
+                                </div>
+                                
+                                {/* Question Text Box - Fixed Height */}
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6 mb-4" style={{
+                                    height: '200px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {showQuestion && (
+                                        <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
+                                            fontSize: '48px',
+                                            margin: 0
+                                        }}>
+                                            {currentQuestionText}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Answer Text Box - Fixed Height */}
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
+                                    height: '120px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {showQuestion && (
+                                        <p className="text-yellow-400 font-bold text-5xl" style={{
+                                            opacity: showAnswer ? 1 : 0.3
+                                        }}>
+                                            {currentAnswerText}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Powerups and Control Buttons Row */}
+                        <div className="mx-auto mb-8" style={{width: '1400px'}}>
+                            <div className="flex justify-between items-center">
+                                {/* Team 1 Powerups */}
+                                <div className="flex gap-6">
+                                    <img 
+                                        src={`${imagePath}powerup-double.png`}
+                                        alt="Team 1 Point Doubler"
+                                        className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'pointDoubler')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-time.png`}
+                                        alt="Team 1 Extra Time"
+                                        className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'extraTime')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-dip.png`}
+                                        alt="Team 1 Double Dip"
+                                        className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'doubleDip')}
+                                    />
+                                </div>
+
+                                {/* Control Buttons */}
+                                <div className="flex gap-4">
+                                    {!showQuestion ? (
+                                        <button 
+                                            onClick={handleRevealQuestion}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            REVEAL QUESTION
+                                        </button>
+                                    ) : !timerRunning && !showAnswer ? (
+                                        <button 
+                                            onClick={handleStartTimer}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            START TIMER
+                                        </button>
+                                    ) : showAnswer ? (
+                                        <button 
+                                            onClick={handleNext}
+                                            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            NEXT
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button 
+                                                onClick={handleCorrect}
+                                                className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                CORRECT
+                                            </button>
+                                            <button 
+                                                onClick={handleIncorrect}
+                                                className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                INCORRECT
+                                            </button>
+                                            <button 
+                                                onClick={handleSteal}
+                                                className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                STEAL
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Team 2 Powerups */}
+                                <div className="flex gap-6">
+                                    <img 
+                                        src={`${imagePath}powerup-dip.png`}
+                                        alt="Team 2 Double Dip"
+                                        className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'doubleDip')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-time.png`}
+                                        alt="Team 2 Extra Time"
+                                        className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'extraTime')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-double.png`}
+                                        alt="Team 2 Point Doubler"
+                                        className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'pointDoubler')}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Round Progress Indicator */}
+                        <div className="flex justify-center gap-2">
+                            {[1, 2, 3, 4, 5, 6].map((round) => (
+                                <div
+                                    key={round}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {round}
+                                </div>
+                            ))}
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm bg-purple-500 text-white">
+                                B
+                            </div>
+                            {[7, 8, 9, 10, 11, 12].map((round) => (
+                                <div
+                                    key={round}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {round}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<TriviaGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>index.html
