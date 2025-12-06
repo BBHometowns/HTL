@@ -63,10 +63,10 @@
         }
         @keyframes versusSplitLeft {
             from {
-                clip-path: polygon(0% 100%, 0% 100%, 50% 50%, 0% 100%);
+                clip-path: polygon(50% 0%, 50% 100%, 50% 100%, 50% 0%);
             }
             to {
-                clip-path: polygon(0% 0%, 0% 100%, 50% 50%, 0% 0%);
+                clip-path: polygon(0% 0%, 0% 100%, 50% 100%, 50% 0%);
             }
         }
         
@@ -75,10 +75,10 @@
         }
         @keyframes versusSplitRight {
             from {
-                clip-path: polygon(50% 50%, 100% 0%, 100% 0%, 50% 50%);
+                clip-path: polygon(50% 0%, 50% 100%, 50% 100%, 50% 0%);
             }
             to {
-                clip-path: polygon(50% 50%, 100% 0%, 100% 100%, 50% 50%);
+                clip-path: polygon(50% 0%, 50% 100%, 100% 100%, 100% 0%);
             }
         }
         
@@ -204,6 +204,7 @@
             const [selectedTeam2, setSelectedTeam2] = useState(null);
             const [showIntro, setShowIntro] = useState(false);
             const [introStep, setIntroStep] = useState(0);
+            const [teamsConfirmed, setTeamsConfirmed] = useState(false);
             
             // All 16 teams data
             const teamsData = [
@@ -560,20 +561,48 @@
                 }
             };
             
-            const handleStartMatch = () => {
+            const handleConfirmTeams = () => {
                 if (selectedTeam1 && selectedTeam2) {
-                    setShowIntro(true);
+                    setTeamsConfirmed(true);
                 }
+            };
+            
+            const handleStartMatch = () => {
+                setShowIntro(true);
             };
 
             const currentRoundData = rounds[currentRound - 1];
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
             const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
 
-            // Team Selection Screen
-            if (!gameStarted && !showIntro) {
+            // Confirmation Screen - Just background and Start Match button
+            if (!gameStarted && !showIntro && teamsConfirmed) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden bg-gray-900 flex flex-col items-center justify-center p-8">
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
+                        backgroundImage: `url(${imagePath}background.png)`,
+                        backgroundSize: '115%',
+                        backgroundPosition: '65% center',
+                        backgroundRepeat: 'no-repeat'
+                    }}>
+                        <button
+                            onClick={handleStartMatch}
+                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-12 rounded-lg text-3xl border-4 border-black"
+                        >
+                            START MATCH
+                        </button>
+                    </div>
+                );
+            }
+            
+            // Team Selection Screen
+            if (!gameStarted && !showIntro && !teamsConfirmed) {
+                return (
+                    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center p-8" style={{
+                        backgroundImage: `url(${imagePath}background.png)`,
+                        backgroundSize: '115%',
+                        backgroundPosition: '65% center',
+                        backgroundRepeat: 'no-repeat'
+                    }}>
                         <h1 className="text-6xl font-bold text-white mb-12">SELECT TEAMS</h1>
                         
                         {/* Team Selection Status */}
@@ -637,13 +666,13 @@
                             })}
                         </div>
             
-                        {/* Start Button */}
+                        {/* Confirm Button */}
                         {selectedTeam1 && selectedTeam2 && (
                             <button
-                                onClick={handleStartMatch}
+                                onClick={handleConfirmTeams}
                                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-12 rounded-lg text-3xl border-4 border-black"
                             >
-                                START MATCH
+                                CONFIRM TEAMS
                             </button>
                         )}
                     </div>
@@ -655,7 +684,7 @@
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
-                        backgroundSize: 'cover',
+                        backgroundSize: '115%',
                         backgroundPosition: '65% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
@@ -943,7 +972,7 @@
             return (
                 <div className="relative w-screen h-screen overflow-hidden" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
-                    backgroundSize: 'cover',
+                    backgroundSize: '115%',
                     backgroundPosition: '65% center',
                     backgroundRepeat: 'no-repeat'
                 }}>
@@ -982,7 +1011,7 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: activeTeam === 2 ? 0.9 : 0.1
+                                    opacity: activeTeam === 2 ? 0.9 : (currentQuestion === 1 && !showQuestion) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
