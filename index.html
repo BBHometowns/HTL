@@ -274,6 +274,15 @@
             const handleRevealQuestion = () => {
                 setShowQuestion(true);
                 setPowerupPhase(false);
+                
+                // Apply Point Doubler for the current question
+                if (currentQuestion === 1 && !team1Powerups.pointDoubler) {
+                    setCurrentPointValue(2);
+                } else if (currentQuestion === 2 && !team2Powerups.pointDoubler) {
+                    setCurrentPointValue(2);
+                } else {
+                    setCurrentPointValue(1);
+                }
             };
 
             const handleStartTimer = () => {
@@ -324,12 +333,6 @@
                     } else {
                         setTeam2Time(30);
                     }
-                    // Check if Team 2 activated Point Doubler (powerup was used, so it's now false)
-                    if (!team2Powerups.pointDoubler) {
-                        setCurrentPointValue(2);
-                    } else {
-                        setCurrentPointValue(1); // Reset to 1 if Team 2 didn't use doubler
-                    }
                     setShowCategory(true);
                     setShowQuestion(false);
                 } else {
@@ -365,7 +368,7 @@
                     if (powerup === 'pointDoubler' && team1Powerups.pointDoubler && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, pointDoubler: false});
                         setTeam1DoublerActive(true);
-                        setCurrentPointValue(2);
+                        // Point value will be set when question is revealed
                     } else if (powerup === 'extraTime' && team1Powerups.extraTime && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, extraTime: false});
                         setTeam1Time(45);
