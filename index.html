@@ -55,12 +55,10 @@
         }
         @keyframes slideInLeft {
             from {
-                transform: translateX(-100vw);
-                opacity: 0;
+                transform: translate(-200%, -50%);
             }
             to {
-                transform: translateX(0);
-                opacity: 1;
+                transform: translateY(-50%);
             }
         }
         
@@ -69,12 +67,10 @@
         }
         @keyframes slideInRight {
             from {
-                transform: translateX(100vw);
-                opacity: 0;
+                transform: translate(200%, -50%);
             }
             to {
-                transform: translateX(0);
-                opacity: 1;
+                transform: translateY(-50%);
             }
         }
         
@@ -83,10 +79,10 @@
         }
         @keyframes versusSplitLeft {
             from {
-                clip-path: polygon(0 100%, 0 100%, 50% 50%);
+                clip-path: polygon(0 100%, 0 100%, 50% 50%, 0 100%);
             }
             to {
-                clip-path: polygon(0 100%, 0 0, 50% 50%);
+                clip-path: polygon(0 100%, 0 0, 50% 50%, 0 100%);
             }
         }
         
@@ -95,10 +91,10 @@
         }
         @keyframes versusSplitRight {
             from {
-                clip-path: polygon(50% 50%, 100% 0, 100% 0);
+                clip-path: polygon(50% 50%, 100% 0, 100% 0, 50% 50%);
             }
             to {
-                clip-path: polygon(50% 50%, 100% 0, 100% 100%);
+                clip-path: polygon(50% 50%, 100% 0, 100% 100%, 50% 50%);
             }
         }
         
@@ -696,16 +692,19 @@
                         backgroundRepeat: 'no-repeat'
                     }}>
                         {/* Team 1 Logo */}
-                        <div 
-                            className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
-                            style={{
-                                left: '5%',
-                                top: '50%',
-                                transform: introStep >= 1 ? 'translateY(-50%)' : 'translate(-200%, -50%)',
-                                transition: 'transform 1s ease-out',
-                                willChange: 'transform'
-                            }}
-                        >
+                        {introStep >= 1 && (
+                            <div 
+                                className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
+                                style={{
+                                    left: '5%',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    transition: 'transform 1s ease-out',
+                                    willChange: 'transform',
+                                    animation: 'slideInFromLeft 1s ease-out',
+                                    zIndex: 10
+                                }}
+                            >
                                 <img 
                                     src={`${imagePath}${selectedTeam1.logo}`}
                                     alt={selectedTeam1.name}
@@ -720,16 +719,19 @@
                         )}
             
                         {/* Team 2 Logo */}
-                        <div 
-                            className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
-                            style={{
-                                right: '5%',
-                                top: '50%',
-                                transform: introStep >= 2 ? 'translateY(-50%)' : 'translate(200%, -50%)',
-                                transition: 'transform 1s ease-out',
-                                willChange: 'transform'
-                            }}
-                        >
+                        {introStep >= 2 && (
+                            <div 
+                                className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
+                                style={{
+                                    right: '5%',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    transition: 'transform 1s ease-out',
+                                    willChange: 'transform',
+                                    animation: 'slideInFromRight 1s ease-out',
+                                    zIndex: 10
+                                }}
+                            >
                                 <img 
                                     src={`${imagePath}${selectedTeam2.logo}`}
                                     alt={selectedTeam2.name}
@@ -746,7 +748,7 @@
                         {/* Versus Graphic */}
                         {introStep >= 3 && (
                             <div 
-                                className={`absolute ${introStep >= 4 ? 'shake-3' : ''}`}
+                                className="absolute"
                                 style={{
                                     left: '50%',
                                     top: '50%',
@@ -754,7 +756,7 @@
                                     opacity: introStep >= 5 ? 0 : 1,
                                     transition: 'opacity 1s ease-out',
                                     pointerEvents: 'none',
-                                    zIndex: 100
+                                    zIndex: 1
                                 }}
                             >
                                 <div className="relative" style={{width: '3600px', height: '3600px'}}>
