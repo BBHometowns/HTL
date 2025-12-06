@@ -368,7 +368,6 @@
                     if (powerup === 'pointDoubler' && team1Powerups.pointDoubler && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, pointDoubler: false});
                         setTeam1DoublerActive(true);
-                        // Point value will be set when question is revealed
                     } else if (powerup === 'extraTime' && team1Powerups.extraTime && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, extraTime: false});
                         setTeam1Time(45);
