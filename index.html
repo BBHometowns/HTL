@@ -670,19 +670,18 @@
                                 zIndex: 10
                             }}
                         >
-                                <img 
-                                    src={`${imagePath}${selectedTeam1.logo}`}
-                                    alt={selectedTeam1.name}
-                                    style={{
-                                        transform: 'perspective(1000px) rotateY(15deg)',
-                                        width: '1000px',
-                                        height: '1000px',
-                                        objectFit: 'contain'
-                                    }}
-                                />
-                            </div>
+                            <img 
+                                src={`${imagePath}${selectedTeam1.logo}`}
+                                alt={selectedTeam1.name}
+                                style={{
+                                    transform: 'perspective(1000px) rotateY(15deg)',
+                                    width: '1000px',
+                                    height: '1000px',
+                                    objectFit: 'contain'
+                                }}
+                            />
                         </div>
-            
+                        
                         {/* Team 2 Logo */}
                         <div 
                             className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
@@ -694,18 +693,18 @@
                                 zIndex: 10
                             }}
                         >
-                                <img 
-                                    src={`${imagePath}${selectedTeam2.logo}`}
-                                    alt={selectedTeam2.name}
-                                    style={{
-                                        transform: 'perspective(1000px) rotateY(-15deg)',
-                                        width: '1000px',
-                                        height: '1000px',
-                                        objectFit: 'contain'
-                                    }}
-                                />
-                            </div>
+                            <img 
+                                src={`${imagePath}${selectedTeam2.logo}`}
+                                alt={selectedTeam2.name}
+                                style={{
+                                    transform: 'perspective(1000px) rotateY(-15deg)',
+                                    width: '1000px',
+                                    height: '1000px',
+                                    objectFit: 'contain'
+                                }}
+                            />
                         </div>
+                    </div>
             
                         {/* Versus Graphic */}
                         {introStep >= 3 && (
