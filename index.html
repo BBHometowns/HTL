@@ -50,6 +50,85 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        .slide-in-left {
+            animation: slideInLeft 1s ease-out forwards;
+        }
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100vw);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .slide-in-right {
+            animation: slideInRight 1s ease-out forwards;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100vw);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .versus-split-left {
+            animation: versusSplitLeft 1s ease-out forwards;
+            transform-origin: bottom left;
+        }
+        @keyframes versusSplitLeft {
+            from {
+                clip-path: polygon(0 100%, 0 100%, 50% 50%);
+                opacity: 0;
+            }
+            to {
+                clip-path: polygon(0 100%, 0 0, 50% 50%);
+                opacity: 1;
+            }
+        }
+        
+        .versus-split-right {
+            animation: versusSplitRight 1s ease-out forwards;
+            transform-origin: top right;
+        }
+        @keyframes versusSplitRight {
+            from {
+                clip-path: polygon(50% 50%, 100% 0, 100% 0);
+                opacity: 0;
+            }
+            to {
+                clip-path: polygon(50% 50%, 100% 0, 100% 100%);
+                opacity: 1;
+            }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -10px); }
+            20%, 40%, 60%, 80% { transform: translate(10px, 10px); }
+        }
+        
+        .team-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .team-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .team-card-selected {
+            border: 4px solid #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -96,6 +175,33 @@
             const [powerupTimer, setPowerupTimer] = useState(30);
             const [team1DoublerActive, setTeam1DoublerActive] = useState(false);
             const [team2DoublerActive, setTeam2DoublerActive] = useState(false);
+            
+            // Team selection states
+            const [gameStarted, setGameStarted] = useState(false);
+            const [selectedTeam1, setSelectedTeam1] = useState(null);
+            const [selectedTeam2, setSelectedTeam2] = useState(null);
+            const [showIntro, setShowIntro] = useState(false);
+            const [introStep, setIntroStep] = useState(0);
+            
+            // All 16 teams data
+            const teamsData = [
+                { id: 1, name: "Bear Essentials", logo: "BearEssentials.png", color: "#FF6B35" },
+                { id: 2, name: "Beef With A Q", logo: "BeefwithaQ.png", color: "#4ECDC4" },
+                { id: 3, name: "Edgewood High School", logo: "EdgewoodHighSchool.png", color: "#95E1D3" },
+                { id: 4, name: "Glitterati", logo: "Glitterati.png", color: "#F38181" },
+                { id: 5, name: "Identity Thieves", logo: "IdentityThieves.png", color: "#AA96DA" },
+                { id: 6, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
+                { id: 7, name: "Nerd Word Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
+                { id: 8, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
+                { id: 9, name: "Pacific Midwest", logo: "PacificMidwest.png", color: "#FFD93D" },
+                { id: 10, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
+                { id: 11, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
+                { id: 12, name: "The Smartboards", logo: "Smartboards.png", color: "#FF8DC7" },
+                { id: 13, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
+                { id: 14, name: "Texas Two Step", logo: "Texas Two Step.png", color: "#FFB6B9" },
+                { id: 15, name: "Vatican City Cardinals", logo: "VaticanCityCardinals.png", color: "#8EC5FC" },
+                { id: 16, name: "Weathermen", logo: "Weathermen.png", color: "#FEC8D8" }
+            ];
 
             // Round data with questions and answers
             const rounds = [
@@ -250,6 +356,25 @@
                 return () => clearInterval(interval);
             }, [powerupPhase]);
 
+            // Intro animation sequence
+            useEffect(() => {
+                if (showIntro) {
+                    const timers = [
+                        setTimeout(() => setIntroStep(1), 500),      // Team 1 name
+                        setTimeout(() => setIntroStep(2), 1500),     // Team 1 logo
+                        setTimeout(() => setIntroStep(3), 3000),     // Team 2 name
+                        setTimeout(() => setIntroStep(4), 4000),     // Team 2 logo
+                        setTimeout(() => setIntroStep(5), 5500),     // Versus graphic
+                        setTimeout(() => setIntroStep(6), 6500),     // Shake animation
+                        setTimeout(() => {
+                            setShowIntro(false);
+                            setGameStarted(true);
+                        }, 8500)  // Start game
+                    ];
+                    return () => timers.forEach(timer => clearTimeout(timer));
+                }
+            }, [showIntro]);
+
             const handleRevealCategory = () => {
                 setShowCategory(true);
                 // Reset timers to default at start of each question
@@ -398,10 +523,176 @@
                 }
             };
 
+            const handleTeamSelection = (team) => {
+                if (!selectedTeam1) {
+                    setSelectedTeam1(team);
+                } else if (!selectedTeam2 && team.id !== selectedTeam1.id) {
+                    setSelectedTeam2(team);
+                }
+            };
+            
+            const handleDeselectTeam = (teamNumber) => {
+                if (teamNumber === 1) {
+                    setSelectedTeam1(null);
+                } else {
+                    setSelectedTeam2(null);
+                }
+            };
+            
+            const handleStartMatch = () => {
+                if (selectedTeam1 && selectedTeam2) {
+                    setShowIntro(true);
+                }
+            };
+
             const currentRoundData = rounds[currentRound - 1];
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
             const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
 
+            // Team Selection Screen
+            if (!gameStarted && !showIntro) {
+                return (
+                    <div className="relative w-screen h-screen overflow-hidden bg-gray-900 flex flex-col items-center justify-center p-8">
+                        <h1 className="text-6xl font-bold text-white mb-12">SELECT TEAMS</h1>
+                        
+                        {/* Team Selection Status */}
+                        <div className="flex gap-8 mb-12">
+                            <div className="bg-gray-800 rounded-lg p-6 border-4" style={{borderColor: '#7d3ad4', width: '300px'}}>
+                                <h2 className="text-3xl font-bold text-cyan-400 mb-4">TEAM 1</h2>
+                                {selectedTeam1 ? (
+                                    <div className="text-center">
+                                        <img src={`${imagePath}${selectedTeam1.logo}`} alt={selectedTeam1.name} 
+                                            className="w-32 h-32 mx-auto mb-2 object-contain" />
+                                        <p className="text-white text-xl font-bold mb-2">{selectedTeam1.name}</p>
+                                        <button onClick={() => handleDeselectTeam(1)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                                            Change
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 text-center py-12">Select a team...</p>
+                                )}
+                            </div>
+                            
+                            <div className="bg-gray-800 rounded-lg p-6 border-4" style={{borderColor: '#7d3ad4', width: '300px'}}>
+                                <h2 className="text-3xl font-bold text-orange-400 mb-4">TEAM 2</h2>
+                                {selectedTeam2 ? (
+                                    <div className="text-center">
+                                        <img src={`${imagePath}${selectedTeam2.logo}`} alt={selectedTeam2.name} 
+                                            className="w-32 h-32 mx-auto mb-2 object-contain" />
+                                        <p className="text-white text-xl font-bold mb-2">{selectedTeam2.name}</p>
+                                        <button onClick={() => handleDeselectTeam(2)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                                            Change
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 text-center py-12">Select a team...</p>
+                                )}
+                            </div>
+                        </div>
+            
+                        {/* Team Grid */}
+                        <div className="grid grid-cols-4 gap-4 mb-8">
+                            {teamsData.map(team => {
+                                const isSelected = selectedTeam1?.id === team.id || selectedTeam2?.id === team.id;
+                                const isDisabled = isSelected;
+                                
+                                return (
+                                    <div
+                                        key={team.id}
+                                        onClick={() => !isDisabled && handleTeamSelection(team)}
+                                        className={`team-card bg-gray-800 rounded-lg p-4 border-4 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        style={{
+                                            borderColor: isSelected ? '#FFD700' : '#7d3ad4',
+                                            width: '180px'
+                                        }}
+                                    >
+                                        <img src={`${imagePath}${team.logo}`} alt={team.name} 
+                                            className="w-full h-32 object-contain mb-2" />
+                                        <p className="text-white text-center text-sm font-bold">{team.name}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+            
+                        {/* Start Button */}
+                        {selectedTeam1 && selectedTeam2 && (
+                            <button
+                                onClick={handleStartMatch}
+                                className="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-12 rounded-lg text-3xl border-4 border-black"
+                            >
+                                START MATCH
+                            </button>
+                        )}
+                    </div>
+                );
+            }
+            
+            // Intro Animation Screen
+            if (showIntro) {
+                return (
+                    <div className="relative w-screen h-screen overflow-hidden bg-black flex items-center justify-center">
+                        {/* Team 1 Side */}
+                        {introStep >= 1 && (
+                            <div className={`absolute left-0 top-0 bottom-0 w-1/2 flex flex-col items-center justify-center ${introStep >= 2 ? 'slide-in-left' : ''}`}>
+                                {introStep >= 1 && (
+                                    <h2 className={`text-6xl font-bold text-white mb-8 ${introStep >= 6 ? 'shake' : ''}`}>
+                                        {selectedTeam1.name}
+                                    </h2>
+                                )}
+                                {introStep >= 2 && (
+                                    <img 
+                                        src={`${imagePath}${selectedTeam1.logo}`}
+                                        alt={selectedTeam1.name}
+                                        className={`w-96 h-96 object-contain ${introStep >= 6 ? 'shake' : ''}`}
+                                    />
+                                )}
+                            </div>
+                        )}
+            
+                        {/* Team 2 Side */}
+                        {introStep >= 3 && (
+                            <div className={`absolute right-0 top-0 bottom-0 w-1/2 flex flex-col items-center justify-center ${introStep >= 4 ? 'slide-in-right' : ''}`}>
+                                {introStep >= 3 && (
+                                    <h2 className={`text-6xl font-bold text-white mb-8 ${introStep >= 6 ? 'shake' : ''}`}>
+                                        {selectedTeam2.name}
+                                    </h2>
+                                )}
+                                {introStep >= 4 && (
+                                    <img 
+                                        src={`${imagePath}${selectedTeam2.logo}`}
+                                        alt={selectedTeam2.name}
+                                        className={`w-96 h-96 object-contain ${introStep >= 6 ? 'shake' : ''}`}
+                                    />
+                                )}
+                            </div>
+                        )}
+            
+                        {/* Versus Graphic */}
+                        {introStep >= 5 && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="relative">
+                                    <img 
+                                        src={`${imagePath}versus.png`}
+                                        alt="VS"
+                                        className={`w-64 h-64 object-contain versus-split-left ${introStep >= 6 ? 'shake' : ''}`}
+                                        style={{position: 'absolute', clipPath: 'polygon(0 100%, 0 0, 50% 50%)'}}
+                                    />
+                                    <img 
+                                        src={`${imagePath}versus.png`}
+                                        alt="VS"
+                                        className={`w-64 h-64 object-contain versus-split-right ${introStep >= 6 ? 'shake' : ''}`}
+                                        style={{clipPath: 'polygon(50% 50%, 100% 0, 100% 100%)'}}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            
+            // Main Game (your existing game code, but with dynamic teams)
             return (
                 <div className="relative w-screen h-screen overflow-hidden" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
@@ -417,7 +708,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}BeefwithaQ.png`}
+                                src={`${imagePath}${selectedTeam1.logo}`}
                                 alt="Team 1 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
@@ -436,7 +727,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}BearEssentials.png`}
+                                src={`${imagePath}${selectedTeam2.logo}`}
                                 alt="Team 2 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
@@ -449,7 +740,7 @@
                             />
                         </div>
                     </div>
-
+            
                     {/* Main Content */}
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8">
                         {/* HTL Logo and Scores */}
@@ -458,7 +749,7 @@
                                 left: '25%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
-                                textShadow: '12px 12px 24px rgba(6, 182, 212, 0.8)'
+                                textShadow: `12px 12px 24px ${selectedTeam1.color}`
                             }}>
                                 {team1Score}
                             </div>
@@ -474,7 +765,7 @@
                                 right: '25%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
-                                textShadow: '12px 12px 24px rgba(249, 115, 22, 0.8)'
+                                textShadow: `12px 12px 24px ${selectedTeam2.color}`
                             }}>
                                 {team2Score}
                             </div>
@@ -484,7 +775,7 @@
                         <div className="flex items-center justify-center mb-8 gap-4">
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
                                 borderColor: '#7d3ad4',
-                                backgroundColor: 'rgba(6, 182, 212, 0.65)',
+                                backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
                                 opacity: (activeTeam === 1 || (powerupPhase && powerupTimer > 0)) ? 1 : 0.3
@@ -514,7 +805,7 @@
                         
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
                                 borderColor: '#7d3ad4',
-                                backgroundColor: 'rgba(249, 115, 22, 0.65)',
+                                backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
                                 opacity: (activeTeam === 2 || (powerupPhase && powerupTimer > 0)) ? 1 : 0.3
@@ -527,196 +818,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        {/* Question Display Area */}
-                        <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
-                            borderColor: '#7d3ad4',
-                            width: '1400px',
-                            height: '550px',
-                            padding: '48px'
-                        }}>
-                            <div className="text-center h-full flex flex-col">
-                                <div className="text-cyan-400 font-bold text-4xl mb-6">
-                                    QUESTION {currentQuestion}
-                                </div>
-                                
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
-                                    height: '280px',
-                                    overflow: 'hidden'
-                                }}>
-                                    {powerupPhase ? (
-                                        <p className="text-white text-6xl font-bold fade-in">
-                                            Powerups?
-                                        </p>
-                                    ) : showQuestion ? (
-                                        <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
-                                            fontSize: '40px',
-                                            margin: 0
-                                        }}>
-                                            {currentQuestionText}
-                                        </p>
-                                    ) : null}
-                                </div>
-
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
-                                    height: '120px',
-                                    overflow: 'hidden'
-                                }}>
-                                    {showQuestion && (
-                                        <p className="text-yellow-400 font-bold text-5xl" style={{
-                                            opacity: showAnswer ? 1 : 0.3
-                                        }}>
-                                            {currentAnswerText}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Powerups and Control Buttons */}
-                        <div className="mx-auto mb-8" style={{width: '1400px'}}>
-                            <div className="flex justify-between items-center">
-                                <div className="flex gap-6">
-                                    <img 
-                                        src={`${imagePath}powerup-double.png`}
-                                        alt="Team 1 Point Doubler"
-                                        className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'pointDoubler')}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-time.png`}
-                                        alt="Team 1 Extra Time"
-                                        className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'extraTime')}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-dip.png`}
-                                        alt="Team 1 Double Dip"
-                                        className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'doubleDip')}
-                                    />
-                                </div>
-
-                                <div className="flex gap-4">
-                                    {!showCategory ? (
-                                        <button 
-                                            onClick={handleRevealCategory}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                        >
-                                            REVEAL CATEGORY
-                                        </button>
-                                    ) : powerupPhase ? (
-                                        <button 
-                                            onClick={() => {
-                                                setPowerupPhase(false);
-                                                setPowerupTimer(30);
-                                            }}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                        >
-                                            SKIP POWERUPS
-                                        </button>
-                                    ) : !showQuestion ? (
-                                        <button 
-                                            onClick={handleRevealQuestion}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                        >
-                                            REVEAL QUESTION
-                                        </button>
-                                    ) : !timerRunning && !showAnswer ? (
-                                        <button 
-                                            onClick={handleStartTimer}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                        >
-                                            START TIMER
-                                        </button>
-                                    ) : showAnswer ? (
-                                        <button 
-                                            onClick={handleNext}
-                                            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                        >
-                                            NEXT
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button 
-                                                onClick={handleCorrect}
-                                                className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                CORRECT
-                                            </button>
-                                            <button 
-                                                onClick={handleIncorrect}
-                                                className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                INCORRECT
-                                            </button>
-                                            <button 
-                                                onClick={handleSteal}
-                                                className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                STEAL
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-6">
-                                    <img 
-                                        src={`${imagePath}powerup-dip.png`}
-                                        alt="Team 2 Double Dip"
-                                        className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'doubleDip')}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-time.png`}
-                                        alt="Team 2 Extra Time"
-                                        className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'extraTime')}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-double.png`}
-                                        alt="Team 2 Point Doubler"
-                                        className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'pointDoubler')}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Round Progress */}
-                        <div className="flex justify-center gap-2">
-                            {[1, 2, 3, 4, 5, 6].map((round) => (
-                                <div
-                                    key={round}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
-                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
-                                    }`}
-                                >
-                                    {round}
-                                </div>
-                            ))}
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm bg-purple-500 text-white">
-                                B
-                            </div>
-                            {[7, 8, 9, 10, 11, 12].map((round) => (
-                                <div
-                                    key={round}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
-                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
-                                    }`}
-                                >
-                                    {round}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
             );
         }
 
