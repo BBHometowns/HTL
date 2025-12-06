@@ -63,6 +63,7 @@
             const [team2Score, setTeam2Score] = useState(0);
             const [currentRound, setCurrentRound] = useState(1);
             const [currentQuestion, setCurrentQuestion] = useState(1);
+            const [showCategory, setShowCategory] = useState(false);
             const [showQuestion, setShowQuestion] = useState(false);
             const [showAnswer, setShowAnswer] = useState(false);
             const [activeTeam, setActiveTeam] = useState(1);
@@ -91,7 +92,7 @@
 
             const [currentPointValue, setCurrentPointValue] = useState(1);
 
-            const [powerupPhase, setPowerupPhase] = useState(true); // New phase before each round
+            const [powerupPhase, setPowerupPhase] = useState(false);
             const [powerupTimer, setPowerupTimer] = useState(30);
 
             // Round data with questions and answers
@@ -191,13 +192,13 @@
                     const containerHeight = container.clientHeight;
                     const containerWidth = container.clientWidth - 40;
                     
-                    let fontSize = 48;
+                    let fontSize = 40;
                     questionTextRef.current.style.fontSize = fontSize + 'px';
                     
                     while ((questionTextRef.current.scrollHeight > containerHeight || 
                             questionTextRef.current.scrollWidth > containerWidth) && 
-                           fontSize > 20) {
-                        fontSize -= 2;
+                           fontSize > 18) {
+                        fontSize -= 1;
                         questionTextRef.current.style.fontSize = fontSize + 'px';
                     }
                 }
@@ -233,7 +234,7 @@
             // Powerup phase timer countdown
             useEffect(() => {
                 let interval;
-                if (powerupPhase && showQuestion) {
+                if (powerupPhase) {
                     interval = setInterval(() => {
                         setPowerupTimer(prev => {
                             if (prev <= 1) {
@@ -245,20 +246,23 @@
                     }, 1000);
                 }
                 return () => clearInterval(interval);
-            }, [powerupPhase, showQuestion]);
+            }, [powerupPhase]);
 
-            const handleRevealQuestion = () => {
+            const handleRevealCategory = () => {
+                setShowCategory(true);
                 // Check if all Point Doublers and Extra Times are used
                 const allPowerupsUsed = !team1Powerups.pointDoubler && !team1Powerups.extraTime && 
                                         !team2Powerups.pointDoubler && !team2Powerups.extraTime;
                 
-                if (allPowerupsUsed) {
-                    setPowerupPhase(false);
-                } else {
+                if (currentQuestion === 1 && !allPowerupsUsed) {
                     setPowerupPhase(true);
                     setPowerupTimer(30);
                 }
+            };
+
+            const handleRevealQuestion = () => {
                 setShowQuestion(true);
+                setPowerupPhase(false);
             };
 
             const handleStartTimer = () => {
@@ -304,6 +308,8 @@
                     setActiveTimer(2);
                     setTeam1Time(15);
                     setTeam2Time(30);
+                    setShowCategory(true);
+                    setShowQuestion(false);
                 } else {
                     if (currentRound < 12) {
                         setCurrentRound(currentRound + 1);
@@ -312,21 +318,22 @@
                         setActiveTimer(1);
                         setTeam1Time(30);
                         setTeam2Time(15);
+                        setShowCategory(false);
+                        setShowQuestion(false);
                     }
                 }
-                setShowQuestion(false);
                 setShowAnswer(false);
                 setStealAttempted(false);
                 setCurrentPointValue(1);
                 setTimerRunning(false);
-                setPowerupPhase(true); // Reset for next round
+                setPowerupPhase(false);
                 setPowerupTimer(30);
             };
 
             const handlePowerup = (team, powerup) => {
                 // Only allow powerup usage during powerup phase for Point Doubler and Extra Time
                 if ((powerup === 'pointDoubler' || powerup === 'extraTime') && !powerupPhase) {
-                    return; // Can't use these powerups after powerup phase
+                    return;
                 }
                 
                 if (team === 1 && currentQuestion === 1) {
@@ -337,7 +344,6 @@
                         setTeam1Powerups({...team1Powerups, extraTime: false});
                         setTeam1Time(45);
                     } else if (powerup === 'doubleDip' && team1Powerups.doubleDip && !stealAttempted) {
-                        // Double Dip can only be used when answering their own question, not stealing
                         setTeam1Powerups({...team1Powerups, doubleDip: false});
                     }
                 } else if (team === 2 && currentQuestion === 2) {
@@ -364,9 +370,8 @@
                     backgroundPosition: '65% center',
                     backgroundRepeat: 'no-repeat'
                 }}>
-                    {/* Team Logos - Behind everything with perspective */}
+                    {/* Team Logos */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        {/* Team 1 Logo */}
                         <div className="absolute team-logo-transition" style={{
                             left: '5%',
                             top: '50%',
@@ -386,7 +391,6 @@
                             />
                         </div>
                         
-                        {/* Team 2 Logo */}
                         <div className="absolute team-logo-transition" style={{
                             right: '5%',
                             top: '50%',
@@ -407,13 +411,12 @@
                         </div>
                     </div>
 
-                    {/* Main Content Container */}
+                    {/* Main Content */}
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8">
                         {/* HTL Logo and Scores */}
                         <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px'}}>
-                            {/* Team 1 Score - Absolutely positioned */}
                             <div className="absolute score-text font-black text-black" style={{
-                                left: '5%',
+                                left: '12%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
                                 textShadow: '12px 12px 24px rgba(6, 182, 212, 0.8)'
@@ -421,7 +424,6 @@
                                 {team1Score}
                             </div>
                         
-                            {/* HTL Logo - Centered */}
                             <img 
                                 src={`${imagePath}htl-logo.png`}
                                 alt="HTL - Hometown Trivia League" 
@@ -429,9 +431,8 @@
                                 style={{height: '560px'}}
                             />
                         
-                            {/* Team 2 Score - Absolutely positioned */}
                             <div className="absolute score-text font-black text-black" style={{
-                                right: '5%',
+                                right: '12%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
                                 textShadow: '12px 12px 24px rgba(249, 115, 22, 0.8)'
@@ -442,15 +443,21 @@
                         
                         {/* Round Title with Timers */}
                         <div className="flex items-center justify-center mb-8 gap-4">
-                            {/* Team 1 Timer */}
-                            <div className="text-8xl font-black text-white" style={{
-                                WebkitTextStroke: '2px black',
-                                textStroke: '2px black'
+                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                borderColor: '#7d3ad4',
+                                backgroundColor: 'rgba(6, 182, 212, 0.3)',
+                                width: '200px',
+                                height: '200px',
+                                opacity: activeTeam === 1 ? 1 : 0.3
                             }}>
-                                {powerupPhase && showQuestion ? powerupTimer : team1Time}
+                                <div className="text-8xl font-black text-white" style={{
+                                    WebkitTextStroke: '2px black',
+                                    textStroke: '2px black'
+                                }}>
+                                    {powerupPhase ? powerupTimer : team1Time}
+                                </div>
                             </div>
                         
-                            {/* Round Title */}
                             <div className="bg-gray-900 rounded-2xl border-8" style={{
                                 borderColor: '#7d3ad4',
                                 padding: '16px 48px',
@@ -466,20 +473,27 @@
                                 </h2>
                             </div>
                         
-                            {/* Team 2 Timer */}
-                            <div className="text-8xl font-black text-white" style={{
-                                WebkitTextStroke: '2px black',
-                                textStroke: '2px black'
+                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                borderColor: '#7d3ad4',
+                                backgroundColor: 'rgba(249, 115, 22, 0.3)',
+                                width: '200px',
+                                height: '200px',
+                                opacity: activeTeam === 2 ? 1 : 0.3
                             }}>
-                                {powerupPhase && showQuestion ? powerupTimer : team2Time}
+                                <div className="text-8xl font-black text-white" style={{
+                                    WebkitTextStroke: '2px black',
+                                    textStroke: '2px black'
+                                }}>
+                                    {powerupPhase ? powerupTimer : team2Time}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Question Display Area - FIXED SIZE */}
+                        {/* Question Display Area */}
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
-                            height: '500px',
+                            height: '550px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -487,26 +501,24 @@
                                     QUESTION {currentQuestion}
                                 </div>
                                 
-                                {/* Question Text Box - Fixed Height */}
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6 mb-4" style={{
-                                    height: '200px',
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
+                                    height: '280px',
                                     overflow: 'hidden'
                                 }}>
                                     {powerupPhase ? (
                                         <p className="text-white text-6xl font-bold fade-in">
                                             Powerups?
                                         </p>
-                                    ) : showQuestion && (
+                                    ) : showQuestion ? (
                                         <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
-                                            fontSize: '48px',
+                                            fontSize: '40px',
                                             margin: 0
                                         }}>
                                             {currentQuestionText}
                                         </p>
-                                    )}
+                                    ) : null}
                                 </div>
 
-                                {/* Answer Text Box - Fixed Height */}
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
                                     height: '120px',
                                     overflow: 'hidden'
@@ -522,10 +534,9 @@
                             </div>
                         </div>
 
-                        {/* Powerups and Control Buttons Row */}
+                        {/* Powerups and Control Buttons */}
                         <div className="mx-auto mb-8" style={{width: '1400px'}}>
                             <div className="flex justify-between items-center">
-                                {/* Team 1 Powerups */}
                                 <div className="flex gap-6">
                                     <img 
                                         src={`${imagePath}powerup-double.png`}
@@ -550,14 +561,13 @@
                                     />
                                 </div>
 
-                                {/* Control Buttons */}
                                 <div className="flex gap-4">
-                                    {!showQuestion ? (
+                                    {!showCategory ? (
                                         <button 
-                                            onClick={handleRevealQuestion}
+                                            onClick={handleRevealCategory}
                                             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                         >
-                                            REVEAL QUESTION
+                                            REVEAL CATEGORY
                                         </button>
                                     ) : powerupPhase ? (
                                         <button 
@@ -568,6 +578,13 @@
                                             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                         >
                                             SKIP POWERUPS
+                                        </button>
+                                    ) : !showQuestion ? (
+                                        <button 
+                                            onClick={handleRevealQuestion}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            REVEAL QUESTION
                                         </button>
                                     ) : !timerRunning && !showAnswer ? (
                                         <button 
@@ -607,7 +624,6 @@
                                     )}
                                 </div>
 
-                                {/* Team 2 Powerups */}
                                 <div className="flex gap-6">
                                     <img 
                                         src={`${imagePath}powerup-dip.png`}
@@ -634,7 +650,7 @@
                             </div>
                         </div>
 
-                        {/* Round Progress Indicator */}
+                        {/* Round Progress */}
                         <div className="flex justify-center gap-2">
                             {[1, 2, 3, 4, 5, 6].map((round) => (
                                 <div
