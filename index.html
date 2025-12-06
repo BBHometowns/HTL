@@ -91,6 +91,9 @@
 
             const [currentPointValue, setCurrentPointValue] = useState(1);
 
+            const [powerupPhase, setPowerupPhase] = useState(true); // New phase before each round
+            const [powerupTimer, setPowerupTimer] = useState(30);
+
             // Round data with questions and answers
             const rounds = [
                 { 
@@ -227,7 +230,34 @@
                 return () => clearInterval(interval);
             }, [timerRunning, activeTimer]);
 
+            // Powerup phase timer countdown
+            useEffect(() => {
+                let interval;
+                if (powerupPhase && showQuestion) {
+                    interval = setInterval(() => {
+                        setPowerupTimer(prev => {
+                            if (prev <= 1) {
+                                setPowerupPhase(false);
+                                return 30;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [powerupPhase, showQuestion]);
+
             const handleRevealQuestion = () => {
+                // Check if all Point Doublers and Extra Times are used
+                const allPowerupsUsed = !team1Powerups.pointDoubler && !team1Powerups.extraTime && 
+                                        !team2Powerups.pointDoubler && !team2Powerups.extraTime;
+                
+                if (allPowerupsUsed) {
+                    setPowerupPhase(false);
+                } else {
+                    setPowerupPhase(true);
+                    setPowerupTimer(30);
+                }
                 setShowQuestion(true);
             };
 
@@ -289,9 +319,16 @@
                 setStealAttempted(false);
                 setCurrentPointValue(1);
                 setTimerRunning(false);
+                setPowerupPhase(true); // Reset for next round
+                setPowerupTimer(30);
             };
 
             const handlePowerup = (team, powerup) => {
+                // Only allow powerup usage during powerup phase for Point Doubler and Extra Time
+                if ((powerup === 'pointDoubler' || powerup === 'extraTime') && !powerupPhase) {
+                    return; // Can't use these powerups after powerup phase
+                }
+                
                 if (team === 1 && currentQuestion === 1) {
                     if (powerup === 'pointDoubler' && team1Powerups.pointDoubler) {
                         setTeam1Powerups({...team1Powerups, pointDoubler: false});
@@ -299,7 +336,8 @@
                     } else if (powerup === 'extraTime' && team1Powerups.extraTime) {
                         setTeam1Powerups({...team1Powerups, extraTime: false});
                         setTeam1Time(45);
-                    } else if (powerup === 'doubleDip' && team1Powerups.doubleDip) {
+                    } else if (powerup === 'doubleDip' && team1Powerups.doubleDip && !stealAttempted) {
+                        // Double Dip can only be used when answering their own question, not stealing
                         setTeam1Powerups({...team1Powerups, doubleDip: false});
                     }
                 } else if (team === 2 && currentQuestion === 2) {
@@ -309,7 +347,7 @@
                     } else if (powerup === 'extraTime' && team2Powerups.extraTime) {
                         setTeam2Powerups({...team2Powerups, extraTime: false});
                         setTeam2Time(45);
-                    } else if (powerup === 'doubleDip' && team2Powerups.doubleDip) {
+                    } else if (powerup === 'doubleDip' && team2Powerups.doubleDip && !stealAttempted) {
                         setTeam2Powerups({...team2Powerups, doubleDip: false});
                     }
                 }
@@ -372,17 +410,17 @@
                     {/* Main Content Container */}
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8">
                         {/* HTL Logo and Scores */}
-                        <div className="relative flex items-center justify-center mb-6" style={{height: '560px'}}>
+                        <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px'}}>
                             {/* Team 1 Score - Absolutely positioned */}
                             <div className="absolute score-text font-black text-black" style={{
-                                left: '10%',
+                                left: '5%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
                                 textShadow: '12px 12px 24px rgba(6, 182, 212, 0.8)'
                             }}>
                                 {team1Score}
                             </div>
-
+                        
                             {/* HTL Logo - Centered */}
                             <img 
                                 src={`${imagePath}htl-logo.png`}
@@ -390,10 +428,10 @@
                                 className="object-contain"
                                 style={{height: '560px'}}
                             />
-
+                        
                             {/* Team 2 Score - Absolutely positioned */}
                             <div className="absolute score-text font-black text-black" style={{
-                                right: '10%',
+                                right: '5%',
                                 fontSize: '560px',
                                 lineHeight: '560px',
                                 textShadow: '12px 12px 24px rgba(249, 115, 22, 0.8)'
@@ -405,18 +443,13 @@
                         {/* Round Title with Timers */}
                         <div className="flex items-center justify-center mb-8 gap-4">
                             {/* Team 1 Timer */}
-                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
-                                borderColor: '#7d3ad4',
-                                backgroundColor: 'rgba(6, 182, 212, 0.2)',
-                                width: '150px',
-                                height: '200px',
-                                opacity: activeTeam === 1 ? 1 : 0.3
+                            <div className="text-8xl font-black text-white" style={{
+                                WebkitTextStroke: '2px black',
+                                textStroke: '2px black'
                             }}>
-                                <div className="text-8xl font-black text-white">
-                                    {team1Time}
-                                </div>
+                                {powerupPhase && showQuestion ? powerupTimer : team1Time}
                             </div>
-
+                        
                             {/* Round Title */}
                             <div className="bg-gray-900 rounded-2xl border-8" style={{
                                 borderColor: '#7d3ad4',
@@ -432,18 +465,13 @@
                                     ROUND {currentRound}: {currentRoundData.category}
                                 </h2>
                             </div>
-
+                        
                             {/* Team 2 Timer */}
-                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
-                                borderColor: '#7d3ad4',
-                                backgroundColor: 'rgba(249, 115, 22, 0.2)',
-                                width: '150px',
-                                height: '200px',
-                                opacity: activeTeam === 2 ? 1 : 0.3
+                            <div className="text-8xl font-black text-white" style={{
+                                WebkitTextStroke: '2px black',
+                                textStroke: '2px black'
                             }}>
-                                <div className="text-8xl font-black text-white">
-                                    {team2Time}
-                                </div>
+                                {powerupPhase && showQuestion ? powerupTimer : team2Time}
                             </div>
                         </div>
 
@@ -456,7 +484,7 @@
                         }}>
                             <div className="text-center h-full flex flex-col">
                                 <div className="text-cyan-400 font-bold text-4xl mb-6">
-                                    QUESTION {currentQuestion} - TEAM {currentQuestion}
+                                    QUESTION {currentQuestion}
                                 </div>
                                 
                                 {/* Question Text Box - Fixed Height */}
@@ -464,7 +492,11 @@
                                     height: '200px',
                                     overflow: 'hidden'
                                 }}>
-                                    {showQuestion && (
+                                    {powerupPhase ? (
+                                        <p className="text-white text-6xl font-bold fade-in">
+                                            Powerups?
+                                        </p>
+                                    ) : showQuestion && (
                                         <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
                                             fontSize: '48px',
                                             margin: 0
@@ -526,6 +558,16 @@
                                             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                         >
                                             REVEAL QUESTION
+                                        </button>
+                                    ) : powerupPhase ? (
+                                        <button 
+                                            onClick={() => {
+                                                setPowerupPhase(false);
+                                                setPowerupTimer(30);
+                                            }}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            SKIP POWERUPS
                                         </button>
                                     ) : !timerRunning && !showAnswer ? (
                                         <button 
