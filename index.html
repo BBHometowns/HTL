@@ -340,6 +340,10 @@
                     }
                     setShowCategory(true);
                     setShowQuestion(false);
+                    setShowAnswer(false);
+                    setStealAttempted(false);
+                    setCurrentPointValue(1);
+                    setTimerRunning(false);
                 } else {
                     if (currentRound < 12) {
                         setCurrentRound(currentRound + 1);
@@ -352,15 +356,15 @@
                         setShowCategory(false);
                         setShowQuestion(false);
                     }
+                    setShowAnswer(false);
+                    setStealAttempted(false);
+                    setCurrentPointValue(1);
+                    setTeam1DoublerActive(false);
+                    setTeam2DoublerActive(false);
+                    setTimerRunning(false);
+                    setPowerupPhase(false);
+                    setPowerupTimer(30);
                 }
-                setShowAnswer(false);
-                setStealAttempted(false);
-                setCurrentPointValue(1);
-                setTeam1DoublerActive(false);
-                setTeam2DoublerActive(false);
-                setTimerRunning(false);
-                setPowerupPhase(false);
-                setPowerupTimer(30);
             };
 
             const handlePowerup = (team, powerup) => {
