@@ -63,10 +63,10 @@
         }
         @keyframes versusSplitLeft {
             from {
-                clip-path: polygon(0% 100%, 0% 100%, 50% 50%);
+                clip-path: polygon(0% 100%, 0% 100%, 50% 50%, 0% 100%);
             }
             to {
-                clip-path: polygon(0% 100%, 0% 0%, 50% 50%);
+                clip-path: polygon(0% 0%, 0% 100%, 50% 50%, 0% 0%);
             }
         }
         
@@ -75,10 +75,10 @@
         }
         @keyframes versusSplitRight {
             from {
-                clip-path: polygon(50% 50%, 100% 0%, 100% 0%);
+                clip-path: polygon(50% 50%, 100% 0%, 100% 0%, 50% 50%);
             }
             to {
-                clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
+                clip-path: polygon(50% 50%, 100% 0%, 100% 100%, 50% 50%);
             }
         }
         
@@ -95,32 +95,32 @@
             animation: shake1 0.5s ease-in-out;
         }
         @keyframes shake1 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-8px, 5px) rotate(-2deg); }
-            20% { transform: translate(7px, -6px) rotate(1deg); }
-            30% { transform: translate(-6px, 8px) rotate(-1deg); }
-            40% { transform: translate(9px, -5px) rotate(2deg); }
-            50% { transform: translate(-7px, 7px) rotate(-2deg); }
-            60% { transform: translate(6px, -8px) rotate(1deg); }
-            70% { transform: translate(-9px, 6px) rotate(-1deg); }
-            80% { transform: translate(8px, -7px) rotate(2deg); }
-            90% { transform: translate(-5px, 9px) rotate(-2deg); }
+            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translateY(-50%) translate(-8px, 5px) rotate(-2deg); }
+            20% { transform: translateY(-50%) translate(7px, -6px) rotate(1deg); }
+            30% { transform: translateY(-50%) translate(-6px, 8px) rotate(-1deg); }
+            40% { transform: translateY(-50%) translate(9px, -5px) rotate(2deg); }
+            50% { transform: translateY(-50%) translate(-7px, 7px) rotate(-2deg); }
+            60% { transform: translateY(-50%) translate(6px, -8px) rotate(1deg); }
+            70% { transform: translateY(-50%) translate(-9px, 6px) rotate(-1deg); }
+            80% { transform: translateY(-50%) translate(8px, -7px) rotate(2deg); }
+            90% { transform: translateY(-50%) translate(-5px, 9px) rotate(-2deg); }
         }
         
         .shake-2 {
             animation: shake2 0.5s ease-in-out;
         }
         @keyframes shake2 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(6px, -7px) rotate(1deg); }
-            20% { transform: translate(-8px, 6px) rotate(-2deg); }
-            30% { transform: translate(7px, -8px) rotate(2deg); }
-            40% { transform: translate(-6px, 9px) rotate(-1deg); }
-            50% { transform: translate(9px, -6px) rotate(1deg); }
-            60% { transform: translate(-7px, 8px) rotate(-2deg); }
-            70% { transform: translate(8px, -9px) rotate(2deg); }
-            80% { transform: translate(-9px, 7px) rotate(-1deg); }
-            90% { transform: translate(7px, -8px) rotate(1deg); }
+            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translateY(-50%) translate(6px, -7px) rotate(1deg); }
+            20% { transform: translateY(-50%) translate(-8px, 6px) rotate(-2deg); }
+            30% { transform: translateY(-50%) translate(7px, -8px) rotate(2deg); }
+            40% { transform: translateY(-50%) translate(-6px, 9px) rotate(-1deg); }
+            50% { transform: translateY(-50%) translate(9px, -6px) rotate(1deg); }
+            60% { transform: translateY(-50%) translate(-7px, 8px) rotate(-2deg); }
+            70% { transform: translateY(-50%) translate(8px, -9px) rotate(2deg); }
+            80% { transform: translateY(-50%) translate(-9px, 7px) rotate(-1deg); }
+            90% { transform: translateY(-50%) translate(7px, -8px) rotate(1deg); }
         }
         
         .fade-out {
@@ -660,17 +660,16 @@
                         backgroundRepeat: 'no-repeat'
                     }}>
                         {/* Team 1 Logo */}
-                        {introStep >= 1 && (
-                            <div 
-                                className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
-                                style={{
-                                    left: introStep >= 1 ? '5%' : '-100%',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    transition: 'left 1s ease-out',
-                                    zIndex: 10
-                                }}
-                            >
+                        <div 
+                            className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
+                            style={{
+                                left: introStep >= 1 ? '5%' : '-100%',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                transition: 'left 1s ease-out',
+                                zIndex: 10
+                            }}
+                        >
                                 <img 
                                     src={`${imagePath}${selectedTeam1.logo}`}
                                     alt={selectedTeam1.name}
@@ -682,20 +681,19 @@
                                     }}
                                 />
                             </div>
-                        )}
+                        </div>
             
                         {/* Team 2 Logo */}
-                        {introStep >= 2 && (
-                            <div 
-                                className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
-                                style={{
-                                    right: introStep >= 2 ? '5%' : '-100%',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    transition: 'right 1s ease-out',
-                                    zIndex: 10
-                                }}
-                            >
+                        <div 
+                            className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
+                            style={{
+                                right: introStep >= 2 ? '5%' : '-100%',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                transition: 'right 1s ease-out',
+                                zIndex: 10
+                            }}
+                        >
                                 <img 
                                     src={`${imagePath}${selectedTeam2.logo}`}
                                     alt={selectedTeam2.name}
@@ -707,7 +705,7 @@
                                     }}
                                 />
                             </div>
-                        )}
+                        </div>
             
                         {/* Versus Graphic */}
                         {introStep >= 3 && (
@@ -915,7 +913,9 @@
                                         {[1, 2, 3, 4, 5, 6].map((round) => (
                                             <div
                                                 key={round}
-                                                className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg bg-yellow-400 text-black"
+                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                                    round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                                }`}
                                             >
                                                 {round}
                                             </div>
@@ -926,7 +926,9 @@
                                         {[7, 8, 9, 10, 11, 12].map((round) => (
                                             <div
                                                 key={round}
-                                                className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg bg-gray-600 text-white"
+                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                                    round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                                }`}
                                             >
                                                 {round}
                                             </div>
