@@ -275,10 +275,10 @@
                 setShowQuestion(true);
                 setPowerupPhase(false);
                 
-                // Apply Point Doubler for the current question
-                if (currentQuestion === 1 && !team1Powerups.pointDoubler) {
+                // Apply Point Doubler for the current question based on tracking states
+                if (currentQuestion === 1 && team1DoublerActive) {
                     setCurrentPointValue(2);
-                } else if (currentQuestion === 2 && !team2Powerups.pointDoubler) {
+                } else if (currentQuestion === 2 && team2DoublerActive) {
                     setCurrentPointValue(2);
                 } else {
                     setCurrentPointValue(1);
