@@ -323,7 +323,7 @@
                 <div className="relative w-screen h-screen overflow-hidden" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
                     backgroundSize: 'cover',
-                    backgroundPosition: '55% center',
+                    backgroundPosition: '60% center',
                     backgroundRepeat: 'no-repeat'
                 }}>
                     {/* Team Logos - Behind everything with perspective */}
@@ -340,8 +340,8 @@
                                 className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
                                     transform: 'perspective(1000px) rotateY(15deg)',
-                                    width: '800px',
-                                    height: '800px',
+                                    width: '1000px',
+                                    height: '1000px',
                                     objectFit: 'contain',
                                     opacity: activeTeam === 1 ? 0.9 : 0.1
                                 }}
@@ -360,8 +360,8 @@
                                 className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'}`}
                                 style={{
                                     transform: 'perspective(1000px) rotateY(-15deg)',
-                                    width: '800px',
-                                    height: '800px',
+                                    width: '1000px',
+                                    height: '1000px',
                                     objectFit: 'contain',
                                     opacity: activeTeam === 2 ? 0.9 : 0.1
                                 }}
