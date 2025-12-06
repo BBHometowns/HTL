@@ -80,31 +80,25 @@
         
         .versus-split-left {
             animation: versusSplitLeft 1s ease-out forwards;
-            transform-origin: bottom left;
         }
         @keyframes versusSplitLeft {
             from {
                 clip-path: polygon(0 100%, 0 100%, 50% 50%);
-                opacity: 0;
             }
             to {
                 clip-path: polygon(0 100%, 0 0, 50% 50%);
-                opacity: 1;
             }
         }
         
         .versus-split-right {
             animation: versusSplitRight 1s ease-out forwards;
-            transform-origin: top right;
         }
         @keyframes versusSplitRight {
             from {
                 clip-path: polygon(50% 50%, 100% 0, 100% 0);
-                opacity: 0;
             }
             to {
                 clip-path: polygon(50% 50%, 100% 0, 100% 100%);
-                opacity: 1;
             }
         }
         
@@ -121,48 +115,48 @@
             animation: shake1 0.5s ease-in-out;
         }
         @keyframes shake1 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-8px, 5px) rotate(-2deg); }
-            20% { transform: translate(7px, -6px) rotate(1deg); }
-            30% { transform: translate(-6px, 8px) rotate(-1deg); }
-            40% { transform: translate(9px, -5px) rotate(2deg); }
-            50% { transform: translate(-7px, 7px) rotate(-2deg); }
-            60% { transform: translate(6px, -8px) rotate(1deg); }
-            70% { transform: translate(-9px, 6px) rotate(-1deg); }
-            80% { transform: translate(8px, -7px) rotate(2deg); }
-            90% { transform: translate(-5px, 9px) rotate(-2deg); }
+            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translateY(-50%) translate(-8px, 5px) rotate(-2deg); }
+            20% { transform: translateY(-50%) translate(7px, -6px) rotate(1deg); }
+            30% { transform: translateY(-50%) translate(-6px, 8px) rotate(-1deg); }
+            40% { transform: translateY(-50%) translate(9px, -5px) rotate(2deg); }
+            50% { transform: translateY(-50%) translate(-7px, 7px) rotate(-2deg); }
+            60% { transform: translateY(-50%) translate(6px, -8px) rotate(1deg); }
+            70% { transform: translateY(-50%) translate(-9px, 6px) rotate(-1deg); }
+            80% { transform: translateY(-50%) translate(8px, -7px) rotate(2deg); }
+            90% { transform: translateY(-50%) translate(-5px, 9px) rotate(-2deg); }
         }
         
         .shake-2 {
             animation: shake2 0.5s ease-in-out;
         }
         @keyframes shake2 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(6px, -7px) rotate(1deg); }
-            20% { transform: translate(-8px, 6px) rotate(-2deg); }
-            30% { transform: translate(7px, -8px) rotate(2deg); }
-            40% { transform: translate(-6px, 9px) rotate(-1deg); }
-            50% { transform: translate(9px, -6px) rotate(1deg); }
-            60% { transform: translate(-7px, 8px) rotate(-2deg); }
-            70% { transform: translate(8px, -9px) rotate(2deg); }
-            80% { transform: translate(-9px, 7px) rotate(-1deg); }
-            90% { transform: translate(7px, -8px) rotate(1deg); }
+            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translateY(-50%) translate(6px, -7px) rotate(1deg); }
+            20% { transform: translateY(-50%) translate(-8px, 6px) rotate(-2deg); }
+            30% { transform: translateY(-50%) translate(7px, -8px) rotate(2deg); }
+            40% { transform: translateY(-50%) translate(-6px, 9px) rotate(-1deg); }
+            50% { transform: translateY(-50%) translate(9px, -6px) rotate(1deg); }
+            60% { transform: translateY(-50%) translate(-7px, 8px) rotate(-2deg); }
+            70% { transform: translateY(-50%) translate(8px, -9px) rotate(2deg); }
+            80% { transform: translateY(-50%) translate(-9px, 7px) rotate(-1deg); }
+            90% { transform: translateY(-50%) translate(7px, -8px) rotate(1deg); }
         }
         
         .shake-3 {
             animation: shake3 0.5s ease-in-out;
         }
         @keyframes shake3 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-7px, 8px) rotate(-1deg); }
-            20% { transform: translate(9px, -7px) rotate(2deg); }
-            30% { transform: translate(-8px, 6px) rotate(-2deg); }
-            40% { transform: translate(7px, -9px) rotate(1deg); }
-            50% { transform: translate(-6px, 8px) rotate(-1deg); }
-            60% { transform: translate(8px, -6px) rotate(2deg); }
-            70% { transform: translate(-9px, 7px) rotate(-2deg); }
-            80% { transform: translate(6px, -8px) rotate(1deg); }
-            90% { transform: translate(-7px, 9px) rotate(-1deg); }
+            0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-50%, -50%) translate(-7px, 8px) rotate(-1deg); }
+            20% { transform: translate(-50%, -50%) translate(9px, -7px) rotate(2deg); }
+            30% { transform: translate(-50%, -50%) translate(-8px, 6px) rotate(-2deg); }
+            40% { transform: translate(-50%, -50%) translate(7px, -9px) rotate(1deg); }
+            50% { transform: translate(-50%, -50%) translate(-6px, 8px) rotate(-1deg); }
+            60% { transform: translate(-50%, -50%) translate(8px, -6px) rotate(2deg); }
+            70% { transform: translate(-50%, -50%) translate(-9px, 7px) rotate(-2deg); }
+            80% { transform: translate(-50%, -50%) translate(6px, -8px) rotate(1deg); }
+            90% { transform: translate(-50%, -50%) translate(-7px, 9px) rotate(-1deg); }
         }
         
         .fade-out {
@@ -702,19 +696,16 @@
                         backgroundRepeat: 'no-repeat'
                     }}>
                         {/* Team 1 Logo */}
-                        {introStep >= 1 && (
-                            <div 
-                                className={`absolute team-logo-transition ${introStep >= 4 ? 'shake-1' : ''}`}
-                                style={{
-                                    left: '5%',
-                                    top: '50%',
-                                    transform: introStep >= 1 ? 'translateY(-50%)' : 'translate(-100vw, -50%)',
-                                    transition: 'transform 1s ease-out',
-                                    opacity: introStep >= 5 ? 0 : 1,
-                                    transitionProperty: introStep >= 5 ? 'opacity, transform' : 'transform',
-                                    transitionDuration: introStep >= 5 ? '1s, 1s' : '1s'
-                                }}
-                            >
+                        <div 
+                            className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
+                            style={{
+                                left: '5%',
+                                top: '50%',
+                                transform: introStep >= 1 ? 'translateY(-50%)' : 'translate(-200%, -50%)',
+                                transition: 'transform 1s ease-out',
+                                willChange: 'transform'
+                            }}
+                        >
                                 <img 
                                     src={`${imagePath}${selectedTeam1.logo}`}
                                     alt={selectedTeam1.name}
@@ -729,19 +720,16 @@
                         )}
             
                         {/* Team 2 Logo */}
-                        {introStep >= 2 && (
-                            <div 
-                                className={`absolute team-logo-transition ${introStep >= 4 ? 'shake-2' : ''}`}
-                                style={{
-                                    right: '5%',
-                                    top: '50%',
-                                    transform: introStep >= 2 ? 'translateY(-50%)' : 'translate(100vw, -50%)',
-                                    transition: 'transform 1s ease-out',
-                                    opacity: introStep >= 5 ? 0 : 1,
-                                    transitionProperty: introStep >= 5 ? 'opacity, transform' : 'transform',
-                                    transitionDuration: introStep >= 5 ? '1s, 1s' : '1s'
-                                }}
-                            >
+                        <div 
+                            className={`absolute ${introStep >= 4 ? 'shake-2' : ''}`}
+                            style={{
+                                right: '5%',
+                                top: '50%',
+                                transform: introStep >= 2 ? 'translateY(-50%)' : 'translate(200%, -50%)',
+                                transition: 'transform 1s ease-out',
+                                willChange: 'transform'
+                            }}
+                        >
                                 <img 
                                     src={`${imagePath}${selectedTeam2.logo}`}
                                     alt={selectedTeam2.name}
@@ -758,25 +746,30 @@
                         {/* Versus Graphic */}
                         {introStep >= 3 && (
                             <div 
-                                className={`absolute inset-0 flex items-center justify-center pointer-events-none ${introStep >= 4 ? 'shake-3' : ''}`}
+                                className={`absolute ${introStep >= 4 ? 'shake-3' : ''}`}
                                 style={{
+                                    left: '50%',
+                                    top: '50%',
+                                    transform: 'translate(-50%, -50%)',
                                     opacity: introStep >= 5 ? 0 : 1,
-                                    transition: 'opacity 1s ease-out'
+                                    transition: 'opacity 1s ease-out',
+                                    pointerEvents: 'none',
+                                    zIndex: 100
                                 }}
                             >
-                                <div className="relative">
+                                <div className="relative" style={{width: '3600px', height: '3600px'}}>
                                     <img 
                                         src={`${imagePath}versus.png`}
                                         alt="VS"
                                         className="versus-split-left"
                                         style={{
                                             position: 'absolute',
-                                            width: '1200px',
-                                            height: '1200px',
+                                            width: '3600px',
+                                            height: '3600px',
                                             objectFit: 'contain',
                                             clipPath: 'polygon(0 100%, 0 0, 50% 50%)',
-                                            left: '-600px',
-                                            top: '-600px'
+                                            left: '0',
+                                            top: '0'
                                         }}
                                     />
                                     <img 
@@ -784,12 +777,13 @@
                                         alt="VS"
                                         className="versus-split-right"
                                         style={{
-                                            width: '1200px',
-                                            height: '1200px',
+                                            position: 'absolute',
+                                            width: '3600px',
+                                            height: '3600px',
                                             objectFit: 'contain',
                                             clipPath: 'polygon(50% 50%, 100% 0, 100% 100%)',
-                                            marginLeft: '-600px',
-                                            marginTop: '-600px'
+                                            left: '0',
+                                            top: '0'
                                         }}
                                     />
                                 </div>
