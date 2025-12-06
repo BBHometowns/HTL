@@ -76,25 +76,27 @@
         
         .versus-split-left {
             animation: versusSplitLeft 1s ease-out forwards;
+            clip-path: polygon(0% 0%, 0% 100%, 50% 50%);
         }
         @keyframes versusSplitLeft {
             from {
-                clip-path: polygon(0 100%, 0 100%, 50% 50%, 0 100%);
+                clip-path: polygon(0% 100%, 0% 100%, 50% 50%);
             }
             to {
-                clip-path: polygon(0 100%, 0 0, 50% 50%, 0 100%);
+                clip-path: polygon(0% 0%, 0% 100%, 50% 50%);
             }
         }
         
         .versus-split-right {
             animation: versusSplitRight 1s ease-out forwards;
+            clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
         }
         @keyframes versusSplitRight {
             from {
-                clip-path: polygon(50% 50%, 100% 0, 100% 0, 50% 50%);
+                clip-path: polygon(50% 50%, 100% 0%, 100% 0%);
             }
             to {
-                clip-path: polygon(50% 50%, 100% 0, 100% 100%, 50% 50%);
+                clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
             }
         }
         
@@ -111,48 +113,32 @@
             animation: shake1 0.5s ease-in-out;
         }
         @keyframes shake1 {
-            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
-            10% { transform: translateY(-50%) translate(-8px, 5px) rotate(-2deg); }
-            20% { transform: translateY(-50%) translate(7px, -6px) rotate(1deg); }
-            30% { transform: translateY(-50%) translate(-6px, 8px) rotate(-1deg); }
-            40% { transform: translateY(-50%) translate(9px, -5px) rotate(2deg); }
-            50% { transform: translateY(-50%) translate(-7px, 7px) rotate(-2deg); }
-            60% { transform: translateY(-50%) translate(6px, -8px) rotate(1deg); }
-            70% { transform: translateY(-50%) translate(-9px, 6px) rotate(-1deg); }
-            80% { transform: translateY(-50%) translate(8px, -7px) rotate(2deg); }
-            90% { transform: translateY(-50%) translate(-5px, 9px) rotate(-2deg); }
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-8px, 5px) rotate(-2deg); }
+            20% { transform: translate(7px, -6px) rotate(1deg); }
+            30% { transform: translate(-6px, 8px) rotate(-1deg); }
+            40% { transform: translate(9px, -5px) rotate(2deg); }
+            50% { transform: translate(-7px, 7px) rotate(-2deg); }
+            60% { transform: translate(6px, -8px) rotate(1deg); }
+            70% { transform: translate(-9px, 6px) rotate(-1deg); }
+            80% { transform: translate(8px, -7px) rotate(2deg); }
+            90% { transform: translate(-5px, 9px) rotate(-2deg); }
         }
         
         .shake-2 {
             animation: shake2 0.5s ease-in-out;
         }
         @keyframes shake2 {
-            0%, 100% { transform: translateY(-50%) translate(0, 0) rotate(0deg); }
-            10% { transform: translateY(-50%) translate(6px, -7px) rotate(1deg); }
-            20% { transform: translateY(-50%) translate(-8px, 6px) rotate(-2deg); }
-            30% { transform: translateY(-50%) translate(7px, -8px) rotate(2deg); }
-            40% { transform: translateY(-50%) translate(-6px, 9px) rotate(-1deg); }
-            50% { transform: translateY(-50%) translate(9px, -6px) rotate(1deg); }
-            60% { transform: translateY(-50%) translate(-7px, 8px) rotate(-2deg); }
-            70% { transform: translateY(-50%) translate(8px, -9px) rotate(2deg); }
-            80% { transform: translateY(-50%) translate(-9px, 7px) rotate(-1deg); }
-            90% { transform: translateY(-50%) translate(7px, -8px) rotate(1deg); }
-        }
-        
-        .shake-3 {
-            animation: shake3 0.5s ease-in-out;
-        }
-        @keyframes shake3 {
-            0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-50%, -50%) translate(-7px, 8px) rotate(-1deg); }
-            20% { transform: translate(-50%, -50%) translate(9px, -7px) rotate(2deg); }
-            30% { transform: translate(-50%, -50%) translate(-8px, 6px) rotate(-2deg); }
-            40% { transform: translate(-50%, -50%) translate(7px, -9px) rotate(1deg); }
-            50% { transform: translate(-50%, -50%) translate(-6px, 8px) rotate(-1deg); }
-            60% { transform: translate(-50%, -50%) translate(8px, -6px) rotate(2deg); }
-            70% { transform: translate(-50%, -50%) translate(-9px, 7px) rotate(-2deg); }
-            80% { transform: translate(-50%, -50%) translate(6px, -8px) rotate(1deg); }
-            90% { transform: translate(-50%, -50%) translate(-7px, 9px) rotate(-1deg); }
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(6px, -7px) rotate(1deg); }
+            20% { transform: translate(-8px, 6px) rotate(-2deg); }
+            30% { transform: translate(7px, -8px) rotate(2deg); }
+            40% { transform: translate(-6px, 9px) rotate(-1deg); }
+            50% { transform: translate(9px, -6px) rotate(1deg); }
+            60% { transform: translate(-7px, 8px) rotate(-2deg); }
+            70% { transform: translate(8px, -9px) rotate(2deg); }
+            80% { transform: translate(-9px, 7px) rotate(-1deg); }
+            90% { transform: translate(7px, -8px) rotate(1deg); }
         }
         
         .fade-out {
@@ -698,16 +684,13 @@
                                 style={{
                                     left: '5%',
                                     top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    transition: 'transform 1s ease-out',
-                                    willChange: 'transform',
-                                    animation: 'slideInFromLeft 1s ease-out',
                                     zIndex: 10
                                 }}
                             >
                                 <img 
                                     src={`${imagePath}${selectedTeam1.logo}`}
                                     alt={selectedTeam1.name}
+                                    className="slide-in-left"
                                     style={{
                                         transform: 'perspective(1000px) rotateY(15deg)',
                                         width: '1000px',
@@ -725,16 +708,13 @@
                                 style={{
                                     right: '5%',
                                     top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    transition: 'transform 1s ease-out',
-                                    willChange: 'transform',
-                                    animation: 'slideInFromRight 1s ease-out',
                                     zIndex: 10
                                 }}
                             >
                                 <img 
                                     src={`${imagePath}${selectedTeam2.logo}`}
                                     alt={selectedTeam2.name}
+                                    className="slide-in-right"
                                     style={{
                                         transform: 'perspective(1000px) rotateY(-15deg)',
                                         width: '1000px',
@@ -759,120 +739,240 @@
                                     zIndex: 1
                                 }}
                             >
-                                <div className="relative" style={{width: '3600px', height: '3600px'}}>
-                                    <img 
-                                        src={`${imagePath}versus.png`}
-                                        alt="VS"
-                                        className="versus-split-left"
-                                        style={{
-                                            position: 'absolute',
-                                            width: '3600px',
-                                            height: '3600px',
-                                            objectFit: 'contain',
-                                            clipPath: 'polygon(0 100%, 0 0, 50% 50%)',
-                                            left: '0',
-                                            top: '0'
-                                        }}
-                                    />
-                                    <img 
-                                        src={`${imagePath}versus.png`}
-                                        alt="VS"
-                                        className="versus-split-right"
-                                        style={{
-                                            position: 'absolute',
-                                            width: '3600px',
-                                            height: '3600px',
-                                            objectFit: 'contain',
-                                            clipPath: 'polygon(50% 50%, 100% 0, 100% 100%)',
-                                            left: '0',
-                                            top: '0'
-                                        }}
-                                    />
-                                </div>
+                                <img 
+                                    src={`${imagePath}versus.png`}
+                                    alt="VS"
+                                    className="versus-split-left"
+                                    style={{
+                                        width: '3600px',
+                                        height: '3600px',
+                                        objectFit: 'contain'
+                                    }}
+                                />
+                                <img 
+                                    src={`${imagePath}versus.png`}
+                                    alt="VS"
+                                    className="versus-split-right"
+                                    style={{
+                                        position: 'absolute',
+                                        left: '0',
+                                        top: '0',
+                                        width: '3600px',
+                                        height: '3600px',
+                                        objectFit: 'contain'
+                                    }}
+                                />
                             </div>
                         )}
             
-                        {/* Game Elements Fade In */}
+                        {/* All Game Elements Fade In */}
                         {introStep >= 5 && (
-                            <>
-                                {/* HTL Logo and Scores fade in */}
-                                <div className="absolute fade-in-game" style={{top: '8%', left: '50%', transform: 'translateX(-50%)', width: '100%'}}>
-                                    <div className="relative flex items-center justify-center" style={{width: '100%', height: '560px'}}>
-                                        <div className="absolute score-text font-black text-black" style={{
-                                            left: '25%',
-                                            fontSize: '560px',
-                                            lineHeight: '560px',
-                                            textShadow: `12px 12px 24px ${selectedTeam1.color}`
+                            <div className="fade-in-game" style={{position: 'absolute', inset: 0, zIndex: 5}}>
+                                {/* HTL Logo and Scores */}
+                                <div className="relative flex items-center justify-center mb-6" style={{
+                                    width: '100%',
+                                    height: '560px',
+                                    position: 'absolute',
+                                    top: '8%',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    <div className="absolute score-text font-black text-black" style={{
+                                        left: '25%',
+                                        fontSize: '560px',
+                                        lineHeight: '560px',
+                                        textShadow: `12px 12px 24px ${selectedTeam1.color}`
+                                    }}>
+                                        {team1Score}
+                                    </div>
+                                
+                                    <img 
+                                        src={`${imagePath}htl-logo.png`}
+                                        alt="HTL - Hometown Trivia League" 
+                                        className="object-contain"
+                                        style={{height: '560px'}}
+                                    />
+                                
+                                    <div className="absolute score-text font-black text-black" style={{
+                                        right: '25%',
+                                        fontSize: '560px',
+                                        lineHeight: '560px',
+                                        textShadow: `12px 12px 24px ${selectedTeam2.color}`
+                                    }}>
+                                        {team2Score}
+                                    </div>
+                                </div>
+                                
+                                {/* Round Title with Timers */}
+                                <div className="flex items-center justify-center mb-8 gap-4" style={{
+                                    position: 'absolute',
+                                    top: 'calc(8% + 560px + 24px)',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    <div className="rounded-2xl border-8 flex items-center justify-center" style={{
+                                        borderColor: '#7d3ad4',
+                                        backgroundColor: `${selectedTeam1.color}65`,
+                                        width: '200px',
+                                        height: '200px'
+                                    }}>
+                                        <div className="text-8xl font-black text-white" style={{
+                                            WebkitTextStroke: '2px black',
+                                            textStroke: '2px black'
                                         }}>
-                                            {team1Score}
+                                            {team1Time}
                                         </div>
-                                    
-                                        <img 
-                                            src={`${imagePath}htl-logo.png`}
-                                            alt="HTL - Hometown Trivia League" 
-                                            className="object-contain"
-                                            style={{height: '560px'}}
-                                        />
-                                    
-                                        <div className="absolute score-text font-black text-black" style={{
-                                            right: '25%',
-                                            fontSize: '560px',
-                                            lineHeight: '560px',
-                                            textShadow: `12px 12px 24px ${selectedTeam2.color}`
+                                    </div>
+                                
+                                    <div className="bg-gray-900 rounded-2xl border-8" style={{
+                                        borderColor: '#7d3ad4',
+                                        padding: '16px 48px',
+                                        minWidth: '800px',
+                                        textAlign: 'center',
+                                        height: '100px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <h2 className="text-5xl font-bold text-white">
+                                            ROUND 1
+                                        </h2>
+                                    </div>
+                                
+                                    <div className="rounded-2xl border-8 flex items-center justify-center" style={{
+                                        borderColor: '#7d3ad4',
+                                        backgroundColor: `${selectedTeam2.color}65`,
+                                        width: '200px',
+                                        height: '200px'
+                                    }}>
+                                        <div className="text-8xl font-black text-white" style={{
+                                            WebkitTextStroke: '2px black',
+                                            textStroke: '2px black'
                                         }}>
-                                            {team2Score}
+                                            {team2Time}
                                         </div>
                                     </div>
                                 </div>
             
-                                {/* Timer boxes fade in */}
-                                <div className="absolute fade-in-game" style={{top: '70%', left: '50%', transform: 'translateX(-50%)'}}>
-                                    <div className="flex items-center justify-center gap-4">
-                                        <div className="rounded-2xl border-8 flex items-center justify-center" style={{
-                                            borderColor: '#7d3ad4',
-                                            backgroundColor: `${selectedTeam1.color}65`,
-                                            width: '200px',
-                                            height: '200px'
-                                        }}>
-                                            <div className="text-8xl font-black text-white" style={{
-                                                WebkitTextStroke: '2px black',
-                                                textStroke: '2px black'
-                                            }}>
-                                                {team1Time}
-                                            </div>
+                                {/* Question Display Area */}
+                                <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
+                                    borderColor: '#7d3ad4',
+                                    width: '1400px',
+                                    height: '550px',
+                                    padding: '48px',
+                                    position: 'absolute',
+                                    top: 'calc(8% + 560px + 24px + 200px + 32px)',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    <div className="text-center h-full flex flex-col">
+                                        <div className="text-cyan-400 font-bold text-4xl mb-6">
+                                            QUESTION 1
                                         </div>
-                                    
-                                        <div className="bg-gray-900 rounded-2xl border-8" style={{
-                                            borderColor: '#7d3ad4',
-                                            padding: '16px 48px',
-                                            minWidth: '800px',
-                                            textAlign: 'center',
-                                            height: '100px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
+                                        
+                                        <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
+                                            height: '280px',
+                                            overflow: 'hidden'
                                         }}>
-                                            <h2 className="text-5xl font-bold text-white">
-                                                ROUND 1
-                                            </h2>
                                         </div>
-                                    
-                                        <div className="rounded-2xl border-8 flex items-center justify-center" style={{
-                                            borderColor: '#7d3ad4',
-                                            backgroundColor: `${selectedTeam2.color}65`,
-                                            width: '200px',
-                                            height: '200px'
+            
+                                        <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
+                                            height: '120px',
+                                            overflow: 'hidden'
                                         }}>
-                                            <div className="text-8xl font-black text-white" style={{
-                                                WebkitTextStroke: '2px black',
-                                                textStroke: '2px black'
-                                            }}>
-                                                {team2Time}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </>
+            
+                                {/* Powerups and Control Buttons */}
+                                <div className="mx-auto mb-8" style={{
+                                    width: '1400px',
+                                    position: 'absolute',
+                                    top: 'calc(8% + 560px + 24px + 200px + 32px + 550px + 32px)',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex gap-6">
+                                            <img 
+                                                src={`${imagePath}powerup-double.png`}
+                                                alt="Team 1 Point Doubler"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                            <img 
+                                                src={`${imagePath}powerup-time.png`}
+                                                alt="Team 1 Extra Time"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                            <img 
+                                                src={`${imagePath}powerup-dip.png`}
+                                                alt="Team 1 Double Dip"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                        </div>
+            
+                                        <div className="flex gap-4">
+                                            <button 
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                REVEAL CATEGORY
+                                            </button>
+                                        </div>
+            
+                                        <div className="flex gap-6">
+                                            <img 
+                                                src={`${imagePath}powerup-dip.png`}
+                                                alt="Team 2 Double Dip"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                            <img 
+                                                src={`${imagePath}powerup-time.png`}
+                                                alt="Team 2 Extra Time"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                            <img 
+                                                src={`${imagePath}powerup-double.png`}
+                                                alt="Team 2 Point Doubler"
+                                                className="powerup-active"
+                                                style={{width: '84px', height: '84px'}}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+            
+                                {/* Round Progress */}
+                                <div className="flex justify-center gap-2" style={{
+                                    position: 'absolute',
+                                    bottom: '32px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    {[1, 2, 3, 4, 5, 6].map((round) => (
+                                        <div
+                                            key={round}
+                                            className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg bg-yellow-400 text-black"
+                                        >
+                                            {round}
+                                        </div>
+                                    ))}
+                                    <div className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm bg-purple-500 text-white">
+                                        B
+                                    </div>
+                                    {[7, 8, 9, 10, 11, 12].map((round) => (
+                                        <div
+                                            key={round}
+                                            className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg bg-gray-600 text-white"
+                                        >
+                                            {round}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         )}
                     </div>
                 );
