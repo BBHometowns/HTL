@@ -818,6 +818,202 @@
                                 </div>
                             </div>
                         </div>
+                {/* Question Display Area */}
+                        <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
+                            borderColor: '#7d3ad4',
+                            width: '1400px',
+                            height: '550px',
+                            padding: '48px'
+                        }}>
+                            <div className="text-center h-full flex flex-col">
+                                <div className="text-cyan-400 font-bold text-4xl mb-6">
+                                    QUESTION {currentQuestion}
+                                </div>
+                                
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
+                                    height: '280px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {powerupPhase ? (
+                                        <p className="text-white text-6xl font-bold fade-in">
+                                            Powerups?
+                                        </p>
+                                    ) : showQuestion ? (
+                                        <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
+                                            fontSize: '40px',
+                                            margin: 0
+                                        }}>
+                                            {currentQuestionText}
+                                        </p>
+                                    ) : null}
+                                </div>
+
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
+                                    height: '120px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {showQuestion && (
+                                        <p className="text-yellow-400 font-bold text-5xl" style={{
+                                            opacity: showAnswer ? 1 : 0.3
+                                        }}>
+                                            {currentAnswerText}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Powerups and Control Buttons */}
+                        <div className="mx-auto mb-8" style={{width: '1400px'}}>
+                            <div className="flex justify-between items-center">
+                                <div className="flex gap-6">
+                                    <img 
+                                        src={`${imagePath}powerup-double.png`}
+                                        alt="Team 1 Point Doubler"
+                                        className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'pointDoubler')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-time.png`}
+                                        alt="Team 1 Extra Time"
+                                        className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'extraTime')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-dip.png`}
+                                        alt="Team 1 Double Dip"
+                                        className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(1, 'doubleDip')}
+                                    />
+                                </div>
+
+                                <div className="flex gap-4">
+                                    {!showCategory ? (
+                                        <button 
+                                            onClick={handleRevealCategory}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            REVEAL CATEGORY
+                                        </button>
+                                    ) : powerupPhase ? (
+                                        <button 
+                                            onClick={() => {
+                                                setPowerupPhase(false);
+                                                setPowerupTimer(30);
+                                            }}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            SKIP POWERUPS
+                                        </button>
+                                    ) : !showQuestion ? (
+                                        <button 
+                                            onClick={handleRevealQuestion}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            REVEAL QUESTION
+                                        </button>
+                                    ) : !timerRunning && !showAnswer ? (
+                                        <button 
+                                            onClick={handleStartTimer}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            START TIMER
+                                        </button>
+                                    ) : showAnswer ? (
+                                        <button 
+                                            onClick={handleNext}
+                                            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                        >
+                                            NEXT
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button 
+                                                onClick={handleCorrect}
+                                                className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                CORRECT
+                                            </button>
+                                            <button 
+                                                onClick={handleIncorrect}
+                                                className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                INCORRECT
+                                            </button>
+                                            <button 
+                                                onClick={handleSteal}
+                                                className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                STEAL
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-6">
+                                    <img 
+                                        src={`${imagePath}powerup-dip.png`}
+                                        alt="Team 2 Double Dip"
+                                        className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'doubleDip')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-time.png`}
+                                        alt="Team 2 Extra Time"
+                                        className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'extraTime')}
+                                    />
+                                    <img 
+                                        src={`${imagePath}powerup-double.png`}
+                                        alt="Team 2 Point Doubler"
+                                        className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                        style={{width: '84px', height: '84px'}}
+                                        onClick={() => handlePowerup(2, 'pointDoubler')}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Round Progress */}
+                        <div className="flex justify-center gap-2">
+                            {[1, 2, 3, 4, 5, 6].map((round) => (
+                                <div
+                                    key={round}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {round}
+                                </div>
+                            ))}
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm bg-purple-500 text-white">
+                                B
+                            </div>
+                            {[7, 8, 9, 10, 11, 12].map((round) => (
+                                <div
+                                    key={round}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
+                                        round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {round}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<TriviaGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>
             );
         }
 
