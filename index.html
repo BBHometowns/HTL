@@ -1011,7 +1011,7 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: activeTeam === 2 ? 0.9 : (currentQuestion === 1 && !showQuestion) ? 0.9 : 0.1
+                                    opacity: activeTeam === 2 ? 0.9 : (powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
@@ -1084,7 +1084,7 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (activeTeam === 2 || (powerupPhase && powerupTimer > 0)) ? 1 : 0.3
+                                opacity: (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
