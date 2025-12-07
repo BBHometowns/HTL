@@ -216,6 +216,12 @@
             const [introStep, setIntroStep] = useState(0);
             const [teamsConfirmed, setTeamsConfirmed] = useState(false);
 
+            // Admin and match selection states
+            const [showAdminModal, setShowAdminModal] = useState(false);
+            const [adminPassword, setAdminPassword] = useState('');
+            const [adminAuthenticated, setAdminAuthenticated] = useState(false);
+            const [selectedMatch, setSelectedMatch] = useState(null);
+
             // Bonus round states
             const [bonusType, setBonusType] = useState('closestTo'); // 'closestTo' or 'shootout'
             const [bonusScore1, setBonusScore1] = useState(0);
@@ -248,115 +254,327 @@
                 { id: 16, name: "Weathermen", logo: "Weathermen.png", color: "#FEC8D8" }
             ];
 
-            // Round data with questions and answers
-            const rounds = [
-                { 
-                    category: "MOVIES", 
-                    question1: "WHICH 1940s FILM BEGINS WITH THE WORD \"ROSEBUD\" FOLLOWED BY A SNOW GLOBE FALLING TO THE FLOOR?",
-                    answer1: "CITIZEN CANE",
-                    question2: "\"MR. DEMILLE, I'M READY FOR MY CLOSE UP\" IS A FAMOUS LINE FROM WHAT 1950s FILM?",
-                    answer2: "SUNSET BOULEVARD"
-                },
-                { 
-                    category: "SCIENCE", 
-                    question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
-                    answer1: "Higgs Boson",
-                    question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
-                    answer2: "Jupiter"
-                },
-                { 
-                    category: "MUSIC", 
-                    question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
-                    answer1: "Bohemian Rhapsody",
-                    question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
-                    answer2: "Beyoncé"
-                },
-                { 
-                    category: "MOVIES", 
-                    question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
-                    answer1: "The Shawshank Redemption",
-                    question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
-                    answer2: "John Ford"
-                },
-                { 
-                    category: "GEOGRAPHY", 
-                    question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
-                    answer1: "South Africa",
-                    question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
-                    answer2: "Istanbul"
-                },
-                { 
-                    category: "SPORTS", 
-                    question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
-                    answer1: "Michael Phelps",
-                    question2: "This is the only sport to have been played on the moon.",
-                    answer2: "Golf"
-                },
-                { 
-                    category: "HISTORY", 
-                    question1: "This ancient wonder of the world is the only one still standing today.",
-                    answer1: "Great Pyramid of Giza",
-                    question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
-                    answer2: "The Hundred Years' War"
-                },
-                { 
-                    category: "LITERATURE", 
-                    question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
-                    answer1: "Leo Tolstoy",
-                    question2: "This Shakespeare play is his longest, with over 4,000 lines.",
-                    answer2: "Hamlet"
-                },
-                { 
-                    category: "FOOD & DRINK", 
-                    question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
-                    answer1: "Saffron",
-                    question2: "This fruit is technically a berry, while strawberries are not.",
-                    answer2: "Banana"
-                },
-                { 
-                    category: "TECHNOLOGY", 
-                    question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
-                    answer1: "Python",
-                    question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
-                    answer2: "Intel"
-                },
-                { 
-                    category: "ART", 
-                    question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
-                    answer1: "Vincent van Gogh",
-                    question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
-                    answer2: "Michelangelo"
-                },
-                { 
-                    category: "NATURE", 
-                    question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
-                    answer1: "Great Barrier Reef",
-                    question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
-                    answer2: "Elephant"
-                }
-            ];
-
-            // Closest To Bonus Round Questions
-            const closestToQuestions = [
+            // Match Data - Each match contains rounds, bonus type, and bonus questions
+            const matchesData = [
                 {
-                    question: "In what year did the first iPhone release?",
-                    answer: 2007
+                    id: 1,
+                    name: "Consalvo 1",
+                    bonusType: "closestTo", // or "shootout"
+                    rounds: [
+                        { 
+                            category: "BOARD GAMES", 
+                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
+                            answer1: "Scythe",
+                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
+                            answer2: "Risk"
+                        },
+                        { 
+                            category: "SCIENCE", 
+                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
+                            answer1: "Higgs Boson",
+                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
+                            answer2: "Jupiter"
+                        },
+                        { 
+                            category: "MUSIC", 
+                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
+                            answer1: "Bohemian Rhapsody",
+                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
+                            answer2: "Beyoncé"
+                        },
+                        { 
+                            category: "MOVIES", 
+                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
+                            answer1: "The Shawshank Redemption",
+                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
+                            answer2: "John Ford"
+                        },
+                        { 
+                            category: "GEOGRAPHY", 
+                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
+                            answer1: "South Africa",
+                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
+                            answer2: "Istanbul"
+                        },
+                        { 
+                            category: "SPORTS", 
+                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
+                            answer1: "Michael Phelps",
+                            question2: "This is the only sport to have been played on the moon.",
+                            answer2: "Golf"
+                        },
+                        { 
+                            category: "HISTORY", 
+                            question1: "This ancient wonder of the world is the only one still standing today.",
+                            answer1: "Great Pyramid of Giza",
+                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
+                            answer2: "The Hundred Years' War"
+                        },
+                        { 
+                            category: "LITERATURE", 
+                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
+                            answer1: "Leo Tolstoy",
+                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
+                            answer2: "Hamlet"
+                        },
+                        { 
+                            category: "FOOD & DRINK", 
+                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
+                            answer1: "Saffron",
+                            question2: "This fruit is technically a berry, while strawberries are not.",
+                            answer2: "Banana"
+                        },
+                        { 
+                            category: "TECHNOLOGY", 
+                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
+                            answer1: "Python",
+                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
+                            answer2: "Intel"
+                        },
+                        { 
+                            category: "ART", 
+                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
+                            answer1: "Vincent van Gogh",
+                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
+                            answer2: "Michelangelo"
+                        },
+                        { 
+                            category: "NATURE", 
+                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
+                            answer1: "Great Barrier Reef",
+                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
+                            answer2: "Elephant"
+                        }
+                    ],
+                    bonusQuestions: [
+                        {
+                            question: "In what year did the first iPhone release?",
+                            answer: 2007
+                        },
+                        {
+                            question: "How many bones are in the adult human body?",
+                            answer: 206
+                        },
+                        {
+                            question: "What is the distance in miles from New York City to Los Angeles?",
+                            answer: 2789
+                        },
+                        {
+                            question: "How many episodes of The Office (US) were produced?",
+                            answer: 201
+                        },
+                        {
+                            question: "What is the height in feet of the Eiffel Tower?",
+                            answer: 1083
+                        }
+                    ]
                 },
                 {
-                    question: "How many bones are in the adult human body?",
-                    answer: 206
+                    id: 2,
+                    name: "CLC 1",
+                    bonusType: "shootout", // Placeholder - we'll build shootout later
+                    rounds: [
+                        // Copy same rounds structure as above - you can change questions later
+                        { 
+                            category: "BOARD GAMES", 
+                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
+                            answer1: "Scythe",
+                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
+                            answer2: "Risk"
+                        },
+                        { 
+                            category: "SCIENCE", 
+                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
+                            answer1: "Higgs Boson",
+                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
+                            answer2: "Jupiter"
+                        },
+                        { 
+                            category: "MUSIC", 
+                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
+                            answer1: "Bohemian Rhapsody",
+                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
+                            answer2: "Beyoncé"
+                        },
+                        { 
+                            category: "MOVIES", 
+                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
+                            answer1: "The Shawshank Redemption",
+                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
+                            answer2: "John Ford"
+                        },
+                        { 
+                            category: "GEOGRAPHY", 
+                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
+                            answer1: "South Africa",
+                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
+                            answer2: "Istanbul"
+                        },
+                        { 
+                            category: "SPORTS", 
+                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
+                            answer1: "Michael Phelps",
+                            question2: "This is the only sport to have been played on the moon.",
+                            answer2: "Golf"
+                        },
+                        { 
+                            category: "HISTORY", 
+                            question1: "This ancient wonder of the world is the only one still standing today.",
+                            answer1: "Great Pyramid of Giza",
+                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
+                            answer2: "The Hundred Years' War"
+                        },
+                        { 
+                            category: "LITERATURE", 
+                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
+                            answer1: "Leo Tolstoy",
+                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
+                            answer2: "Hamlet"
+                        },
+                        { 
+                            category: "FOOD & DRINK", 
+                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
+                            answer1: "Saffron",
+                            question2: "This fruit is technically a berry, while strawberries are not.",
+                            answer2: "Banana"
+                        },
+                        { 
+                            category: "TECHNOLOGY", 
+                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
+                            answer1: "Python",
+                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
+                            answer2: "Intel"
+                        },
+                        { 
+                            category: "ART", 
+                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
+                            answer1: "Vincent van Gogh",
+                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
+                            answer2: "Michelangelo"
+                        },
+                        { 
+                            category: "NATURE", 
+                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
+                            answer1: "Great Barrier Reef",
+                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
+                            answer2: "Elephant"
+                        }
+                    ],
+                    bonusQuestions: [] // Shootout doesn't use these
                 },
                 {
-                    question: "What is the distance in miles from New York City to Los Angeles?",
-                    answer: 2789
-                },
-                {
-                    question: "How many episodes of The Office (US) were produced?",
-                    answer: 201
-                },
-                {
-                    question: "What is the height in feet of the Eiffel Tower?",
-                    answer: 1083
+                    id: 3,
+                    name: "Focer 1",
+                    bonusType: "closestTo",
+                    rounds: [
+                        // Copy same rounds structure - you can customize later
+                        { 
+                            category: "BOARD GAMES", 
+                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
+                            answer1: "Scythe",
+                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
+                            answer2: "Risk"
+                        },
+                        { 
+                            category: "SCIENCE", 
+                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
+                            answer1: "Higgs Boson",
+                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
+                            answer2: "Jupiter"
+                        },
+                        { 
+                            category: "MUSIC", 
+                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
+                            answer1: "Bohemian Rhapsody",
+                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
+                            answer2: "Beyoncé"
+                        },
+                        { 
+                            category: "MOVIES", 
+                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
+                            answer1: "The Shawshank Redemption",
+                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
+                            answer2: "John Ford"
+                        },
+                        { 
+                            category: "GEOGRAPHY", 
+                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
+                            answer1: "South Africa",
+                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
+                            answer2: "Istanbul"
+                        },
+                        { 
+                            category: "SPORTS", 
+                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
+                            answer1: "Michael Phelps",
+                            question2: "This is the only sport to have been played on the moon.",
+                            answer2: "Golf"
+                        },
+                        { 
+                            category: "HISTORY", 
+                            question1: "This ancient wonder of the world is the only one still standing today.",
+                            answer1: "Great Pyramid of Giza",
+                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
+                            answer2: "The Hundred Years' War"
+                        },
+                        { 
+                            category: "LITERATURE", 
+                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
+                            answer1: "Leo Tolstoy",
+                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
+                            answer2: "Hamlet"
+                        },
+                        { 
+                            category: "FOOD & DRINK", 
+                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
+                            answer1: "Saffron",
+                            question2: "This fruit is technically a berry, while strawberries are not.",
+                            answer2: "Banana"
+                        },
+                        { 
+                            category: "TECHNOLOGY", 
+                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
+                            answer1: "Python",
+                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
+                            answer2: "Intel"
+                        },
+                        { 
+                            category: "ART", 
+                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
+                            answer1: "Vincent van Gogh",
+                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
+                            answer2: "Michelangelo"
+                        },
+                        { 
+                            category: "NATURE", 
+                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
+                            answer1: "Great Barrier Reef",
+                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
+                            answer2: "Elephant"
+                        }
+                    ],
+                    bonusQuestions: [
+                        {
+                            question: "In what year did the first iPhone release?",
+                            answer: 2007
+                        },
+                        {
+                            question: "How many bones are in the adult human body?",
+                            answer: 206
+                        },
+                        {
+                            question: "What is the distance in miles from New York City to Los Angeles?",
+                            answer: 2789
+                        },
+                        {
+                            question: "How many episodes of The Office (US) were produced?",
+                            answer: 201
+                        },
+                        {
+                            question: "What is the height in feet of the Eiffel Tower?",
+                            answer: 1083
+                        }
+                    ]
                 }
             ];
 
@@ -648,6 +866,29 @@
                 setShowIntro(true);
             };
 
+            const handleAdminLogin = () => {
+                if (adminPassword === 'HaychTL3') {
+                    setAdminAuthenticated(true);
+                    setShowAdminModal(true);
+                } else {
+                    alert('Incorrect password');
+                    setAdminPassword('');
+                }
+            };
+            
+            const handleMatchSelection = (match) => {
+                setSelectedMatch(match);
+                setBonusType(match.bonusType);
+            };
+            
+            const handleCloseAdmin = () => {
+                if (selectedTeam1 && selectedTeam2 && selectedMatch) {
+                    setShowAdminModal(false);
+                } else {
+                    alert('Please select both teams and a match before closing');
+                }
+            };
+
             const handleSubmitGuess = (team) => {
                 if (team === 1) {
                     setTeam1GuessSubmitted(true);
@@ -737,12 +978,16 @@
                 setTeam2Time(30);
             };
 
+            // Use selected match data
+            const rounds = selectedMatch ? selectedMatch.rounds : matchesData[0].rounds;
+            const closestToQuestions = selectedMatch ? selectedMatch.bonusQuestions : matchesData[0].bonusQuestions;
+            
             const currentRoundData = rounds[currentRound - 1];
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
             const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
 
-            // Confirmation Screen - Just background and Start Match button
-            if (!gameStarted && !showIntro && teamsConfirmed) {
+            // Password Login Screen
+            if (!adminAuthenticated) {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
@@ -750,15 +995,163 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
-                        <button
-                            onClick={handleStartMatch}
-                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-12 rounded-lg text-3xl border-4 border-black"
-                        >
-                            START MATCH
-                        </button>
+                        <div className="bg-gray-900 rounded-lg p-8 border-4" style={{borderColor: '#7d3ad4'}}>
+                            <h2 className="text-4xl font-bold text-white mb-6 text-center">ADMIN LOGIN</h2>
+                            <input
+                                type="password"
+                                value={adminPassword}
+                                onChange={(e) => setAdminPassword(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+                                className="w-full text-center text-3xl font-bold bg-gray-800 text-white rounded p-4 mb-4"
+                                placeholder="Enter Password"
+                                autoFocus
+                            />
+                            <button
+                                onClick={handleAdminLogin}
+                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl"
+                            >
+                                LOGIN
+                            </button>
+                        </div>
                     </div>
                 );
             }
+            
+            // Admin Modal - Team & Match Selection
+            if (showAdminModal && !teamsConfirmed) {
+                return (
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
+                        backgroundImage: `url(${imagePath}background.png)`,
+                        backgroundSize: '115%',
+                        backgroundPosition: '35% center',
+                        backgroundRepeat: 'no-repeat'
+                    }}>
+                        <div className="bg-gray-900 rounded-3xl p-8 border-8 max-w-7xl w-full max-h-[90vh] overflow-y-auto" style={{borderColor: '#7d3ad4'}}>
+                            <h1 className="text-5xl font-bold text-white mb-8 text-center">MATCH SETUP</h1>
+                            
+                            <div className="flex gap-8">
+                                {/* Left Side - Team Selection */}
+                                <div className="flex-1">
+                                    <h2 className="text-3xl font-bold text-cyan-400 mb-6">SELECT TEAMS</h2>
+                                    
+                                    {/* Selected Teams Display */}
+                                    <div className="flex gap-4 mb-6">
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
+                                            <h3 className="text-xl font-bold text-cyan-400 mb-2">TEAM 1</h3>
+                                            {selectedTeam1 ? (
+                                                <div className="text-center">
+                                                    <img src={`${imagePath}${selectedTeam1.logo}`} alt={selectedTeam1.name} 
+                                                        className="w-24 h-24 mx-auto mb-2 object-contain" />
+                                                    <p className="text-white text-sm font-bold mb-2">{selectedTeam1.name}</p>
+                                                    <button onClick={() => handleDeselectTeam(1)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                                        Change
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-400 text-center py-8 text-sm">Select...</p>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
+                                            <h3 className="text-xl font-bold text-orange-400 mb-2">TEAM 2</h3>
+                                            {selectedTeam2 ? (
+                                                <div className="text-center">
+                                                    <img src={`${imagePath}${selectedTeam2.logo}`} alt={selectedTeam2.name} 
+                                                        className="w-24 h-24 mx-auto mb-2 object-contain" />
+                                                    <p className="text-white text-sm font-bold mb-2">{selectedTeam2.name}</p>
+                                                    <button onClick={() => handleDeselectTeam(2)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                                        Change
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-400 text-center py-8 text-sm">Select...</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Team Grid */}
+                                    <div className="grid grid-cols-4 gap-3">
+                                        {teamsData.map(team => {
+                                            const isSelected = selectedTeam1?.id === team.id || selectedTeam2?.id === team.id;
+                                            const isDisabled = isSelected;
+                                            
+                                            return (
+                                                <div
+                                                    key={team.id}
+                                                    onClick={() => !isDisabled && handleTeamSelection(team)}
+                                                    className={`team-card bg-gray-800 rounded-lg p-3 border-4 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    style={{
+                                                        borderColor: isSelected ? '#FFD700' : '#7d3ad4'
+                                                    }}
+                                                >
+                                                    <img src={`${imagePath}${team.logo}`} alt={team.name} 
+                                                        className="w-full h-20 object-contain mb-2" />
+                                                    <p className="text-white text-center text-xs font-bold">{team.name}</p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                
+                                {/* Right Side - Match Selection */}
+                                <div className="w-80">
+                                    <h2 className="text-3xl font-bold text-purple-400 mb-6">SELECT MATCH</h2>
+                                    
+                                    <div className="flex flex-col gap-4">
+                                        {matchesData.map(match => {
+                                            const isSelected = selectedMatch?.id === match.id;
+                                            
+                                            return (
+                                                <div
+                                                    key={match.id}
+                                                    onClick={() => handleMatchSelection(match)}
+                                                    className={`bg-gray-800 rounded-lg p-6 border-4 cursor-pointer hover:scale-105 transition ${
+                                                        isSelected ? 'border-yellow-400' : ''
+                                                    }`}
+                                                    style={{
+                                                        borderColor: isSelected ? '#FFD700' : '#7d3ad4'
+                                                    }}
+                                                >
+                                                    <h3 className="text-2xl font-bold text-white mb-2">{match.name}</h3>
+                                                    <p className="text-gray-400 text-sm mb-1">Bonus: <span className="text-purple-400 font-bold">
+                                                        {match.bonusType === 'closestTo' ? 'Closest To' : 'Shootout'}
+                                                    </span></p>
+                                                    <p className="text-gray-400 text-sm">{match.rounds.length} Rounds</p>
+                                                    {isSelected && (
+                                                        <div className="mt-3 text-yellow-400 font-bold text-center">
+                                                            ✓ SELECTED
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Close Button */}
+                            <div className="mt-8 text-center">
+                                <button
+                                    onClick={handleCloseAdmin}
+                                    disabled={!selectedTeam1 || !selectedTeam2 || !selectedMatch}
+                                    className={`font-bold py-4 px-12 rounded-lg text-2xl border-4 border-black ${
+                                        selectedTeam1 && selectedTeam2 && selectedMatch 
+                                            ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer' 
+                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                >
+                                    CONTINUE
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // Confirmation Screen - Just background and Start Match button
+            if (!gameStarted && !showIntro && teamsConfirmed) {
             
             // Team Selection Screen
             if (!gameStarted && !showIntro && !teamsConfirmed) {
