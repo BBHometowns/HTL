@@ -884,6 +884,7 @@
             const handleCloseAdmin = () => {
                 if (selectedTeam1 && selectedTeam2 && selectedMatch) {
                     setShowAdminModal(false);
+                    setTeamsConfirmed(true);
                 } else {
                     alert('Please select both teams and a match before closing');
                 }
@@ -1049,7 +1050,10 @@
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <p className="text-gray-400 text-center py-8 text-sm">Select...</p>
+                                                <div className="py-8">
+                                                    <div className="w-24 h-24 mx-auto mb-2"></div>
+                                                    <p className="text-gray-400 text-center text-sm">Select...</p>
+                                                </div>
                                             )}
                                         </div>
                                         
@@ -1066,7 +1070,10 @@
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <p className="text-gray-400 text-center py-8 text-sm">Select...</p>
+                                                <div className="py-8">
+                                                    <div className="w-24 h-24 mx-auto mb-2"></div>
+                                                    <p className="text-gray-400 text-center text-sm">Select...</p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
