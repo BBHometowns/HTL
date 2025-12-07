@@ -485,6 +485,12 @@
                 setShowQuestion(true);
                 setPowerupPhase(false);
                 
+                // For bonus round first question, ensure both timers are at 30
+                if (currentRound === 7 && bonusQuestionIndex === 0) {
+                    setTeam1Time(30);
+                    setTeam2Time(30);
+                }
+                
                 console.log('Revealing Q' + currentQuestion + ', Team1Active:', team1DoublerActive, ', Team2Active:', team2DoublerActive);
                 
                 // Apply Point Doubler for the current question based on tracking states
@@ -555,14 +561,22 @@
                     setCurrentPointValue(1);
                     setTimerRunning(false);
                 } else {
-                    if (currentRound < 12) {
-                        setCurrentRound(currentRound + 1);
+                    if (currentRound < 13) {
+                        const nextRound = currentRound + 1;
+                        setCurrentRound(nextRound);
                         setCurrentQuestion(1);
                         setActiveTeam(1);
                         setActiveTimer(1);
                         // Reset to default times for new round
-                        setTeam1Time(30);
-                        setTeam2Time(15);
+                        if (nextRound === 7) {
+                            // Entering bonus round - both timers start at 30
+                            setTeam1Time(30);
+                            setTeam2Time(30);
+                        } else {
+                            // Regular round
+                            setTeam1Time(30);
+                            setTeam2Time(15);
+                        }
                         setShowCategory(false);
                         setShowQuestion(false);
                     }
@@ -959,23 +973,30 @@
                                     </div>
 
                                     {/* Bonus Score Display - Only show during bonus round */}
-                                    {currentRound === 7 && (
-                                        <div className="flex items-center justify-center gap-8 mb-4">
-                                            <div className="text-8xl font-black text-white score-text" style={{
-                                                textShadow: `8px 8px 16px ${selectedTeam1.color}`
-                                            }}>
-                                                {bonusScore1}
-                                            </div>
-                                            <div className="text-4xl font-bold text-white">
-                                                BONUS SCORE
-                                            </div>
-                                            <div className="text-8xl font-black text-white score-text" style={{
-                                                textShadow: `8px 8px 16px ${selectedTeam2.color}`
-                                            }}>
-                                                {bonusScore2}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center justify-center gap-8" style={{
+                                        height: currentRound === 7 ? 'auto' : '0px',
+                                        marginBottom: currentRound === 7 ? '16px' : '0px',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        {currentRound === 7 && (
+                                            <>
+                                                <div className="text-8xl font-black text-white score-text" style={{
+                                                    textShadow: `8px 8px 16px ${selectedTeam1.color}`
+                                                }}>
+                                                    {bonusScore1}
+                                                </div>
+                                                <div className="text-4xl font-bold text-white">
+                                                    BONUS SCORE
+                                                </div>
+                                                <div className="text-8xl font-black text-white score-text" style={{
+                                                    textShadow: `8px 8px 16px ${selectedTeam2.color}`
+                                                }}>
+                                                    {bonusScore2}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                     
                                     {/* Round Title with Timers */}
                                     <div className="flex items-center justify-center mb-8 gap-4">
