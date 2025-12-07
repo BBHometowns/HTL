@@ -387,7 +387,23 @@
                 let interval;
                 if (timerRunning) {
                     interval = setInterval(() => {
-                        if (activeTimer === 1) {
+                        if (currentRound === 7) {
+                            // For bonus round, both timers count down together
+                            setTeam1Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                            setTeam2Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        } else if (activeTimer === 1) {
                             setTeam1Time(prev => {
                                 if (prev <= 1) {
                                     setTimerRunning(false);
@@ -407,7 +423,7 @@
                     }, 1000);
                 }
                 return () => clearInterval(interval);
-            }, [timerRunning, activeTimer]);
+            }, [timerRunning, activeTimer, currentRound]);
 
             // Powerup phase timer countdown
             useEffect(() => {
@@ -702,6 +718,9 @@
                 setTeam2GuessSubmitted(false);
                 setTimerRunning(false);
                 setShowQuestion(false);
+                // Reset timers for next bonus question
+                setTeam1Time(30);
+                setTeam2Time(30);
             };
 
             const currentRoundData = rounds[currentRound - 1];
@@ -1253,6 +1272,25 @@
                                 {team2Score}
                             </div>
                         </div>
+
+                        {/* Bonus Score Display - Only show during bonus round */}
+                        {currentRound === 7 && (
+                            <div className="flex items-center justify-center gap-8 mb-4">
+                                <div className="text-8xl font-black text-white score-text" style={{
+                                    textShadow: `8px 8px 16px ${selectedTeam1.color}`
+                                }}>
+                                    {bonusScore1}
+                                </div>
+                                <div className="text-4xl font-bold text-white">
+                                    BONUS SCORE
+                                </div>
+                                <div className="text-8xl font-black text-white score-text" style={{
+                                    textShadow: `8px 8px 16px ${selectedTeam2.color}`
+                                }}>
+                                    {bonusScore2}
+                                </div>
+                            </div>
+                        )}
                         
                         {/* Round Title with Timers */}
                         <div className="flex items-center justify-center mb-8 gap-4">
@@ -1347,23 +1385,23 @@
                                 }}>
                                     {showQuestion && currentRound === 7 ? (
                                         showBonusAnswer ? (
-                                            <div className="flex items-center justify-center w-full gap-6">
-                                                {/* Team 1 Guess */}
-                                                <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                
-                                                {/* Team 1 Difference */}
-                                                {team1Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                            <div className="flex items-center justify-between w-full px-4">
+                                                {/* Team 1 Side */}
+                                                <div className="flex items-center gap-8 flex-1">
+                                                    <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
+                                                    {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                </div>
                                                 
                                                 {/* Correct Answer */}
-                                                <div className="text-yellow-400 font-bold text-6xl">
+                                                <div className="text-yellow-400 font-bold text-6xl mx-8">
                                                     {closestToQuestions[bonusQuestionIndex].answer}
                                                 </div>
                                                 
-                                                {/* Team 2 Difference */}
-                                                {team2Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
-                                                
-                                                {/* Team 2 Guess */}
-                                                <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
+                                                {/* Team 2 Side */}
+                                                <div className="flex items-center gap-8 flex-1">
+                                                    {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                    <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
+                                                </div>
                                             </div>
                                         ) : null
                                     ) : showQuestion ? (
@@ -1414,7 +1452,7 @@
                                             >
                                                 REVEAL QUESTION
                                             </button>
-                                        ) : !showBonusAnswer && team1Time > 0 && team2Time > 0 ? (
+                                        ) : !timerRunning && !showBonusAnswer ? (
                                             <button 
                                                 onClick={handleStartTimer}
                                                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
