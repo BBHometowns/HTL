@@ -151,6 +151,16 @@
             border: 4px solid #FFD700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
         }
+
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
@@ -894,7 +904,7 @@
                         {/* All Game Elements Fade In */}
                         {introStep >= 5 && (
                             <div className="fade-in-game" style={{position: 'absolute', inset: 0, zIndex: 20, pointerEvents: 'none'}}>
-                                <div className="relative z-10 flex flex-col items-center justify-start h-full p-8">
+                                <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
                                     {/* HTL Logo and Scores */}
                                     <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px'}}>
                                         <div className="absolute score-text font-black text-black" style={{
@@ -922,6 +932,25 @@
                                             {team2Score}
                                         </div>
                                     </div>
+
+                                    {/* Bonus Score Display - Only show during bonus round */}
+                                    {currentRound === 7 && (
+                                        <div className="flex items-center justify-center gap-8 mb-4">
+                                            <div className="text-8xl font-black text-white score-text" style={{
+                                                textShadow: `8px 8px 16px ${selectedTeam1.color}`
+                                            }}>
+                                                {bonusScore1}
+                                            </div>
+                                            <div className="text-4xl font-bold text-white">
+                                                BONUS SCORE
+                                            </div>
+                                            <div className="text-8xl font-black text-white score-text" style={{
+                                                textShadow: `8px 8px 16px ${selectedTeam2.color}`
+                                            }}>
+                                                {bonusScore2}
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     {/* Round Title with Timers */}
                                     <div className="flex items-center justify-center mb-8 gap-4">
@@ -1138,21 +1167,21 @@
                     {currentRound === 7 && showQuestion && !showBonusAnswer && (
                         <>
                             {/* Team 1 Input */}
-                            <div className="absolute" style={{left: '5%', top: '40%', zIndex: 15}}>
-                                <div className="bg-gray-900 rounded-lg p-4 border-4" style={{borderColor: selectedTeam1.color}}>
+                            <div className="absolute" style={{left: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
+                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam1.color, width: '250px'}}>
                                     <input
                                         type="number"
                                         value={team1Guess}
                                         onChange={(e) => setTeam1Guess(e.target.value)}
                                         disabled={team1GuessSubmitted}
-                                        className="w-32 text-center text-3xl font-bold bg-gray-800 text-white rounded p-2 mb-2"
+                                        className="w-full text-center text-4xl font-bold bg-gray-800 text-white rounded p-3 mb-3"
                                         placeholder="?"
-                                        style={{pointerEvents: 'auto'}}
+                                        style={{pointerEvents: 'auto', appearance: 'textfield', MozAppearance: 'textfield', WebkitAppearance: 'none'}}
                                     />
                                     <button
                                         onClick={() => handleSubmitGuess(1)}
                                         disabled={team1GuessSubmitted || !team1Guess}
-                                        className={`w-full text-white font-bold py-2 px-4 rounded ${
+                                        className={`w-full text-white font-bold py-3 px-6 rounded text-xl ${
                                             team1GuessSubmitted ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
                                         }`}
                                         style={{pointerEvents: 'auto'}}
@@ -1163,21 +1192,21 @@
                             </div>
                             
                             {/* Team 2 Input */}
-                            <div className="absolute" style={{right: '5%', top: '40%', zIndex: 15}}>
-                                <div className="bg-gray-900 rounded-lg p-4 border-4" style={{borderColor: selectedTeam2.color}}>
+                            <div className="absolute" style={{right: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
+                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam2.color, width: '250px'}}>
                                     <input
                                         type="number"
                                         value={team2Guess}
                                         onChange={(e) => setTeam2Guess(e.target.value)}
                                         disabled={team2GuessSubmitted}
-                                        className="w-32 text-center text-3xl font-bold bg-gray-800 text-white rounded p-2 mb-2"
+                                        className="w-full text-center text-4xl font-bold bg-gray-800 text-white rounded p-3 mb-3"
                                         placeholder="?"
-                                        style={{pointerEvents: 'auto'}}
+                                        style={{pointerEvents: 'auto', appearance: 'textfield', MozAppearance: 'textfield', WebkitAppearance: 'none'}}
                                     />
                                     <button
                                         onClick={() => handleSubmitGuess(2)}
                                         disabled={team2GuessSubmitted || !team2Guess}
-                                        className={`w-full text-white font-bold py-2 px-4 rounded ${
+                                        className={`w-full text-white font-bold py-3 px-6 rounded text-xl ${
                                             team2GuessSubmitted ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
                                         }`}
                                         style={{pointerEvents: 'auto'}}
@@ -1266,25 +1295,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        {/* Bonus Score Display - Only show during bonus round */}
-                        {currentRound === 7 && (
-                            <div className="flex items-center justify-center gap-8 mb-6">
-                                <div className="text-8xl font-black text-white score-text" style={{
-                                    textShadow: `8px 8px 16px ${selectedTeam1.color}`
-                                }}>
-                                    {bonusScore1}
-                                </div>
-                                <div className="text-4xl font-bold text-white">
-                                    BONUS SCORE
-                                </div>
-                                <div className="text-8xl font-black text-white score-text" style={{
-                                    textShadow: `8px 8px 16px ${selectedTeam2.color}`
-                                }}>
-                                    {bonusScore2}
-                                </div>
-                            </div>
-                        )}
                         
                         {/* Question Display Area */}
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
