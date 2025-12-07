@@ -361,6 +361,7 @@
             ];
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
+            const displayRound = currentRound === 7 ? 'BONUS' : currentRound > 7 ? currentRound - 1 : currentRound;
 
             // Auto-resize text to fit container
             useEffect(() => {
@@ -635,22 +636,27 @@
                     const guess1 = parseInt(team1Guess) || 0;
                     const guess2 = parseInt(team2Guess) || 0;
                     
-                    const diff1 = Math.abs(correctAnswer - guess1);
-                    const diff2 = Math.abs(correctAnswer - guess2);
-                    
-                    // Check for exact answers (worth 2 points)
-                    if (guess1 === correctAnswer) {
-                        setBonusScore1(bonusScore1 + 2);
-                    } else if (guess2 === correctAnswer) {
-                        setBonusScore2(bonusScore2 + 2);
+                    // If both teams have same answer, it's a tie - no points
+                    if (guess1 === guess2) {
+                        // No points awarded
                     } else {
-                        // Award 1 point to closer team
-                        if (diff1 < diff2) {
-                            setBonusScore1(bonusScore1 + 1);
-                        } else if (diff2 < diff1) {
-                            setBonusScore2(bonusScore2 + 1);
+                        const diff1 = Math.abs(correctAnswer - guess1);
+                        const diff2 = Math.abs(correctAnswer - guess2);
+                        
+                        // Check for exact answers (worth 2 points)
+                        if (guess1 === correctAnswer) {
+                            setBonusScore1(bonusScore1 + 2);
+                        } else if (guess2 === correctAnswer) {
+                            setBonusScore2(bonusScore2 + 2);
+                        } else {
+                            // Award 1 point to closer team
+                            if (diff1 < diff2) {
+                                setBonusScore1(bonusScore1 + 1);
+                            } else if (diff2 < diff1) {
+                                setBonusScore2(bonusScore2 + 1);
+                            }
+                            // If tied distance, no one gets a point
                         }
-                        // If tied, no one gets a point
                     }
                     
                     setBonusWinnerAwarded(true);
@@ -1138,7 +1144,7 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: activeTeam === 1 ? 0.9 : 0.1
+                                    opacity: (currentRound === 7 || activeTeam === 1) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
@@ -1157,7 +1163,7 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: activeTeam === 2 ? 0.9 : (powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
+                                    opacity: (currentRound === 7 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
@@ -1255,13 +1261,13 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (activeTeam === 1 || (powerupPhase && powerupTimer > 0)) ? 1 : 0.3
+                                opacity: (currentRound === 7 || activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {powerupPhase ? powerupTimer : team1Time}
+                                    {currentRound === 7 ? Math.max(team1Time, team2Time) : powerupPhase ? powerupTimer : team1Time}
                                 </div>
                             </div>
                         
@@ -1276,7 +1282,7 @@
                                 justifyContent: 'center'
                             }}>
                                 <h2 className="text-5xl font-bold text-white">
-                                    ROUND {currentRound}{showCategory ? `: ${currentRoundData.category}` : ''}
+                                    {currentRound === 7 ? 'BONUS ROUND' : `ROUND ${displayRound}${showCategory ? `: ${currentRoundData.category}` : ''}`}
                                 </h2>
                             </div>
                         
@@ -1285,13 +1291,13 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
+                                opacity: (currentRound === 7 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {powerupPhase ? powerupTimer : team2Time}
+                                    {currentRound === 7 ? Math.max(team1Time, team2Time) : powerupPhase ? powerupTimer : team2Time}
                                 </div>
                             </div>
                         </div>
@@ -1305,7 +1311,7 @@
                         }}>
                             <div className="text-center h-full flex flex-col">
                                 <div className="text-cyan-400 font-bold text-4xl mb-6">
-                                    QUESTION {currentQuestion}
+                                    {currentRound === 7 ? `QUESTION ${bonusQuestionIndex + 1}` : `QUESTION ${currentQuestion}`}
                                 </div>
                                 
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
@@ -1341,23 +1347,23 @@
                                 }}>
                                     {showQuestion && currentRound === 7 ? (
                                         showBonusAnswer ? (
-                                            <div className="flex items-center justify-between w-full px-8">
+                                            <div className="flex items-center justify-center w-full gap-6">
                                                 {/* Team 1 Guess */}
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                    {team1Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
-                                                </div>
+                                                <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
+                                                
+                                                {/* Team 1 Difference */}
+                                                {team1Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
                                                 
                                                 {/* Correct Answer */}
                                                 <div className="text-yellow-400 font-bold text-6xl">
                                                     {closestToQuestions[bonusQuestionIndex].answer}
                                                 </div>
                                                 
+                                                {/* Team 2 Difference */}
+                                                {team2Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                
                                                 {/* Team 2 Guess */}
-                                                <div className="flex items-center gap-4">
-                                                    {team2Guess && <span className="text-gray-400 text-3xl">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
-                                                    <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
-                                                </div>
+                                                <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
                                             </div>
                                         ) : null
                                     ) : showQuestion ? (
@@ -1408,7 +1414,7 @@
                                             >
                                                 REVEAL QUESTION
                                             </button>
-                                        ) : !timerRunning && !showBonusAnswer ? (
+                                        ) : !showBonusAnswer && team1Time > 0 && team2Time > 0 ? (
                                             <button 
                                                 onClick={handleStartTimer}
                                                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
@@ -1533,17 +1539,19 @@
                                     {round}
                                 </div>
                             ))}
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm bg-purple-500 text-white">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm ${
+                                currentRound === 7 ? 'bg-yellow-400 text-black' : currentRound > 7 ? 'bg-green-500 text-white' : 'bg-purple-500 text-white'
+                            }`}>
                                 B
                             </div>
-                            {[7, 8, 9, 10, 11, 12].map((round) => (
+                            {[8, 9, 10, 11, 12, 13].map((round) => (
                                 <div
                                     key={round}
                                     className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-lg ${
                                         round === currentRound ? 'bg-yellow-400 text-black' : round < currentRound ? 'bg-green-500 text-white' : 'bg-gray-600 text-white'
                                     }`}
                                 >
-                                    {round}
+                                    {round - 1}
                                 </div>
                             ))}
                         </div>
