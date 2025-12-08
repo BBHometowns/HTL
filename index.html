@@ -240,6 +240,7 @@
             const [shootoutTurnCount, setShootoutTurnCount] = useState(0); // How many turns each team has taken
             const [shootoutActiveTeam, setShootoutActiveTeam] = useState(1); // Which team is currently guessing
             const [shootoutSuddenDeath, setShootoutSuddenDeath] = useState(false);
+            const [shootoutShuffledAnswers, setShootoutShuffledAnswers] = useState([]);
             
             // All 16 teams data
             const teamsData = [
@@ -1084,6 +1085,7 @@
                     // Reset shootout states
                     setShootoutBoardRevealed(false);
                     setShootoutRevealedAnswers([]);
+                    setShootoutShuffledAnswers([]);
                     setShootoutTurnCount(0);
                     setShootoutActiveTeam(1);
                     setShootoutSuddenDeath(false);
@@ -1096,6 +1098,17 @@
             const rounds = selectedMatch ? selectedMatch.rounds : matchesData[0].rounds;
             const closestToQuestions = selectedMatch ? selectedMatch.bonusQuestions : matchesData[0].bonusQuestions;
             const shootoutQuestion = selectedMatch ? selectedMatch.bonusQuestions[0] : matchesData[1].bonusQuestions[0];
+            const shootoutQuestion = selectedMatch ? selectedMatch.bonusQuestions[0] : matchesData[1].bonusQuestions[0];
+
+            // Shuffle shootout answers when match is selected
+            useEffect(() => {
+                if (shootoutQuestion && shootoutQuestion.answers) {
+                    const shuffled = [...shootoutQuestion.answers]
+                        .map((answer, index) => ({ answer, originalIndex: index }))
+                        .sort(() => Math.random() - 0.5);
+                    setShootoutShuffledAnswers(shuffled);
+                }
+            }, [selectedMatch]);
             
             const currentRoundData = rounds[currentRound - 1];
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
@@ -1923,28 +1936,29 @@
                                                 shootoutBoardRevealed ? (
                                                     // Show the answer grid
                                                     <div className="w-full h-full flex flex-col gap-2 overflow-y-auto">
-                                                        {Array.from({ length: Math.ceil(shootoutQuestion.answers.length / 5) }).map((_, rowIndex) => (
+                                                        {Array.from({ length: Math.ceil(shootoutShuffledAnswers.length / 5) }).map((_, rowIndex) => (
                                                             <div key={rowIndex} className="flex gap-2 justify-center">
-                                                                {shootoutQuestion.answers.slice(rowIndex * 5, (rowIndex + 1) * 5).map((answer, colIndex) => {
-                                                                    const answerIndex = rowIndex * 5 + colIndex;
-                                                                    const isRevealed = shootoutRevealedAnswers.includes(answerIndex);
+                                                                {shootoutShuffledAnswers.slice(rowIndex * 5, (rowIndex + 1) * 5).map((item, colIndex) => {
+                                                                    const gridIndex = rowIndex * 5 + colIndex;
+                                                                    const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
                                                                     
                                                                     return (
                                                                         <button
-                                                                            key={answerIndex}
-                                                                            onClick={() => handleShootoutAnswer(answerIndex)}
+                                                                            key={gridIndex}
+                                                                            onClick={() => handleShootoutAnswer(item.originalIndex)}
                                                                             disabled={isRevealed}
-                                                                            className="font-bold rounded border-4 border-black transition text-lg"
+                                                                            className="font-bold rounded border-4 border-black transition text-lg relative"
                                                                             style={{
                                                                                 width: '250px',
                                                                                 height: '60px',
                                                                                 backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
-                                                                                color: 'white',
-                                                                                cursor: isRevealed ? 'default' : 'pointer',
-                                                                                opacity: isRevealed ? 1 : 0.8
+                                                                                color: isRevealed ? 'white' : '#ffffff20',
+                                                                                cursor: isRevealed ? 'default' : 'pointer'
                                                                             }}
                                                                         >
-                                                                            {isRevealed ? answer : `${answerIndex + 1}`}
+                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : 0.15 }}>
+                                                                                {item.answer}
+                                                                            </span>
                                                                         </button>
                                                                     );
                                                                 })}
@@ -2109,6 +2123,47 @@
                                                     INCORRECT
                                                 </button>
                                             )
+                                        )
+                                    ) : (
+                                        // Regular Round Buttons
+                                        !showCategory ? (
+                                            <button 
+                                                onClick={handleRevealCategory}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                REVEAL CATEGORY
+                                            </button>
+                                        ) : powerupPhase ? (
+                                            <button 
+                                                onClick={() => {
+                                                    setPowerupPhase(false);
+                                                    setPowerupTimer(30);
+                                                }}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                SKIP POWERUPS
+                                            </button>
+                                        ) : !showQuestion ? (
+                                            <button 
+                                                onClick={handleRevealQuestion}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                REVEAL QUESTION
+                                            </button>
+                                        ) : !timerRunning && !showAnswer ? (
+                                            <button 
+                                                onClick={handleStartTimer}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                START TIMER
+                                            </button>
+                                        ) : showAnswer ? (
+                                            <button 
+                                                onClick={handleNext}
+                                                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                NEXT
+                                            </button>
                                         ) : (
                                             <>
                                                 <button 
