@@ -246,6 +246,8 @@
             const [shootoutShuffledAnswers, setShootoutShuffledAnswers] = useState([]);
             const [isTieBreaker, setIsTieBreaker] = useState(false);
             const [tieBreakerType, setTieBreakerType] = useState(null);
+            const [showWinnerScreen, setShowWinnerScreen] = useState(false);
+            const [winnerTeam, setWinnerTeam] = useState(null);
             
             // All 16 teams data
             const teamsData = [
@@ -929,13 +931,16 @@
                             setCurrentPointValue(1);
                         } else {
                             // Game Over - someone won!
-                            alert(`GAME OVER!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins!`);
+                            setWinnerTeam(team1Score > team2Score ? selectedTeam1 : selectedTeam2);
+                            setShowWinnerScreen(true);
                         }
-                    } else if (currentRound === 14) {
-                        // Tie-breaker just finished - declare winner
-                        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
-                        return; // Stop here - game is over
-                    }
+                        } else if (currentRound === 14) {
+                            // Tie-breaker just finished - declare winner
+                            const winner = team1Score > team2Score ? selectedTeam1 : selectedTeam2;
+                            setWinnerTeam(winner);
+                            setShowWinnerScreen(true);
+                            return; // Stop here - game is over
+                        }
                     setShowAnswer(false);
                     setStealAttempted(false);
                     setCurrentPointValue(1);
@@ -1096,8 +1101,13 @@
                     // Check if this was the tie-breaker
                     if (currentRound === 14) {
                         // Tie-breaker complete - declare winner
+                        const finalScore1 = team1Score + (bonusScore1 >= 3 ? 1 : 0);
+                        const finalScore2 = team2Score + (bonusScore2 >= 3 ? 1 : 0);
+                        const winner = finalScore1 > finalScore2 ? selectedTeam1 : selectedTeam2;
+                        
                         setTimeout(() => {
-                            alert(`TIE-BREAKER COMPLETE!\n\n${team1Score + (bonusScore1 >= 3 ? 1 : 0) > team2Score + (bonusScore2 >= 3 ? 1 : 0) ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                            setWinnerTeam(winner);
+                            setShowWinnerScreen(true);
                         }, 500);
                         // Reset bonus states but don't advance round
                         setBonusScore1(0);
@@ -1259,8 +1269,13 @@
                 // Check if this was the tie-breaker
                 if (currentRound === 14) {
                     // Tie-breaker complete - declare winner
+                    const finalScore1 = team1Score + (bonusScore1 > bonusScore2 ? 1 : 0);
+                    const finalScore2 = team2Score + (bonusScore2 > bonusScore1 ? 1 : 0);
+                    const winner = finalScore1 > finalScore2 ? selectedTeam1 : selectedTeam2;
+                    
                     setTimeout(() => {
-                        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score + (bonusScore1 > bonusScore2 ? 1 : 0) > team2Score + (bonusScore2 > bonusScore1 ? 1 : 0) ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                        setWinnerTeam(winner);
+                        setShowWinnerScreen(true);
                     }, 500);
                     // Reset shootout states but don't advance round
                     setShootoutBoardRevealed(false);
@@ -2019,6 +2034,71 @@
                     )}
             
                     {/* Main Content */}
+                    {/* Winner Screen Overlay */}
+                    {showWinnerScreen && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                            animation: 'fadeIn 0.5s ease-in'
+                        }}>
+                            <div className="flex flex-col items-center">
+                                {/* Final Score Text */}
+                                <div className="text-6xl font-bold text-white mb-12" style={{
+                                    WebkitTextStroke: '3px black',
+                                    textStroke: '3px black'
+                                }}>
+                                    FINAL SCORE
+                                </div>
+                                
+                                {/* Scores Container */}
+                                <div className="flex items-center justify-center gap-32 mb-8">
+                                    {/* Team 1 Score */}
+                                    <div className="flex flex-col items-center">
+                                        <img 
+                                            src={`${imagePath}${selectedTeam1.logo}`}
+                                            alt={selectedTeam1.name}
+                                            className="object-contain mb-4"
+                                            style={{width: '300px', height: '300px'}}
+                                        />
+                                        <div className="score-text font-black text-black" style={{
+                                            fontSize: '200px',
+                                            lineHeight: '200px',
+                                            textShadow: `8px 8px 16px ${selectedTeam1.color}`
+                                        }}>
+                                            {team1Score}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Team 2 Score */}
+                                    <div className="flex flex-col items-center">
+                                        <img 
+                                            src={`${imagePath}${selectedTeam2.logo}`}
+                                            alt={selectedTeam2.name}
+                                            className="object-contain mb-4"
+                                            style={{width: '300px', height: '300px'}}
+                                        />
+                                        <div className="score-text font-black text-black" style={{
+                                            fontSize: '200px',
+                                            lineHeight: '200px',
+                                            textShadow: `8px 8px 16px ${selectedTeam2.color}`
+                                        }}>
+                                            {team2Score}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Winner Announcement */}
+                                <div className="text-7xl font-black text-white" style={{
+                                    WebkitTextStroke: '4px black',
+                                    textStroke: '4px black',
+                                    textShadow: `12px 12px 24px ${winnerTeam?.color}`,
+                                    animation: 'fadeIn 1s ease-in 0.5s both'
+                                }}>
+                                    {winnerTeam?.name} WINS!
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
