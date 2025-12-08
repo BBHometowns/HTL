@@ -681,8 +681,9 @@
                             });
                         }
                     }
-                    return () => clearInterval(interval);
-                }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam]);
+                }
+                return () => clearInterval(interval);
+            }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam]);
 
             // Powerup phase timer countdown
             useEffect(() => {
