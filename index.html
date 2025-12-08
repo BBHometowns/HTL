@@ -244,6 +244,8 @@
             const [shootoutActiveTeam, setShootoutActiveTeam] = useState(1); // Which team is currently guessing
             const [shootoutSuddenDeath, setShootoutSuddenDeath] = useState(false);
             const [shootoutShuffledAnswers, setShootoutShuffledAnswers] = useState([]);
+            const [isTieBreaker, setIsTieBreaker] = useState(false);
+            const [tieBreakerType, setTieBreakerType] = useState(null);
             
             // All 16 teams data
             const teamsData = [
@@ -629,8 +631,9 @@
                 let interval;
                 if (timerRunning) {
                     interval = setInterval(() => {
-                        if (currentRound === 7) {
-                            if (bonusType === 'closestTo') {
+                        if (currentRound === 7 || currentRound === 14) {
+                            const activeBonusType = currentRound === 7 ? bonusType : tieBreakerType;
+                            if (activeBonusType === 'closestTo') {
                                 // For Closest To bonus round, both timers count down together
                                 setTeam1Time(prev => {
                                     if (prev <= 1) {
@@ -646,7 +649,7 @@
                                     }
                                     return prev - 1;
                                 });
-                            } else if (bonusType === 'shootout') {
+                            } else if (activeBonusType === 'shootout') {
                                 // For Shootout, only active team's timer counts down
                                 if (shootoutActiveTeam === 1) {
                                     setTeam1Time(prev => {
@@ -754,11 +757,12 @@
                 }
                 
                 // For bonus round setup
-                if (currentRound === 7) {
-                    if (bonusType === 'closestTo' && bonusQuestionIndex === 0) {
+                if (currentRound === 7 || currentRound === 14) {
+                    const activeBonusType = currentRound === 7 ? bonusType : tieBreakerType;
+                    if (activeBonusType === 'closestTo' && bonusQuestionIndex === 0) {
                         setTeam1Time(30);
                         setTeam2Time(30);
-                    } else if (bonusType === 'shootout') {
+                    } else if (activeBonusType === 'shootout') {
                         setTeam1Time(15);
                         setTeam2Time(15);
                     }
@@ -834,7 +838,23 @@
                     setCurrentPointValue(1);
                     setTimerRunning(false);
                 } else {
-                    if (currentRound < 13) {
+                    // Check for tie after Round 12 (which is actually round 13 in code after bonus)
+                    if (currentRound === 13 && team1Score === team2Score) {
+                        // Tie-breaker needed!
+                        setIsTieBreaker(true);
+                        // Set opposite bonus type
+                        const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
+                        setTieBreakerType(oppositeBonusType);
+                        setCurrentRound(14); // Tie-breaker round
+                        setCurrentQuestion(1);
+                        setActiveTeam(1);
+                        setActiveTimer(1);
+                        setTeam1Time(30);
+                        setTeam2Time(15);
+                        setShowCategory(false);
+                        setShowQuestion(false);
+                        setTimerRunning(false);
+                    } else if (currentRound < 13) {
                         const nextRound = currentRound + 1;
                         setCurrentRound(nextRound);
                         setCurrentQuestion(1);
@@ -1767,7 +1787,7 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: (currentRound === 7 || activeTeam === 1) ? 0.9 : 0.1
+                                    opacity: (currentRound === 7 || currentRound === 14 || activeTeam === 1) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
@@ -1786,14 +1806,14 @@
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: (currentRound === 7 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
+                                    opacity: (currentRound === 7 || currentRound === 14 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
                                 }}
                             />
                         </div>
                     </div>
 
                     {/* Bonus Round Input Boxes - Only for Closest To */}
-                    {currentRound === 7 && bonusType === 'closestTo' && showQuestion && !showBonusAnswer && (
+                    {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' && showQuestion && !showBonusAnswer && (
                         <>
                             {/* Team 1 Input */}
                             <div className="absolute" style={{left: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
@@ -1851,7 +1871,7 @@
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
-                        {currentRound === 7 && (
+                        {(currentRound === 7 || currentRound === 14) && (
                             <div className="absolute flex flex-col items-center justify-center gap-2" style={{
                                 top: '550px',
                                 left: '50%',
@@ -1875,9 +1895,9 @@
                                 </div>
                                 
                                 {/* Bonus Round Progress Circles */}
-                                {(bonusType === 'closestTo' || bonusType === 'shootout') && (
+                                {((currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' || (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout') && (
                                     <div className="flex gap-1 mt-2">
-                                        {bonusType === 'closestTo' ? (
+                                        {(currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             [0, 1, 2, 3, 4].map((index) => (
                                                 <div
                                                     key={index}
@@ -1988,16 +2008,16 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (currentRound === 7 && bonusType === 'shootout' && shootoutActiveTeam === 1) || 
-                                         (currentRound === 7 && bonusType === 'closestTo') || 
+                                opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 1) || 
+                                         ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') ||
                                          (activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {currentRound === 7 ? (
-                                        bonusType === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
+                                    {(currentRound === 7 || currentRound === 14) ? (
+                                        (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
                                     ) : powerupPhase ? powerupTimer : team1Time}
                                 </div>
                             </div>
@@ -2013,7 +2033,9 @@
                                 justifyContent: 'center'
                             }}>
                                 <h2 className="text-5xl font-bold text-white">
-                                    {currentRound === 7 ? 'BONUS ROUND' : `ROUND ${displayRound}${showCategory ? `: ${currentRoundData.category}` : ''}`}
+                                    {currentRound === 7 ? 'BONUS ROUND' : 
+                                     currentRound === 14 ? 'TIE-BREAKER' : 
+                                     `ROUND ${displayRound}${showCategory ? `: ${currentRoundData.category}` : ''}`}
                                 </h2>
                             </div>
                         
@@ -2022,16 +2044,16 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (currentRound === 7 && bonusType === 'shootout' && shootoutActiveTeam === 2) || 
-                                         (currentRound === 7 && bonusType === 'closestTo') || 
+                                opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 2) || 
+                                         ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') || 
                                          (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {currentRound === 7 ? (
-                                        bonusType === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
+                                    {(currentRound === 7 || currentRound === 14) ? (
+                                        (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
                                     ) : powerupPhase ? powerupTimer : team2Time}
                                 </div>
                             </div>
@@ -2041,15 +2063,15 @@
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
-                            height: currentRound === 7 && bonusType === 'shootout' ? '750px' : '650px',
+                            height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '750px' : '650px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
                                 <div className="text-cyan-400 font-bold text-4xl" style={{marginBottom: '32px'}}>
-                                    {currentRound === 7 ? (
-                                        bonusType === 'shootout' && shootoutBoardRevealed ? (
+                                    {(currentRound === 7 || currentRound === 14) ? (
+                                        (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutBoardRevealed ? (
                                             shootoutQuestion.shortQuestion
-                                        ) : bonusType === 'closestTo' ? (
+                                        ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             `QUESTION ${bonusQuestionIndex + 1}`
                                         ) : (
                                             'SHOOTOUT'
@@ -2060,16 +2082,16 @@
                                 </div>
                                 
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
-                                    height: currentRound === 7 && bonusType === 'shootout' ? '100%' : '380px',
-                                    overflow: currentRound === 7 && bonusType === 'shootout' ? 'auto' : 'hidden'
+                                    height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '100%' : '380px',
+                                    overflow: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? 'auto' : 'hidden'
                                 }}>
                                     {powerupPhase ? (
                                         <p className="text-white text-6xl font-bold fade-in">
                                             Powerups?
                                         </p>
                                     ) : showQuestion ? (
-                                        currentRound === 7 ? (
-                                            bonusType === 'closestTo' ? (
+                                        (currentRound === 7 || currentRound === 14) ? (
+                                            (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                                 <p className="text-white leading-relaxed text-center fade-in" style={{
                                                     fontSize: '40px',
                                                     margin: 0
@@ -2131,12 +2153,12 @@
                                     ) : null}
                                 </div>
 
-                                    {!(currentRound === 7 && bonusType === 'shootout') && (
+                                    {!((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout') && (
                                         <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
                                             height: '120px',
                                             overflow: 'hidden'
                                         }}>
-                                        {showQuestion && currentRound === 7 ? (
+                                        {showQuestion && (currentRound === 7 || currentRound === 14) ? (
                                             showBonusAnswer ? (
                                                 <div className="flex items-center justify-between w-full px-4">
                                                     {/* Team 1 Side */}
@@ -2197,8 +2219,8 @@
                                 </div>
 
                                 <div className="flex gap-4">
-                                    {currentRound === 7 ? (
-                                        bonusType === 'closestTo' ? (
+                                    {(currentRound === 7 || currentRound === 14) ? (
+                                        (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             // Closest To Buttons
                                             !showQuestion ? (
                                                 <button 
@@ -2358,9 +2380,9 @@
                                 </div>
                             ))}
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-black font-bold text-sm ${
-                                currentRound === 7 ? 'bg-yellow-400 text-black' : currentRound > 7 ? 'bg-green-500 text-white' : 'bg-purple-500 text-white'
+                                currentRound === 7 || currentRound === 14 ? 'bg-yellow-400 text-black' : currentRound > 7 ? 'bg-green-500 text-white' : 'bg-purple-500 text-white'
                             }`}>
-                                B
+                                {currentRound === 14 ? 'TB' : 'B'}
                             </div>
                             {[8, 9, 10, 11, 12, 13].map((round) => (
                                 <div
