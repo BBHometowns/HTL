@@ -1281,11 +1281,6 @@
                     setShootoutShuffledAnswers(shuffled);
                 }
             }, [selectedMatch, currentRound]);
-                        .map((answer, index) => ({ answer, originalIndex: index }))
-                        .sort(() => Math.random() - 0.5);
-                    setShootoutShuffledAnswers(shuffled);
-                }
-            }, [selectedMatch]);
             
             // Adjust index for rounds after bonus (round 8+ uses index 6+)
             const getRoundIndex = () => {
