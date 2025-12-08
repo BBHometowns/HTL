@@ -380,6 +380,20 @@
                             question: "What is the height in feet of the Eiffel Tower?",
                             answer: 1083
                         }
+                    ],
+                    tieBreakerQuestions: [
+                        {
+                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen. Name the Top 30 highest-earning US businesses of 2023.",
+                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
+                            answers: [
+                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
+                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
+                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
+                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
+                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
+                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
+                            ]
+                        }
                     ]
                 },
                 {
@@ -485,6 +499,28 @@
                                 "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
                                 "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
                             ]
+                        }
+                    ],
+                    tieBreakerQuestions: [
+                        {
+                            question: "In what year did the first iPhone release?",
+                            answer: 2007
+                        },
+                        {
+                            question: "How many bones are in the adult human body?",
+                            answer: 206
+                        },
+                        {
+                            question: "What is the distance in miles from New York City to Los Angeles?",
+                            answer: 2789
+                        },
+                        {
+                            question: "How many episodes of The Office (US) were produced?",
+                            answer: 201
+                        },
+                        {
+                            question: "What is the height in feet of the Eiffel Tower?",
+                            answer: 1083
                         }
                     ]
                 },
@@ -599,6 +635,20 @@
                         {
                             question: "What is the height in feet of the Eiffel Tower?",
                             answer: 1083
+                        }
+                    ],
+                    tieBreakerQuestions: [
+                        {
+                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen. Name the Top 30 highest-earning US businesses of 2023.",
+                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
+                            answers: [
+                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
+                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
+                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
+                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
+                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
+                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
+                            ]
                         }
                     ]
                 }
@@ -838,23 +888,7 @@
                     setCurrentPointValue(1);
                     setTimerRunning(false);
                 } else {
-                    // Check for tie after Round 12 (which is actually round 13 in code after bonus)
-                    if (currentRound === 13 && team1Score === team2Score) {
-                        // Tie-breaker needed!
-                        setIsTieBreaker(true);
-                        // Set opposite bonus type
-                        const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
-                        setTieBreakerType(oppositeBonusType);
-                        setCurrentRound(14); // Tie-breaker round
-                        setCurrentQuestion(1);
-                        setActiveTeam(1);
-                        setActiveTimer(1);
-                        setTeam1Time(30);
-                        setTeam2Time(15);
-                        setShowCategory(false);
-                        setShowQuestion(false);
-                        setTimerRunning(false);
-                    } else if (currentRound < 13) {
+                    if (currentRound < 13) {
                         const nextRound = currentRound + 1;
                         setCurrentRound(nextRound);
                         setCurrentQuestion(1);
@@ -870,10 +904,36 @@
                             setTeam1Time(30);
                             setTeam2Time(15);
                         }
+                        setShowCategory(false);
+                        setShowQuestion(false);
+                        setTimerRunning(false); // IMPORTANT: Stop any running timers
+                    } else if (currentRound === 13) {
+                        // Check for tie after Round 12 (which is round 13 in code after bonus)
+                        if (team1Score === team2Score) {
+                            // Tie-breaker needed!
+                            setIsTieBreaker(true);
+                            // Set opposite bonus type
+                            const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
+                            setTieBreakerType(oppositeBonusType);
+                            setCurrentRound(14); // Tie-breaker round
+                            setCurrentQuestion(1);
+                            setActiveTeam(1);
+                            setActiveTimer(1);
+                            setTeam1Time(30);
+                            setTeam2Time(15);
                             setShowCategory(false);
                             setShowQuestion(false);
-                            setTimerRunning(false); // IMPORTANT: Stop any running timers
-                        }
+                            setShowAnswer(false);
+                            setTimerRunning(false);
+                            setStealAttempted(false);
+                            setCurrentPointValue(1);
+                        } else {
+                            // Game Over - someone won!
+                            alert(`GAME OVER!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins!`);
+        }
+    } else if (currentRound === 14) {
+        // Tie-breaker just finished - declare winner
+        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
                         setShowAnswer(false);
                         setStealAttempted(false);
                         setCurrentPointValue(1);
@@ -1179,17 +1239,48 @@
                 setShootoutSuddenDeath(false);
                 setBonusScore1(0);
                 setBonusScore2(0);
+                // Reset tie-breaker flag if it was a tie-breaker
+                if (currentRound === 14) {
+                    setIsTieBreaker(false);
+                    setTieBreakerType(null);
+                }
             };
 
             // Use selected match data
             const rounds = selectedMatch ? selectedMatch.rounds : matchesData[0].rounds;
-            const closestToQuestions = selectedMatch ? selectedMatch.bonusQuestions : matchesData[0].bonusQuestions;
-            const shootoutQuestion = selectedMatch ? selectedMatch.bonusQuestions[0] : matchesData[1].bonusQuestions[0];
+
+            // For bonus round (round 7)
+            const closestToQuestions = selectedMatch && bonusType === 'closestTo' 
+                ? selectedMatch.bonusQuestions 
+                : selectedMatch && bonusType === 'shootout' && selectedMatch.tieBreakerQuestions
+                ? selectedMatch.tieBreakerQuestions
+                : matchesData[0].bonusQuestions;
+            
+            const shootoutQuestion = selectedMatch && bonusType === 'shootout'
+                ? selectedMatch.bonusQuestions[0]
+                : selectedMatch && bonusType === 'closestTo' && selectedMatch.tieBreakerQuestions
+                ? selectedMatch.tieBreakerQuestions[0]
+                : matchesData[1].bonusQuestions[0];
+            
+            // For tie-breaker (round 14) - use opposite data
+            const tieBreakerClosestToQuestions = selectedMatch && tieBreakerType === 'closestTo'
+                ? selectedMatch.tieBreakerQuestions
+                : null;
+            
+            const tieBreakerShootoutQuestion = selectedMatch && tieBreakerType === 'shootout'
+                ? selectedMatch.tieBreakerQuestions[0]
+                : null;
 
             // Shuffle shootout answers when match is selected
             useEffect(() => {
-                if (shootoutQuestion && shootoutQuestion.answers) {
-                    const shuffled = [...shootoutQuestion.answers]
+                const activeShootoutQuestion = currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion;
+                if (activeShootoutQuestion && activeShootoutQuestion.answers) {
+                    const shuffled = [...activeShootoutQuestion.answers]
+                        .map((answer, index) => ({ answer, originalIndex: index }))
+                        .sort(() => Math.random() - 0.5);
+                    setShootoutShuffledAnswers(shuffled);
+                }
+            }, [selectedMatch, currentRound]);
                         .map((answer, index) => ({ answer, originalIndex: index }))
                         .sort(() => Math.random() - 0.5);
                     setShootoutShuffledAnswers(shuffled);
@@ -2043,7 +2134,7 @@
                                 <h2 className="text-5xl font-bold text-white">
                                     {currentRound === 7 ? 'BONUS ROUND' : 
                                      currentRound === 14 ? 'TIE-BREAKER' : 
-                                     `ROUND ${displayRound}${showCategory ? `: ${currentRoundData.category}` : ''}`}
+                                     `ROUND ${displayRound}${showCategory && currentRoundData ? `: ${currentRoundData.category}` : ''}`}
                                 </h2>
                             </div>
                         
@@ -2078,7 +2169,7 @@
                                 <div className="text-cyan-400 font-bold text-4xl" style={{marginBottom: '32px'}}>
                                     {(currentRound === 7 || currentRound === 14) ? (
                                         (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutBoardRevealed ? (
-                                            shootoutQuestion.shortQuestion
+                                            {(currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).shortQuestion}
                                         ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             `QUESTION ${bonusQuestionIndex + 1}`
                                         ) : (
@@ -2104,7 +2195,7 @@
                                                     fontSize: '40px',
                                                     margin: 0
                                                 }}>
-                                                    {closestToQuestions[bonusQuestionIndex].question}
+                                                    {(currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].question}
                                                 </p>
                                             ) : (
                                                 // Shootout UI
@@ -2146,7 +2237,7 @@
                                                         fontSize: '40px',
                                                         margin: 0
                                                     }}>
-                                                        {shootoutQuestion.longQuestion}
+                                                        {(currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).longQuestion}
                                                     </p>
                                                 )
                                             )
@@ -2172,7 +2263,7 @@
                                                     {/* Team 1 Side */}
                                                     <div className="flex items-center gap-8 flex-1">
                                                         <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                        {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                        {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
                                                     </div>
                                                     
                                                     {/* Correct Answer */}
@@ -2182,7 +2273,7 @@
                                                     
                                                     {/* Team 2 Side */}
                                                     <div className="flex items-center gap-8 flex-1">
-                                                        {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                        {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
                                                         <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
                                                     </div>
                                                 </div>
