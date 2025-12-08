@@ -842,11 +842,20 @@
                             setTeam1Time(30);
                             setTeam2Time(15);
                         }
-                        setShowCategory(false);
-                        setShowQuestion(false);
-                        setTimerRunning(false); // IMPORTANT: Stop any running timers
+                            setShowCategory(false);
+                            setShowQuestion(false);
+                            setTimerRunning(false); // IMPORTANT: Stop any running timers
+                        }
+                        setShowAnswer(false);
+                        setStealAttempted(false);
+                        setCurrentPointValue(1);
+                        setTeam1DoublerActive(false);
+                        setTeam2DoublerActive(false);
+                        setTimerRunning(false);
+                        setPowerupPhase(false);
+                        setPowerupTimer(30);
                     }
-            };
+                };
 
             const handlePowerup = (team, powerup) => {
                 // Only allow powerup usage during powerup phase for Point Doubler and Extra Time
