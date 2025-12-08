@@ -663,9 +663,26 @@
                                     });
                                 }
                             }
-                }
-                return () => clearInterval(interval);
-            }, [timerRunning, activeTimer, currentRound]);
+                        } else if (activeTimer === 1) {
+                            setTeam1Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        } else {
+                            setTeam2Time(prev => {
+                                if (prev <= 1) {
+                                    setTimerRunning(false);
+                                    return 0;
+                                }
+                                return prev - 1;
+                            });
+                        }
+                    }
+                    return () => clearInterval(interval);
+                }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam]);
 
             // Powerup phase timer countdown
             useEffect(() => {
