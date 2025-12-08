@@ -2051,7 +2051,7 @@
                                     }
                                     @keyframes slideToLeft {
                                         to {
-                                            left: 15%;
+                                            left: 22%;
                                             top: 50%;
                                             transform: translateY(-50%);
                                         }
@@ -2061,7 +2061,7 @@
                                     }
                                     @keyframes slideToRight {
                                         to {
-                                            right: 15%;
+                                            right: 22%;
                                             top: 50%;
                                             transform: translateY(-50%);
                                         }
@@ -2079,10 +2079,11 @@
                             <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                                 <div className="flex flex-col items-center">
                                     {/* Final Score Text */}
-                                    <div className="text-8xl font-black text-white mb-16" style={{
+                                    <div className="text-9xl font-black text-white mb-16" style={{
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
-                                        animation: 'fadeIn 1s ease-in'
+                                        animation: 'fadeIn 1s ease-in',
+                                        marginTop: '-150px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -2093,7 +2094,7 @@
                                         textStroke: '5px black',
                                         textShadow: `16px 16px 32px ${winnerTeam?.color}`,
                                         animation: 'fadeIn 1.5s ease-in 0.5s both',
-                                        marginTop: '100px'
+                                        marginTop: '400px'
                                     }}>
                                         {winnerTeam?.name} WINS!
                                     </div>
