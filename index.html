@@ -1947,13 +1947,13 @@
                             <img 
                                 src={`${imagePath}${selectedTeam1.logo}`}
                                 alt="Team 1 Background Logo" 
-                                className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'}`}
+                                className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
                                     transform: 'perspective(1000px) rotateY(15deg)',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: (currentRound === 7 || currentRound === 14 || activeTeam === 1) ? 0.9 : 0.1
+                                    opacity: showWinnerScreen ? 0.9 : ((currentRound === 7 || currentRound === 14 || activeTeam === 1) ? 0.9 : 0.1)
                                 }}
                             />
                         </div>
@@ -1966,13 +1966,13 @@
                             <img 
                                 src={`${imagePath}${selectedTeam2.logo}`}
                                 alt="Team 2 Background Logo" 
-                                className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'}`}
+                                className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
                                     transform: 'perspective(1000px) rotateY(-15deg)',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
-                                    opacity: (currentRound === 7 || currentRound === 14 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1
+                                    opacity: showWinnerScreen ? 0.9 : ((currentRound === 7 || currentRound === 14 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 0.9 : 0.1)
                                 }}
                             />
                         </div>
@@ -2036,67 +2036,70 @@
                     {/* Main Content */}
                     {/* Winner Screen Overlay */}
                     {showWinnerScreen && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center" style={{
-                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                            animation: 'fadeIn 0.5s ease-in'
-                        }}>
-                            <div className="flex flex-col items-center">
-                                {/* Final Score Text */}
-                                <div className="text-6xl font-bold text-white mb-12" style={{
-                                    WebkitTextStroke: '3px black',
-                                    textStroke: '3px black'
-                                }}>
-                                    FINAL SCORE
-                                </div>
-                                
-                                {/* Scores Container */}
-                                <div className="flex items-center justify-center gap-32 mb-8">
-                                    {/* Team 1 Score */}
-                                    <div className="flex flex-col items-center">
-                                        <img 
-                                            src={`${imagePath}${selectedTeam1.logo}`}
-                                            alt={selectedTeam1.name}
-                                            className="object-contain mb-4"
-                                            style={{width: '300px', height: '300px'}}
-                                        />
-                                        <div className="score-text font-black text-black" style={{
-                                            fontSize: '200px',
-                                            lineHeight: '200px',
-                                            textShadow: `8px 8px 16px ${selectedTeam1.color}`
-                                        }}>
-                                            {team1Score}
-                                        </div>
+                        <>
+                            {/* Fade out bottom elements */}
+                            <style>
+                                {`
+                                    .hide-on-winner {
+                                        animation: fadeOut 0.8s ease-out forwards;
+                                    }
+                                    @keyframes fadeOut {
+                                        to { opacity: 0; }
+                                    }
+                                    .score-slide-left {
+                                        animation: slideToLeft 1s ease-out forwards;
+                                    }
+                                    @keyframes slideToLeft {
+                                        to {
+                                            left: 15%;
+                                            top: 50%;
+                                            transform: translateY(-50%);
+                                        }
+                                    }
+                                    .score-slide-right {
+                                        animation: slideToRight 1s ease-out forwards;
+                                    }
+                                    @keyframes slideToRight {
+                                        to {
+                                            right: 15%;
+                                            top: 50%;
+                                            transform: translateY(-50%);
+                                        }
+                                    }
+                                    .team-logo-winner {
+                                        animation: logoFadeIn 1s ease-in forwards;
+                                    }
+                                    @keyframes logoFadeIn {
+                                        to { opacity: 0.9 !important; }
+                                    }
+                                `}
+                            </style>
+                            
+                            {/* Winner Announcement Overlay */}
+                            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                                <div className="flex flex-col items-center">
+                                    {/* Final Score Text */}
+                                    <div className="text-8xl font-black text-white mb-16" style={{
+                                        WebkitTextStroke: '4px black',
+                                        textStroke: '4px black',
+                                        animation: 'fadeIn 1s ease-in'
+                                    }}>
+                                        FINAL SCORE
                                     </div>
                                     
-                                    {/* Team 2 Score */}
-                                    <div className="flex flex-col items-center">
-                                        <img 
-                                            src={`${imagePath}${selectedTeam2.logo}`}
-                                            alt={selectedTeam2.name}
-                                            className="object-contain mb-4"
-                                            style={{width: '300px', height: '300px'}}
-                                        />
-                                        <div className="score-text font-black text-black" style={{
-                                            fontSize: '200px',
-                                            lineHeight: '200px',
-                                            textShadow: `8px 8px 16px ${selectedTeam2.color}`
-                                        }}>
-                                            {team2Score}
-                                        </div>
+                                    {/* Winner Announcement */}
+                                    <div className="text-9xl font-black text-white" style={{
+                                        WebkitTextStroke: '5px black',
+                                        textStroke: '5px black',
+                                        textShadow: `16px 16px 32px ${winnerTeam?.color}`,
+                                        animation: 'fadeIn 1.5s ease-in 0.5s both',
+                                        marginTop: '100px'
+                                    }}>
+                                        {winnerTeam?.name} WINS!
                                     </div>
                                 </div>
-                                
-                                {/* Winner Announcement */}
-                                <div className="text-7xl font-black text-white" style={{
-                                    WebkitTextStroke: '4px black',
-                                    textStroke: '4px black',
-                                    textShadow: `12px 12px 24px ${winnerTeam?.color}`,
-                                    animation: 'fadeIn 1s ease-in 0.5s both'
-                                }}>
-                                    {winnerTeam?.name} WINS!
-                                </div>
                             </div>
-                        </div>
+                        </>
                     )}
                     
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
@@ -2164,7 +2167,7 @@
                         
                         {/* HTL Logo and Scores */}
                         <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px', marginTop: '50px'}}>
-                            <div className="absolute" style={{left: '25%'}}>
+                            <div className={`absolute ${showWinnerScreen ? 'score-slide-left' : ''}`} style={{left: '25%', top: 'initial'}}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
@@ -2201,7 +2204,7 @@
                                 style={{height: '560px'}}
                             />
                         
-                            <div className="absolute" style={{right: '25%'}}>
+                            <div className={`absolute ${showWinnerScreen ? 'score-slide-right' : ''}`} style={{right: '25%', top: 'initial'}}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
@@ -2233,7 +2236,7 @@
                         </div>
                         
                         {/* Round Title with Timers */}
-                        <div className="flex items-center justify-center mb-8 gap-4">
+                        <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`}>
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
                                 borderColor: '#7d3ad4',
                                 backgroundColor: `${selectedTeam1.color}65`,
@@ -2291,7 +2294,7 @@
                         </div>
                         
                         {/* Question Display Area */}
-                        <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
+                        <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
                             height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '750px' : '650px',
@@ -2423,7 +2426,7 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className="mx-auto mb-8" style={{width: '1400px'}}>
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px'}}>
                             <div className="flex justify-between items-center">
                                 <div className="flex gap-6">
                                     <img 
@@ -2593,7 +2596,7 @@
                         </div>
 
                         {/* Round Progress */}
-                        <div className="flex justify-center gap-2">
+                        <div className={`flex justify-center gap-2 ${showWinnerScreen ? 'hide-on-winner' : ''}`}>
                             {[1, 2, 3, 4, 5, 6].map((round) => (
                                 <div
                                     key={round}
