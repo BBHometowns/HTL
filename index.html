@@ -1026,6 +1026,27 @@
                 setTeam2Time(30);
             };
 
+            const checkShootoutEnd = () => {
+                // Use setTimeout to ensure state updates have processed
+                setTimeout(() => {
+                    const currentTurnCount = shootoutTurnCount + (shootoutActiveTeam === 1 ? 1 : 0);
+                    
+                    // After 5 turns (10 total guesses), check for winner
+                    if (currentTurnCount >= 5) {
+                        if (bonusScore1 !== bonusScore2 && !shootoutSuddenDeath) {
+                            // Regular game ended with clear winner
+                            handleShootoutComplete();
+                        } else if (bonusScore1 === bonusScore2 && !shootoutSuddenDeath) {
+                            // Tie after 5 turns - enter sudden death
+                            setShootoutSuddenDeath(true);
+                        } else if (shootoutSuddenDeath && shootoutActiveTeam === 1 && bonusScore1 !== bonusScore2) {
+                            // Sudden death: both teams have guessed, there's a winner
+                            handleShootoutComplete();
+                        }
+                    }
+                }, 100);
+            };
+            
             const handleRevealShootoutBoard = () => {
                 setShootoutBoardRevealed(true);
                 setShootoutActiveTeam(1);
@@ -1046,71 +1067,68 @@
                     setBonusScore2(bonusScore2 + 1);
                 }
                 
-                // Switch to next team and reset timer
-                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
-                setTimerRunning(false);
-                
                 // If switching back to Team 1, increment turn count
                 if (shootoutActiveTeam === 2) {
                     setShootoutTurnCount(shootoutTurnCount + 1);
                 }
                 
-                // Reset timers for next turn
+                // Switch to next team
+                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
+                
+                // Reset timers and restart for next turn
                 setTeam1Time(15);
                 setTeam2Time(15);
+                setTimerRunning(true);
+                
+                // Check if shootout should end
+                checkShootoutEnd();
             };
             
             const handleShootoutIncorrect = () => {
-                // Switch to next team without awarding points
-                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
-                setTimerRunning(false);
-                
                 // If switching back to Team 1, increment turn count
                 if (shootoutActiveTeam === 2) {
                     setShootoutTurnCount(shootoutTurnCount + 1);
                 }
                 
-                // Reset timers for next turn
+                // Switch to next team without awarding points
+                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
+                
+                // Reset timers and restart for next turn
                 setTeam1Time(15);
                 setTeam2Time(15);
+                setTimerRunning(true);
+                
+                // Check if shootout should end
+                checkShootoutEnd();
             };
             
             const handleShootoutComplete = () => {
-                // Check if we need sudden death
-                if (shootoutTurnCount >= 5 && bonusScore1 === bonusScore2) {
-                    setShootoutSuddenDeath(true);
-                    return;
+                // Award match points to winner
+                if (bonusScore1 > bonusScore2) {
+                    setTeam1Score(team1Score + 2);
+                } else {
+                    setTeam2Score(team2Score + 2);
                 }
                 
-                // Check if sudden death has a winner
-                if (shootoutSuddenDeath && bonusScore1 !== bonusScore2 && shootoutActiveTeam === 1) {
-                    // Award match points to winner
-                    if (bonusScore1 > bonusScore2) {
-                        setTeam1Score(team1Score + 2);
-                    } else {
-                        setTeam2Score(team2Score + 2);
-                    }
-                    
-                    // Move to next round
-                    setCurrentRound(currentRound + 1);
-                    setCurrentQuestion(1);
-                    setActiveTeam(1);
-                    setActiveTimer(1);
-                    setTeam1Time(30);
-                    setTeam2Time(15);
-                    setShowCategory(false);
-                    setShowQuestion(false);
-                    
-                    // Reset shootout states
-                    setShootoutBoardRevealed(false);
-                    setShootoutRevealedAnswers([]);
-                    setShootoutShuffledAnswers([]);
-                    setShootoutTurnCount(0);
-                    setShootoutActiveTeam(1);
-                    setShootoutSuddenDeath(false);
-                    setBonusScore1(0);
-                    setBonusScore2(0);
-                }
+                // Move to next round
+                setCurrentRound(currentRound + 1);
+                setCurrentQuestion(1);
+                setActiveTeam(1);
+                setActiveTimer(1);
+                setTeam1Time(30);
+                setTeam2Time(15);
+                setShowCategory(false);
+                setShowQuestion(false);
+                
+                // Reset shootout states
+                setShootoutBoardRevealed(false);
+                setShootoutRevealedAnswers([]);
+                setShootoutShuffledAnswers([]);
+                setShootoutTurnCount(0);
+                setShootoutActiveTeam(1);
+                setShootoutSuddenDeath(false);
+                setBonusScore1(0);
+                setBonusScore2(0);
             };
 
             // Use selected match data
@@ -1585,7 +1603,7 @@
                                     <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                                         borderColor: '#7d3ad4',
                                         width: '1400px',
-                                        height: currentRound === 7 && bonusType === 'shootout' ? '580px' : '650px',
+                                        height: currentRound === 7 && bonusType === 'shootout' ? '510px' : '650px',
                                         padding: '48px'
                                     }}>
                                         <div className="text-center h-full flex flex-col">
@@ -1914,7 +1932,7 @@
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
-                            height: currentRound === 7 && bonusType === 'shootout' ? '580px' : '650px',
+                            height: currentRound === 7 && bonusType === 'shootout' ? '510px' : '650px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -1932,7 +1950,7 @@
                                     )}
                                 </div>
                                 
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-4" style={{
                                     height: currentRound === 7 && bonusType === 'shootout' ? '100%' : '380px',
                                     overflow: currentRound === 7 && bonusType === 'shootout' ? 'auto' : 'hidden'
                                 }}>
@@ -2119,22 +2137,12 @@
                                                     REVEAL THE BOARD
                                                 </button>
                                             ) : (
-                                                <>
-                                                    <button 
-                                                        onClick={handleShootoutIncorrect}
-                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
-                                                        INCORRECT
-                                                    </button>
-                                                    {(shootoutTurnCount >= 5 || shootoutSuddenDeath) && (
-                                                        <button 
-                                                            onClick={handleShootoutComplete}
-                                                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                        >
-                                                            {bonusScore1 === bonusScore2 ? 'CONTINUE TO SUDDEN DEATH' : 'END SHOOTOUT'}
-                                                        </button>
-                                                    )}
-                                                </>
+                                                <button 
+                                                    onClick={handleShootoutIncorrect}
+                                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    INCORRECT
+                                                </button>
                                             )
                                         )
                                     ) : (
