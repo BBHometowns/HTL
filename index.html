@@ -2164,7 +2164,7 @@
                                 <div className="text-cyan-400 font-bold text-4xl" style={{marginBottom: '32px'}}>
                                     {(currentRound === 7 || currentRound === 14) ? (
                                         (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutBoardRevealed ? (
-                                            {(currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).shortQuestion}
+                                            (currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).shortQuestion
                                         ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             `QUESTION ${bonusQuestionIndex + 1}`
                                         ) : (
