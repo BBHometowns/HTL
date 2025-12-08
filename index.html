@@ -1196,7 +1196,15 @@
                 }
             }, [selectedMatch]);
             
-            const currentRoundData = (currentRound !== 7 && currentRound !== 14 && currentRound <= 13) ? rounds[currentRound - 1] : null;
+            // Adjust index for rounds after bonus (round 8+ uses index 6+)
+            const getRoundIndex = () => {
+                if (currentRound < 7) return currentRound - 1; // Rounds 1-6 use index 0-5
+                if (currentRound > 7 && currentRound <= 13) return currentRound - 2; // Rounds 8-13 use index 6-11
+                return null; // Bonus or tie-breaker
+            };
+            
+            const roundIndex = getRoundIndex();
+            const currentRoundData = roundIndex !== null ? rounds[roundIndex] : null;
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
             const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
 
