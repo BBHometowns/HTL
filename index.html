@@ -2046,36 +2046,6 @@
                                     @keyframes fadeOut {
                                         to { opacity: 0; }
                                     }
-                                    .score-slide-left {
-                                        animation: slideToLeft 1s ease-out forwards;
-                                    }
-                                    @keyframes slideToLeft {
-                                        from {
-                                            left: 25%;
-                                            top: initial;
-                                            transform: none;
-                                        }
-                                        to {
-                                            left: 22%;
-                                            top: 50%;
-                                            transform: translateY(-50%);
-                                        }
-                                    }
-                                    .score-slide-right {
-                                        animation: slideToRight 1s ease-out forwards;
-                                    }
-                                    @keyframes slideToRight {
-                                        from {
-                                            right: 25%;
-                                            top: initial;
-                                            transform: none;
-                                        }
-                                        to {
-                                            right: 22%;
-                                            top: 50%;
-                                            transform: translateY(-50%);
-                                        }
-                                    }
                                     .team-logo-winner {
                                         animation: logoFadeIn 1s ease-in forwards;
                                     }
@@ -2093,7 +2063,7 @@
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-100px'
+                                        marginTop: '-125px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -2181,7 +2151,12 @@
                         
                         {/* HTL Logo and Scores */}
                         <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px', marginTop: '50px'}}>
-                            <div className={`absolute ${showWinnerScreen ? 'score-slide-left' : ''}`} style={{left: '25%', top: 'initial'}}>
+                            <div className="absolute" style={{
+                                left: showWinnerScreen ? '22%' : '25%',
+                                top: showWinnerScreen ? '50%' : 'auto',
+                                transform: showWinnerScreen ? 'translateY(-50%)' : 'none',
+                                transition: 'all 1s ease-out'
+                            }}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
@@ -2218,7 +2193,12 @@
                                 style={{height: '560px'}}
                             />
                         
-                            <div className={`absolute ${showWinnerScreen ? 'score-slide-right' : ''}`} style={{right: '25%', top: 'initial'}}>
+                            <div className="absolute" style={{
+                                right: showWinnerScreen ? '22%' : '25%',
+                                top: showWinnerScreen ? '50%' : 'auto',
+                                transform: showWinnerScreen ? 'translateY(-50%)' : 'none',
+                                transition: 'all 1s ease-out'
+                            }}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
