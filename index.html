@@ -9,13 +9,13 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
+
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         html, body, #root {
             width: 100%;
@@ -1034,38 +1034,6 @@
                 setTeam1Time(30);
                 setTeam2Time(30);
             };
-
-            const checkShootoutEnd = () => {
-                // Use setTimeout to ensure state updates have processed
-                setTimeout(() => {
-                    // Get current scores from the latest state
-                    const score1 = bonusScore1;
-                    const score2 = bonusScore2;
-                    const turnCount = shootoutTurnCount;
-                    const suddenDeath = shootoutSuddenDeath;
-                    const currentTeam = shootoutActiveTeam;
-                    
-                    // After 5 full turns (both teams have had 5 guesses each)
-                    if (turnCount >= 5) {
-                        if (!suddenDeath) {
-                            // First check after 5 turns
-                            if (score1 !== score2) {
-                                // Clear winner after 5 turns
-                                handleShootoutComplete();
-                            } else {
-                                // Tie - enter sudden death
-                                setShootoutSuddenDeath(true);
-                            }
-                        } else {
-                            // In sudden death - check if Team 2 just finished (we're now on Team 1's turn)
-                            // AND there's a winner
-                            if (currentTeam === 1 && score1 !== score2) {
-                                handleShootoutComplete();
-                            }
-                        }
-                    }
-                }, 200);
-            };
             
             const handleRevealShootoutBoard = () => {
                 setShootoutBoardRevealed(true);
@@ -1080,16 +1048,40 @@
                 // Reveal the answer
                 setShootoutRevealedAnswers([...shootoutRevealedAnswers, answerIndex]);
                 
+                // Calculate new scores
+                const newScore1 = shootoutActiveTeam === 1 ? bonusScore1 + 1 : bonusScore1;
+                const newScore2 = shootoutActiveTeam === 2 ? bonusScore2 + 1 : bonusScore2;
+                
                 // Award point to active team
                 if (shootoutActiveTeam === 1) {
-                    setBonusScore1(bonusScore1 + 1);
+                    setBonusScore1(newScore1);
                 } else {
-                    setBonusScore2(bonusScore2 + 1);
+                    setBonusScore2(newScore2);
                 }
+                
+                // Calculate new turn count
+                const newTurnCount = shootoutActiveTeam === 2 ? shootoutTurnCount + 1 : shootoutTurnCount;
                 
                 // If switching back to Team 1, increment turn count
                 if (shootoutActiveTeam === 2) {
-                    setShootoutTurnCount(shootoutTurnCount + 1);
+                    setShootoutTurnCount(newTurnCount);
+                }
+                
+                // Check if game should end BEFORE switching teams
+                if (newTurnCount >= 5 && shootoutSuddenDeath && shootoutActiveTeam === 2 && newScore1 !== newScore2) {
+                    // Sudden death ending: Team 2 just scored/missed, there's a winner
+                    setTimeout(() => handleShootoutComplete(), 100);
+                    return;
+                }
+                
+                // Check for regular end after 5 turns
+                if (newTurnCount >= 5 && !shootoutSuddenDeath) {
+                    if (newScore1 !== newScore2) {
+                        setTimeout(() => handleShootoutComplete(), 100);
+                        return;
+                    } else {
+                        setShootoutSuddenDeath(true);
+                    }
                 }
                 
                 // Switch to next team
@@ -1099,15 +1091,32 @@
                 setTeam1Time(15);
                 setTeam2Time(15);
                 setTimerRunning(true);
-                
-                // Check if shootout should end
-                checkShootoutEnd();
             };
             
             const handleShootoutIncorrect = () => {
+                // Calculate new turn count
+                const newTurnCount = shootoutActiveTeam === 2 ? shootoutTurnCount + 1 : shootoutTurnCount;
+                
                 // If switching back to Team 1, increment turn count
                 if (shootoutActiveTeam === 2) {
-                    setShootoutTurnCount(shootoutTurnCount + 1);
+                    setShootoutTurnCount(newTurnCount);
+                }
+                
+                // Check if game should end BEFORE switching teams
+                if (newTurnCount >= 5 && shootoutSuddenDeath && shootoutActiveTeam === 2 && bonusScore1 !== bonusScore2) {
+                    // Sudden death ending: Team 2 just answered, there's a winner
+                    setTimeout(() => handleShootoutComplete(), 100);
+                    return;
+                }
+                
+                // Check for regular end after 5 turns
+                if (newTurnCount >= 5 && !shootoutSuddenDeath) {
+                    if (bonusScore1 !== bonusScore2) {
+                        setTimeout(() => handleShootoutComplete(), 100);
+                        return;
+                    } else {
+                        setShootoutSuddenDeath(true);
+                    }
                 }
                 
                 // Switch to next team without awarding points
@@ -1117,12 +1126,12 @@
                 setTeam1Time(15);
                 setTeam2Time(15);
                 setTimerRunning(true);
-                
-                // Check if shootout should end
-                checkShootoutEnd();
             };
             
             const handleShootoutComplete = () => {
+                // Stop any running timers immediately
+                setTimerRunning(false);
+                
                 // Award match points to winner
                 if (bonusScore1 > bonusScore2) {
                     setTeam1Score(team1Score + 2);
@@ -1139,6 +1148,7 @@
                 setTeam2Time(15);
                 setShowCategory(false);
                 setShowQuestion(false);
+                setShowAnswer(false);
                 
                 // Reset shootout states
                 setShootoutBoardRevealed(false);
@@ -1865,24 +1875,41 @@
                                 </div>
                                 
                                 {/* Bonus Round Progress Circles */}
-                                {bonusType === 'closestTo' && (
+                                {(bonusType === 'closestTo' || bonusType === 'shootout') && (
                                     <div className="flex gap-1 mt-2">
-                                        {[0, 1, 2, 3, 4].map((index) => (
-                                            <div
-                                                key={index}
-                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-black font-bold text-sm ${
-                                                    index === bonusQuestionIndex ? 'bg-yellow-400 text-black' : 
-                                                    index < bonusQuestionIndex ? 'bg-green-500 text-white' : 
-                                                    'bg-gray-600 text-white'
-                                                }`}
-                                            >
-                                                {index + 1}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                        {bonusType === 'closestTo' ? (
+                                            [0, 1, 2, 3, 4].map((index) => (
+                                                <div
+                                                    key={index}
+                                                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-black font-bold text-sm ${
+                                                        index === bonusQuestionIndex ? 'bg-yellow-400 text-black' : 
+                                                        index < bonusQuestionIndex ? 'bg-green-500 text-white' : 
+                                                        'bg-gray-600 text-white'
+                                                    }`}
+                                                >
+                                                    {index + 1}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            // For Shootout, show turn count (best of 5)
+                                            [0, 1, 2, 3, 4].map((index) => (
+                                                <div
+                                                    key={index}
+                                                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-black font-bold text-sm ${
+                                                        index < shootoutTurnCount || (index === shootoutTurnCount && shootoutActiveTeam === 2) ? 'bg-green-500 text-white' : 
+                                                        index === shootoutTurnCount && shootoutActiveTeam === 1 ? 'bg-yellow-400 text-black' : 
+                                                        'bg-gray-600 text-white'
+                                                    }`}
+                                                >
+                                                    {index + 1}
+                                                </div>
+                                            ))
+                                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                         
                         {/* HTL Logo and Scores */}
                         <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px'}}>
