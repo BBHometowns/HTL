@@ -934,15 +934,16 @@
                     } else if (currentRound === 14) {
                         // Tie-breaker just finished - declare winner
                         alert(`TIE-BREAKER COMPLETE!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                        return; // Stop here - game is over
                     }
-                        setShowAnswer(false);
-                        setStealAttempted(false);
-                        setCurrentPointValue(1);
-                        setTeam1DoublerActive(false);
-                        setTeam2DoublerActive(false);
-                        setTimerRunning(false);
-                        setPowerupPhase(false);
-                        setPowerupTimer(30);
+                    setShowAnswer(false);
+                    setStealAttempted(false);
+                    setCurrentPointValue(1);
+                    setTeam1DoublerActive(false);
+                    setTeam2DoublerActive(false);
+                    setTimerRunning(false);
+                    setPowerupPhase(false);
+                    setPowerupTimer(30);
                 }
             };
 
@@ -1075,14 +1076,39 @@
             const handleBonusNext = () => {
                 // Check if someone won (first to 3 points)
                 if (bonusScore1 >= 3 || bonusScore2 >= 3) {
-                    // Award 2 points to match winner
-                    if (bonusScore1 >= 3) {
-                        setTeam1Score(team1Score + 2);
+                    // Award points to match winner
+                    if (currentRound === 14) {
+                        // Tie-breaker is only worth 1 point
+                        if (bonusScore1 >= 3) {
+                            setTeam1Score(team1Score + 1);
+                        } else {
+                            setTeam2Score(team2Score + 1);
+                        }
                     } else {
-                        setTeam2Score(team2Score + 2);
+                        // Regular bonus is worth 2 points
+                        if (bonusScore1 >= 3) {
+                            setTeam1Score(team1Score + 2);
+                        } else {
+                            setTeam2Score(team2Score + 2);
+                        }
                     }
                     
-                    // Move to next round
+                    // Check if this was the tie-breaker
+                    if (currentRound === 14) {
+                        // Tie-breaker complete - declare winner
+                        setTimeout(() => {
+                            alert(`TIE-BREAKER COMPLETE!\n\n${team1Score + (bonusScore1 >= 3 ? 1 : 0) > team2Score + (bonusScore2 >= 3 ? 1 : 0) ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                        }, 500);
+                        // Reset bonus states but don't advance round
+                        setBonusScore1(0);
+                        setBonusScore2(0);
+                        setBonusQuestionIndex(0);
+                        setIsTieBreaker(false);
+                        setTieBreakerType(null);
+                        return; // Stop - game is over
+                    }
+                    
+                    // Move to next round (regular bonus)
                     setCurrentRound(currentRound + 1);
                     setCurrentQuestion(1);
                     setActiveTeam(1);
@@ -1214,13 +1240,43 @@
                 setTimerRunning(false);
                 
                 // Award match points to winner
-                if (bonusScore1 > bonusScore2) {
-                    setTeam1Score(team1Score + 2);
+                if (currentRound === 14) {
+                    // Tie-breaker is only worth 1 point
+                    if (bonusScore1 > bonusScore2) {
+                        setTeam1Score(team1Score + 1);
+                    } else {
+                        setTeam2Score(team2Score + 1);
+                    }
                 } else {
-                    setTeam2Score(team2Score + 2);
+                    // Regular bonus is worth 2 points
+                    if (bonusScore1 > bonusScore2) {
+                        setTeam1Score(team1Score + 2);
+                    } else {
+                        setTeam2Score(team2Score + 2);
+                    }
                 }
                 
-                // Move to next round
+                // Check if this was the tie-breaker
+                if (currentRound === 14) {
+                    // Tie-breaker complete - declare winner
+                    setTimeout(() => {
+                        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score + (bonusScore1 > bonusScore2 ? 1 : 0) > team2Score + (bonusScore2 > bonusScore1 ? 1 : 0) ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                    }, 500);
+                    // Reset shootout states but don't advance round
+                    setShootoutBoardRevealed(false);
+                    setShootoutRevealedAnswers([]);
+                    setShootoutShuffledAnswers([]);
+                    setShootoutTurnCount(0);
+                    setShootoutActiveTeam(1);
+                    setShootoutSuddenDeath(false);
+                    setBonusScore1(0);
+                    setBonusScore2(0);
+                    setIsTieBreaker(false);
+                    setTieBreakerType(null);
+                    return; // Stop - game is over
+                }
+                
+                // Move to next round (regular bonus)
                 setCurrentRound(currentRound + 1);
                 setCurrentQuestion(1);
                 setActiveTeam(1);
@@ -2424,12 +2480,6 @@
                                                     className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                 >
                                                     INCORRECT
-                                                </button>
-                                                <button 
-                                                    onClick={handleSteal}
-                                                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    STEAL
                                                 </button>
                                             </>
                                         )
