@@ -1196,7 +1196,7 @@
                 }
             }, [selectedMatch]);
             
-            const currentRoundData = rounds[currentRound - 1];
+            const currentRoundData = (currentRound !== 7 && currentRound !== 14 && currentRound <= 13) ? rounds[currentRound - 1] : null;
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
             const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
 
