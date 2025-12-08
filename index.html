@@ -1030,6 +1030,7 @@
                 setShootoutBoardRevealed(true);
                 setShootoutActiveTeam(1);
                 setShootoutTurnCount(0);
+                setTimerRunning(true); // Auto-start timer for Team 1
             };
             
             const handleShootoutAnswer = (answerIndex) => {
@@ -1584,7 +1585,7 @@
                                     <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                                         borderColor: '#7d3ad4',
                                         width: '1400px',
-                                        height: '650px',
+                                        height: currentRound === 7 && bonusType === 'shootout' ? '580px' : '650px',
                                         padding: '48px'
                                     }}>
                                         <div className="text-center h-full flex flex-col">
@@ -1743,8 +1744,8 @@
                         </div>
                     </div>
 
-                    {/* Bonus Round Input Boxes */}
-                    {currentRound === 7 && showQuestion && !showBonusAnswer && (
+                    {/* Bonus Round Input Boxes - Only for Closest To */}
+                    {currentRound === 7 && bonusType === 'closestTo' && showQuestion && !showBonusAnswer && (
                         <>
                             {/* Team 1 Input */}
                             <div className="absolute" style={{left: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
@@ -1913,7 +1914,7 @@
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
-                            height: '650px',
+                            height: currentRound === 7 && bonusType === 'shootout' ? '580px' : '650px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -1932,8 +1933,8 @@
                                 </div>
                                 
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
-                                    height: '380px',
-                                    overflow: 'hidden'
+                                    height: currentRound === 7 && bonusType === 'shootout' ? '100%' : '380px',
+                                    overflow: currentRound === 7 && bonusType === 'shootout' ? 'auto' : 'hidden'
                                 }}>
                                     {powerupPhase ? (
                                         <p className="text-white text-6xl font-bold fade-in">
@@ -2003,39 +2004,41 @@
                                     ) : null}
                                 </div>
 
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
-                                    height: '120px',
-                                    overflow: 'hidden'
-                                }}>
-                                    {showQuestion && currentRound === 7 ? (
-                                        showBonusAnswer ? (
-                                            <div className="flex items-center justify-between w-full px-4">
-                                                {/* Team 1 Side */}
-                                                <div className="flex items-center gap-8 flex-1">
-                                                    <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                    {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
-                                                </div>
-                                                
-                                                {/* Correct Answer */}
-                                                <div className="text-yellow-400 font-bold text-6xl mx-8">
-                                                    {closestToQuestions[bonusQuestionIndex].answer}
-                                                </div>
-                                                
-                                                {/* Team 2 Side */}
-                                                <div className="flex items-center gap-8 flex-1">
-                                                    {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
-                                                    <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
-                                                </div>
-                                            </div>
-                                        ) : null
-                                    ) : showQuestion ? (
-                                        <p className="text-yellow-400 font-bold text-5xl" style={{
-                                            opacity: showAnswer ? 1 : 0.3
+                                    {!(currentRound === 7 && bonusType === 'shootout') && (
+                                        <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
+                                            height: '120px',
+                                            overflow: 'hidden'
                                         }}>
-                                            {currentAnswerText}
-                                        </p>
-                                    ) : null}
-                                </div>
+                                        {showQuestion && currentRound === 7 ? (
+                                            showBonusAnswer ? (
+                                                <div className="flex items-center justify-between w-full px-4">
+                                                    {/* Team 1 Side */}
+                                                    <div className="flex items-center gap-8 flex-1">
+                                                        <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
+                                                        {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                    </div>
+                                                    
+                                                    {/* Correct Answer */}
+                                                    <div className="text-yellow-400 font-bold text-6xl mx-8">
+                                                        {closestToQuestions[bonusQuestionIndex].answer}
+                                                    </div>
+                                                    
+                                                    {/* Team 2 Side */}
+                                                    <div className="flex items-center gap-8 flex-1">
+                                                        {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs(closestToQuestions[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                        <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
+                                                    </div>
+                                                </div>
+                                            ) : null
+                                        ) : showQuestion ? (
+                                            <p className="text-yellow-400 font-bold text-5xl" style={{
+                                                opacity: showAnswer ? 1 : 0.3
+                                            }}>
+                                                {currentAnswerText}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -2115,13 +2118,13 @@
                                                 >
                                                     REVEAL THE BOARD
                                                 </button>
-                                            ) : !timerRunning ? (
+                                            ) : (
                                                 <>
                                                     <button 
-                                                        onClick={handleStartTimer}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                        onClick={handleShootoutIncorrect}
+                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                     >
-                                                        START TIMER
+                                                        INCORRECT
                                                     </button>
                                                     {(shootoutTurnCount >= 5 || shootoutSuddenDeath) && (
                                                         <button 
@@ -2132,13 +2135,6 @@
                                                         </button>
                                                     )}
                                                 </>
-                                            ) : (
-                                                <button 
-                                                    onClick={handleShootoutIncorrect}
-                                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    INCORRECT
-                                                </button>
                                             )
                                         )
                                     ) : (
