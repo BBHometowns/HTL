@@ -233,6 +233,13 @@
             const [team2GuessSubmitted, setTeam2GuessSubmitted] = useState(false);
             const [showBonusAnswer, setShowBonusAnswer] = useState(false);
             const [bonusWinnerAwarded, setBonusWinnerAwarded] = useState(false);
+
+            // Shootout bonus states
+            const [shootoutBoardRevealed, setShootoutBoardRevealed] = useState(false);
+            const [shootoutRevealedAnswers, setShootoutRevealedAnswers] = useState([]);
+            const [shootoutTurnCount, setShootoutTurnCount] = useState(0); // How many turns each team has taken
+            const [shootoutActiveTeam, setShootoutActiveTeam] = useState(1); // Which team is currently guessing
+            const [shootoutSuddenDeath, setShootoutSuddenDeath] = useState(false);
             
             // All 16 teams data
             const teamsData = [
@@ -460,7 +467,20 @@
                             answer2: "Elephant"
                         }
                     ],
-                    bonusQuestions: [] // Shootout doesn't use these
+                    bonusQuestions: [
+                        {
+                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen and several became trillion-dollar companies. Name the Top 30 highest-earning US businesses of 2023.",
+                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
+                            answers: [
+                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
+                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
+                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
+                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
+                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
+                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
+                            ]
+                        }
+                    ]
                 },
                 {
                     id: 3,
@@ -606,39 +626,42 @@
                 if (timerRunning) {
                     interval = setInterval(() => {
                         if (currentRound === 7) {
-                            // For bonus round, both timers count down together
-                            setTeam1Time(prev => {
-                                if (prev <= 1) {
-                                    setTimerRunning(false);
-                                    return 0;
+                            if (bonusType === 'closestTo') {
+                                // For Closest To bonus round, both timers count down together
+                                setTeam1Time(prev => {
+                                    if (prev <= 1) {
+                                        setTimerRunning(false);
+                                        return 0;
+                                    }
+                                    return prev - 1;
+                                });
+                                setTeam2Time(prev => {
+                                    if (prev <= 1) {
+                                        setTimerRunning(false);
+                                        return 0;
+                                    }
+                                    return prev - 1;
+                                });
+                            } else if (bonusType === 'shootout') {
+                                // For Shootout, only active team's timer counts down
+                                if (shootoutActiveTeam === 1) {
+                                    setTeam1Time(prev => {
+                                        if (prev <= 1) {
+                                            setTimerRunning(false);
+                                            return 0;
+                                        }
+                                        return prev - 1;
+                                    });
+                                } else {
+                                    setTeam2Time(prev => {
+                                        if (prev <= 1) {
+                                            setTimerRunning(false);
+                                            return 0;
+                                        }
+                                        return prev - 1;
+                                    });
                                 }
-                                return prev - 1;
-                            });
-                            setTeam2Time(prev => {
-                                if (prev <= 1) {
-                                    setTimerRunning(false);
-                                    return 0;
-                                }
-                                return prev - 1;
-                            });
-                        } else if (activeTimer === 1) {
-                            setTeam1Time(prev => {
-                                if (prev <= 1) {
-                                    setTimerRunning(false);
-                                    return 0;
-                                }
-                                return prev - 1;
-                            });
-                        } else {
-                            setTeam2Time(prev => {
-                                if (prev <= 1) {
-                                    setTimerRunning(false);
-                                    return 0;
-                                }
-                                return prev - 1;
-                            });
-                        }
-                    }, 1000);
+                            }
                 }
                 return () => clearInterval(interval);
             }, [timerRunning, activeTimer, currentRound]);
@@ -703,10 +726,15 @@
                 setShowQuestion(true);
                 setPowerupPhase(false);
                 
-                // For bonus round first question, ensure both timers are at 30
-                if (currentRound === 7 && bonusQuestionIndex === 0) {
-                    setTeam1Time(30);
-                    setTeam2Time(30);
+                // For bonus round setup
+                if (currentRound === 7) {
+                    if (bonusType === 'closestTo' && bonusQuestionIndex === 0) {
+                        setTeam1Time(30);
+                        setTeam2Time(30);
+                    } else if (bonusType === 'shootout') {
+                        setTeam1Time(15);
+                        setTeam2Time(15);
+                    }
                 }
                 
                 console.log('Revealing Q' + currentQuestion + ', Team1Active:', team1DoublerActive, ', Team2Active:', team2DoublerActive);
@@ -979,9 +1007,95 @@
                 setTeam2Time(30);
             };
 
+            const handleRevealShootoutBoard = () => {
+                setShootoutBoardRevealed(true);
+                setShootoutActiveTeam(1);
+                setShootoutTurnCount(0);
+            };
+            
+            const handleShootoutAnswer = (answerIndex) => {
+                if (shootoutRevealedAnswers.includes(answerIndex)) return;
+                
+                // Reveal the answer
+                setShootoutRevealedAnswers([...shootoutRevealedAnswers, answerIndex]);
+                
+                // Award point to active team
+                if (shootoutActiveTeam === 1) {
+                    setBonusScore1(bonusScore1 + 1);
+                } else {
+                    setBonusScore2(bonusScore2 + 1);
+                }
+                
+                // Switch to next team and reset timer
+                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
+                setTimerRunning(false);
+                
+                // If switching back to Team 1, increment turn count
+                if (shootoutActiveTeam === 2) {
+                    setShootoutTurnCount(shootoutTurnCount + 1);
+                }
+                
+                // Reset timers for next turn
+                setTeam1Time(15);
+                setTeam2Time(15);
+            };
+            
+            const handleShootoutIncorrect = () => {
+                // Switch to next team without awarding points
+                setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
+                setTimerRunning(false);
+                
+                // If switching back to Team 1, increment turn count
+                if (shootoutActiveTeam === 2) {
+                    setShootoutTurnCount(shootoutTurnCount + 1);
+                }
+                
+                // Reset timers for next turn
+                setTeam1Time(15);
+                setTeam2Time(15);
+            };
+            
+            const handleShootoutComplete = () => {
+                // Check if we need sudden death
+                if (shootoutTurnCount >= 5 && bonusScore1 === bonusScore2) {
+                    setShootoutSuddenDeath(true);
+                    return;
+                }
+                
+                // Check if sudden death has a winner
+                if (shootoutSuddenDeath && bonusScore1 !== bonusScore2 && shootoutActiveTeam === 1) {
+                    // Award match points to winner
+                    if (bonusScore1 > bonusScore2) {
+                        setTeam1Score(team1Score + 2);
+                    } else {
+                        setTeam2Score(team2Score + 2);
+                    }
+                    
+                    // Move to next round
+                    setCurrentRound(currentRound + 1);
+                    setCurrentQuestion(1);
+                    setActiveTeam(1);
+                    setActiveTimer(1);
+                    setTeam1Time(30);
+                    setTeam2Time(15);
+                    setShowCategory(false);
+                    setShowQuestion(false);
+                    
+                    // Reset shootout states
+                    setShootoutBoardRevealed(false);
+                    setShootoutRevealedAnswers([]);
+                    setShootoutTurnCount(0);
+                    setShootoutActiveTeam(1);
+                    setShootoutSuddenDeath(false);
+                    setBonusScore1(0);
+                    setBonusScore2(0);
+                }
+            };
+
             // Use selected match data
             const rounds = selectedMatch ? selectedMatch.rounds : matchesData[0].rounds;
             const closestToQuestions = selectedMatch ? selectedMatch.bonusQuestions : matchesData[0].bonusQuestions;
+            const shootoutQuestion = selectedMatch ? selectedMatch.bonusQuestions[0] : matchesData[1].bonusQuestions[0];
             
             const currentRoundData = rounds[currentRound - 1];
             const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
@@ -1716,13 +1830,17 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (currentRound === 7 || activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
+                                opacity: (currentRound === 7 && bonusType === 'shootout' && shootoutActiveTeam === 1) || 
+                                         (currentRound === 7 && bonusType === 'closestTo') || 
+                                         (activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {currentRound === 7 ? Math.max(team1Time, team2Time) : powerupPhase ? powerupTimer : team1Time}
+                                    {currentRound === 7 ? (
+                                        bonusType === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
+                                    ) : powerupPhase ? powerupTimer : team1Time}
                                 </div>
                             </div>
                         
@@ -1746,13 +1864,17 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                opacity: (currentRound === 7 || activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
+                                opacity: (currentRound === 7 && bonusType === 'shootout' && shootoutActiveTeam === 2) || 
+                                         (currentRound === 7 && bonusType === 'closestTo') || 
+                                         (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
                                 <div className="text-8xl font-black text-white" style={{
                                     WebkitTextStroke: '2px black',
                                     textStroke: '2px black'
                                 }}>
-                                    {currentRound === 7 ? Math.max(team1Time, team2Time) : powerupPhase ? powerupTimer : team2Time}
+                                    {currentRound === 7 ? (
+                                        bonusType === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
+                                    ) : powerupPhase ? powerupTimer : team2Time}
                                 </div>
                             </div>
                         </div>
@@ -1766,7 +1888,17 @@
                         }}>
                             <div className="text-center h-full flex flex-col">
                                 <div className="text-cyan-400 font-bold text-4xl mb-6">
-                                    {currentRound === 7 ? `QUESTION ${bonusQuestionIndex + 1}` : `QUESTION ${currentQuestion}`}
+                                    {currentRound === 7 ? (
+                                        bonusType === 'shootout' && shootoutBoardRevealed ? (
+                                            shootoutQuestion.shortQuestion
+                                        ) : bonusType === 'closestTo' ? (
+                                            `QUESTION ${bonusQuestionIndex + 1}`
+                                        ) : (
+                                            'SHOOTOUT'
+                                        )
+                                    ) : (
+                                        `QUESTION ${currentQuestion}`
+                                    )}
                                 </div>
                                 
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
@@ -1779,12 +1911,56 @@
                                         </p>
                                     ) : showQuestion ? (
                                         currentRound === 7 ? (
-                                            <p className="text-white leading-relaxed text-center fade-in" style={{
-                                                fontSize: '40px',
-                                                margin: 0
-                                            }}>
-                                                {closestToQuestions[bonusQuestionIndex].question}
-                                            </p>
+                                            bonusType === 'closestTo' ? (
+                                                <p className="text-white leading-relaxed text-center fade-in" style={{
+                                                    fontSize: '40px',
+                                                    margin: 0
+                                                }}>
+                                                    {closestToQuestions[bonusQuestionIndex].question}
+                                                </p>
+                                            ) : (
+                                                // Shootout UI
+                                                shootoutBoardRevealed ? (
+                                                    // Show the answer grid
+                                                    <div className="w-full h-full flex flex-col gap-2 overflow-y-auto">
+                                                        {Array.from({ length: Math.ceil(shootoutQuestion.answers.length / 5) }).map((_, rowIndex) => (
+                                                            <div key={rowIndex} className="flex gap-2 justify-center">
+                                                                {shootoutQuestion.answers.slice(rowIndex * 5, (rowIndex + 1) * 5).map((answer, colIndex) => {
+                                                                    const answerIndex = rowIndex * 5 + colIndex;
+                                                                    const isRevealed = shootoutRevealedAnswers.includes(answerIndex);
+                                                                    
+                                                                    return (
+                                                                        <button
+                                                                            key={answerIndex}
+                                                                            onClick={() => handleShootoutAnswer(answerIndex)}
+                                                                            disabled={isRevealed}
+                                                                            className="font-bold rounded border-4 border-black transition text-lg"
+                                                                            style={{
+                                                                                width: '250px',
+                                                                                height: '60px',
+                                                                                backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
+                                                                                color: 'white',
+                                                                                cursor: isRevealed ? 'default' : 'pointer',
+                                                                                opacity: isRevealed ? 1 : 0.8
+                                                                            }}
+                                                                        >
+                                                                            {isRevealed ? answer : `${answerIndex + 1}`}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    // Show the long question before board is revealed
+                                                    <p className="text-white leading-relaxed text-center fade-in" style={{
+                                                        fontSize: '40px',
+                                                        margin: 0
+                                                    }}>
+                                                        {shootoutQuestion.longQuestion}
+                                                    </p>
+                                                )
+                                            )
                                         ) : (
                                             <p ref={questionTextRef} className="text-white leading-relaxed text-center fade-in" style={{
                                                 fontSize: '40px',
@@ -1861,76 +2037,78 @@
 
                                 <div className="flex gap-4">
                                     {currentRound === 7 ? (
-                                        // Bonus Round Buttons
-                                        !showQuestion ? (
-                                            <button 
-                                                onClick={handleRevealQuestion}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL QUESTION
-                                            </button>
-                                        ) : !showBonusAnswer && !timerRunning && team1Time === 30 && team2Time === 30 ? (
-                                            <button 
-                                                onClick={handleStartTimer}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                START TIMER
-                                            </button>
-                                        ) : !showBonusAnswer ? (
-                                            <button 
-                                                onClick={handleRevealBonusAnswer}
-                                                className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL ANSWER
-                                            </button>
-                                        ) : bonusWinnerAwarded ? (
-                                            <button 
-                                                onClick={handleBonusNext}
-                                                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                NEXT
-                                            </button>
-                                        ) : null
-                                    ) : (
-                                        // Regular Round Buttons
-                                        !showCategory ? (
-                                            <button 
-                                                onClick={handleRevealCategory}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL CATEGORY
-                                            </button>
-                                        ) : powerupPhase ? (
-                                            <button 
-                                                onClick={() => {
-                                                    setPowerupPhase(false);
-                                                    setPowerupTimer(30);
-                                                }}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                SKIP POWERUPS
-                                            </button>
-                                        ) : !showQuestion ? (
-                                            <button 
-                                                onClick={handleRevealQuestion}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL QUESTION
-                                            </button>
-                                        ) : !timerRunning && !showAnswer ? (
-                                            <button 
-                                                onClick={handleStartTimer}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                START TIMER
-                                            </button>
-                                        ) : showAnswer ? (
-                                            <button 
-                                                onClick={handleNext}
-                                                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                NEXT
-                                            </button>
+                                        bonusType === 'closestTo' ? (
+                                            // Closest To Buttons
+                                            !showQuestion ? (
+                                                <button 
+                                                    onClick={handleRevealQuestion}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL QUESTION
+                                                </button>
+                                            ) : !showBonusAnswer && !timerRunning && team1Time === 30 && team2Time === 30 ? (
+                                                <button 
+                                                    onClick={handleStartTimer}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    START TIMER
+                                                </button>
+                                            ) : !showBonusAnswer ? (
+                                                <button 
+                                                    onClick={handleRevealBonusAnswer}
+                                                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL ANSWER
+                                                </button>
+                                            ) : bonusWinnerAwarded ? (
+                                                <button 
+                                                    onClick={handleBonusNext}
+                                                    className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    NEXT
+                                                </button>
+                                            ) : null
+                                        ) : (
+                                            // Shootout Buttons
+                                            !showQuestion ? (
+                                                <button 
+                                                    onClick={handleRevealQuestion}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL QUESTION
+                                                </button>
+                                            ) : !shootoutBoardRevealed ? (
+                                                <button 
+                                                    onClick={handleRevealShootoutBoard}
+                                                    className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL THE BOARD
+                                                </button>
+                                            ) : !timerRunning ? (
+                                                <>
+                                                    <button 
+                                                        onClick={handleStartTimer}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        START TIMER
+                                                    </button>
+                                                    {(shootoutTurnCount >= 5 || shootoutSuddenDeath) && (
+                                                        <button 
+                                                            onClick={handleShootoutComplete}
+                                                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                        >
+                                                            {bonusScore1 === bonusScore2 ? 'CONTINUE TO SUDDEN DEATH' : 'END SHOOTOUT'}
+                                                        </button>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <button 
+                                                    onClick={handleShootoutIncorrect}
+                                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    INCORRECT
+                                                </button>
+                                            )
                                         ) : (
                                             <>
                                                 <button 
