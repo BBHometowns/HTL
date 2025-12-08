@@ -1292,8 +1292,8 @@
             
             const roundIndex = getRoundIndex();
             const currentRoundData = roundIndex !== null ? rounds[roundIndex] : null;
-            const currentQuestionText = currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2;
-            const currentAnswerText = currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2;
+            const currentQuestionText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2) : '';
+            const currentAnswerText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2) : '';
 
             // Password Login Screen
             if (!adminAuthenticated) {
