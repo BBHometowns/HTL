@@ -680,7 +680,7 @@
                                 return prev - 1;
                             });
                         }
-                    }
+                    }, 1000);
                 }
                 return () => clearInterval(interval);
             }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam]);
