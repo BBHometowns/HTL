@@ -930,10 +930,11 @@
                         } else {
                             // Game Over - someone won!
                             alert(`GAME OVER!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins!`);
-        }
-    } else if (currentRound === 14) {
-        // Tie-breaker just finished - declare winner
-        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                        }
+                    } else if (currentRound === 14) {
+                        // Tie-breaker just finished - declare winner
+                        alert(`TIE-BREAKER COMPLETE!\n\n${team1Score > team2Score ? selectedTeam1.name : selectedTeam2.name} wins the match!`);
+                    }
                         setShowAnswer(false);
                         setStealAttempted(false);
                         setCurrentPointValue(1);
@@ -942,8 +943,8 @@
                         setTimerRunning(false);
                         setPowerupPhase(false);
                         setPowerupTimer(30);
-                    }
-                };
+                }
+            };
 
             const handlePowerup = (team, powerup) => {
                 // Only allow powerup usage during powerup phase for Point Doubler and Extra Time
