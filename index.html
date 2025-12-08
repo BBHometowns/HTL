@@ -2050,6 +2050,11 @@
                                         animation: slideToLeft 1s ease-out forwards;
                                     }
                                     @keyframes slideToLeft {
+                                        from {
+                                            left: 25%;
+                                            top: initial;
+                                            transform: none;
+                                        }
                                         to {
                                             left: 22%;
                                             top: 50%;
@@ -2060,6 +2065,11 @@
                                         animation: slideToRight 1s ease-out forwards;
                                     }
                                     @keyframes slideToRight {
+                                        from {
+                                            right: 25%;
+                                            top: initial;
+                                            transform: none;
+                                        }
                                         to {
                                             right: 22%;
                                             top: 50%;
@@ -2083,7 +2093,7 @@
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-150px'
+                                        marginTop: '-100px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -2094,7 +2104,10 @@
                                         textStroke: '5px black',
                                         textShadow: `16px 16px 32px ${winnerTeam?.color}`,
                                         animation: 'fadeIn 1.5s ease-in 0.5s both',
-                                        marginTop: '400px'
+                                        position: 'absolute',
+                                        bottom: '150px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)'
                                     }}>
                                         {winnerTeam?.name} WINS!
                                     </div>
@@ -2183,7 +2196,7 @@
                                             setTeam1Score(parseInt(newScore));
                                         }
                                     }}
-                                    className="absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white"
+                                    className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
                                     style={{
                                         width: '60px',
                                         height: '60px',
@@ -2220,7 +2233,7 @@
                                             setTeam2Score(parseInt(newScore));
                                         }
                                     }}
-                                    className="absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white"
+                                    className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
                                     style={{
                                         width: '60px',
                                         height: '60px',
