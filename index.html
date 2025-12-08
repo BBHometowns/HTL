@@ -2063,7 +2063,7 @@
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-200px'
+                                        marginTop: '-300px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -2156,7 +2156,7 @@
                                 left: showWinnerScreen ? '20%' : '25%',
                                 top: showWinnerScreen ? '50%' : 'auto',
                                 transform: showWinnerScreen ? 'translateY(-50%)' : 'none',
-                                transition: 'all 1s ease-out'
+                                transition: showWinnerScreen ? 'all 1s ease-out' : 'none'
                             }}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
@@ -2198,7 +2198,7 @@
                                 right: showWinnerScreen ? '20%' : '25%',
                                 top: showWinnerScreen ? '50%' : 'auto',
                                 transform: showWinnerScreen ? 'translateY(-50%)' : 'none',
-                                transition: 'all 1s ease-out'
+                                transition: showWinnerScreen ? 'all 1s ease-out' : 'none'
                             }}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
