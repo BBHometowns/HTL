@@ -722,6 +722,7 @@
 
             const handleRevealCategory = () => {
                 setShowCategory(true);
+                setTimerRunning(false); // Stop timer when revealing category
                 // Reset timers to default at start of each question
                 if (currentQuestion === 1) {
                     setTeam1Time(30);
@@ -730,7 +731,6 @@
                     setTeam1Time(15);
                     setTeam2Time(30);
                 }
-                
                 // Check if all Point Doublers and Extra Times are used
                 const allPowerupsUsed = !team1Powerups.pointDoubler && !team1Powerups.extraTime && 
                                         !team2Powerups.pointDoubler && !team2Powerups.extraTime;
@@ -844,16 +844,8 @@
                         }
                         setShowCategory(false);
                         setShowQuestion(false);
+                        setTimerRunning(false); // IMPORTANT: Stop any running timers
                     }
-                    setShowAnswer(false);
-                    setStealAttempted(false);
-                    setCurrentPointValue(1);
-                    setTeam1DoublerActive(false);
-                    setTeam2DoublerActive(false);
-                    setTimerRunning(false);
-                    setPowerupPhase(false);
-                    setPowerupTimer(30);
-                }
             };
 
             const handlePowerup = (team, powerup) => {
@@ -1029,19 +1021,24 @@
             const checkShootoutEnd = () => {
                 // Use setTimeout to ensure state updates have processed
                 setTimeout(() => {
-                    const currentTurnCount = shootoutTurnCount + (shootoutActiveTeam === 1 ? 1 : 0);
-                    
-                    // After 5 turns (10 total guesses), check for winner
-                    if (currentTurnCount >= 5) {
-                        if (bonusScore1 !== bonusScore2 && !shootoutSuddenDeath) {
-                            // Regular game ended with clear winner
-                            handleShootoutComplete();
-                        } else if (bonusScore1 === bonusScore2 && !shootoutSuddenDeath) {
-                            // Tie after 5 turns - enter sudden death
-                            setShootoutSuddenDeath(true);
-                        } else if (shootoutSuddenDeath && shootoutActiveTeam === 1 && bonusScore1 !== bonusScore2) {
-                            // Sudden death: both teams have guessed, there's a winner
-                            handleShootoutComplete();
+                    // After 5 full turns (both teams have had 5 guesses each)
+                    if (shootoutTurnCount >= 5) {
+                        if (!shootoutSuddenDeath) {
+                            // First check after 5 turns
+                            if (bonusScore1 !== bonusScore2) {
+                                // Clear winner after 5 turns
+                                handleShootoutComplete();
+                            } else {
+                                // Tie - enter sudden death
+                                setShootoutSuddenDeath(true);
+                            }
+                        } else {
+                            // We're in sudden death - check after each TEAM 2 turn (end of rotation)
+                            if (shootoutActiveTeam === 1 && bonusScore1 !== bonusScore2) {
+                                // Team 2 just finished their turn (we switched to Team 1)
+                                // and there's now a winner - end the game
+                                handleShootoutComplete();
+                            }
                         }
                     }
                 }, 100);
@@ -1932,7 +1929,7 @@
                         <div className="bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8" style={{
                             borderColor: '#7d3ad4',
                             width: '1400px',
-                            height: currentRound === 7 && bonusType === 'shootout' ? '510px' : '650px',
+                            height: currentRound === 7 && bonusType === 'shootout' ? '750px' : '650px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -1950,7 +1947,7 @@
                                     )}
                                 </div>
                                 
-                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-4" style={{
+                                <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
                                     height: currentRound === 7 && bonusType === 'shootout' ? '100%' : '380px',
                                     overflow: currentRound === 7 && bonusType === 'shootout' ? 'auto' : 'hidden'
                                 }}>
