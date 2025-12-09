@@ -771,9 +771,12 @@
                 return () => clearInterval(interval);
             }, [powerupPhase]);
 
-            // Socket.IO connection and sync
+            // Socket.IO connection - triggers when room code is entered
             useEffect(() => {
-                if (userMode && roomCode && !showRoomSetup && !socket) {
+                console.log('Socket useEffect triggered:', { userMode, roomCode, hasSocket: !!socket, showRoomSetup });
+                
+                if (userMode && roomCode && !socket) {
+                    console.log('Creating new socket connection...');
                     const newSocket = io(SERVER_URL);
                     
                     newSocket.on('connect', () => {
@@ -784,6 +787,7 @@
                     newSocket.on('roomJoined', ({ roomCode: joinedRoom, role }) => {
                         console.log(`✅ Joined room ${joinedRoom} as ${role}`);
                         setIsConnected(true);
+                        setShowRoomSetup(false); // Close the room setup modal
                         
                         // If host, show admin modal for setup
                         if (role === 'host') {
@@ -848,6 +852,7 @@
                     setSocket(newSocket);
                     
                     return () => {
+                        console.log('Cleaning up socket...');
                         newSocket.close();
                     };
                 }
@@ -1627,14 +1632,9 @@
                                 maxLength={10}
                             />
                             <button
-                                onClick={() => {
-                                    // Don't set isConnected here - let the socket do it
-                                    // Just close the room setup modal
-                                    if (roomCode) {
-                                        setShowRoomSetup(false);
-                                    }
-                                }}
+                                onClick={() => roomCode && setIsConnected(true)}
                                 disabled={!roomCode}
+                                onKeyPress={(e) => e.key === 'Enter' && roomCode && setIsConnected(true)}
                                 className={`w-full font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl ${
                                     roomCode ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
