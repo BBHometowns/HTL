@@ -253,6 +253,7 @@
             // Stream profile states
             const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
             const [roomCode, setRoomCode] = useState('');
+            const [shouldConnect, setShouldConnect] = useState(false);
             const [isConnected, setIsConnected] = useState(false);
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
@@ -773,9 +774,9 @@
 
             // Socket.IO connection - triggers when room code is entered
             useEffect(() => {
-                console.log('Socket useEffect triggered:', { userMode, roomCode, hasSocket: !!socket, showRoomSetup });
+                console.log('Socket useEffect triggered:', { userMode, roomCode, hasSocket: !!socket, shouldConnect });
                 
-                if (userMode && roomCode && !socket) {
+                if (userMode && roomCode && shouldConnect && !socket) {
                     console.log('Creating new socket connection...');
                     const newSocket = io(SERVER_URL);
                     
@@ -856,7 +857,7 @@
                         newSocket.close();
                     };
                 }
-            }, [userMode, roomCode, socket]);
+            }, [userMode, roomCode, shouldConnect, socket]);
 
             // Auto-broadcast game state when it changes (HOST only)
             useEffect(() => {
@@ -1632,9 +1633,17 @@
                                 maxLength={10}
                             />
                             <button
-                                onClick={() => roomCode && setIsConnected(true)}
+                                onClick={() => {
+                                    if (roomCode) {
+                                        setShouldConnect(true);
+                                    }
+                                }}
                                 disabled={!roomCode}
-                                onKeyPress={(e) => e.key === 'Enter' && roomCode && setIsConnected(true)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && roomCode) {
+                                        setShouldConnect(true);
+                                    }
+                                }}
                                 className={`w-full font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl ${
                                     roomCode ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
