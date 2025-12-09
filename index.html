@@ -778,10 +778,15 @@
                 
                 if (userMode && roomCode && shouldConnect && !socket) {
                     console.log('Creating new socket connection...');
-                    const newSocket = io(SERVER_URL);
+                    const newSocket = io(SERVER_URL, {
+                        transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
+                        reconnection: true
+                    });
                     
+                    // Set up ALL event listeners BEFORE connecting
                     newSocket.on('connect', () => {
-                        console.log('✅ Connected to server');
+                        console.log('✅ Connected to server with socket ID:', newSocket.id);
+                        console.log('Emitting createRoom with:', { roomCode, role: userMode });
                         newSocket.emit('createRoom', { roomCode, role: userMode });
                     });
                     
@@ -848,6 +853,15 @@
                                 setTeamsConfirmed(true);
                             }
                         }
+                    });
+                    
+                    newSocket.on('connect_error', (error) => {
+                        console.error('❌ Connection error:', error);
+                    });
+                    
+                    newSocket.on('disconnect', (reason) => {
+                        console.log('🔌 Disconnected:', reason);
+                        setIsConnected(false);
                     });
                     
                     setSocket(newSocket);
