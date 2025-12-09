@@ -258,6 +258,7 @@
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
             const [waitingDots, setWaitingDots] = useState('.');
+            const [lastPowerupUsed, setLastPowerupUsed] = useState(null);
             
             // All 16 teams data
             const teamsData = [
@@ -887,7 +888,7 @@
                 team1Score, team2Score, currentRound, currentQuestion,
                 showCategory, showQuestion, showAnswer, activeTeam,
                 team1Time, team2Time, timerRunning, powerupPhase,
-                team1Powerups, team2Powerups, bonusScore1, bonusScore2,
+                team1Powerups, team2Powerups, lastPowerupUsed, bonusScore1, bonusScore2,
                 bonusQuestionIndex, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, socket, isConnected, roomCode
@@ -1220,6 +1221,7 @@
                         powerupPhase,
                         team1Powerups,
                         team2Powerups,
+                        lastPowerupUsed,
                         bonusScore1,
                         bonusScore2,
                         bonusQuestionIndex,
