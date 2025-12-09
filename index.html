@@ -773,7 +773,7 @@
 
             // Socket.IO connection and sync
             useEffect(() => {
-                if (userMode && roomCode && !socket) {
+                if (userMode && roomCode && !showRoomSetup && !socket) {
                     const newSocket = io(SERVER_URL);
                     
                     newSocket.on('connect', () => {
@@ -1616,14 +1616,24 @@
                                 type="text"
                                 value={roomCode}
                                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                                onKeyPress={(e) => e.key === 'Enter' && roomCode && setIsConnected(true)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && roomCode) {
+                                        setShowRoomSetup(false);
+                                    }
+                                }}
                                 className="w-full text-center text-3xl font-bold bg-gray-800 text-white rounded p-4 mb-4 uppercase"
                                 placeholder={userMode === 'host' ? 'CREATE CODE' : 'ENTER CODE'}
                                 autoFocus
                                 maxLength={10}
                             />
                             <button
-                                onClick={() => roomCode && setIsConnected(true)}
+                                onClick={() => {
+                                    // Don't set isConnected here - let the socket do it
+                                    // Just close the room setup modal
+                                    if (roomCode) {
+                                        setShowRoomSetup(false);
+                                    }
+                                }}
                                 disabled={!roomCode}
                                 className={`w-full font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl ${
                                     roomCode ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'
