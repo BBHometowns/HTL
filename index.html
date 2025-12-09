@@ -840,14 +840,18 @@
                             setTeam2Time(gameState.team2Time);
                             setTimerRunning(gameState.timerRunning);
                             setPowerupPhase(gameState.powerupPhase);
+                            setPowerupTimer(gameState.powerupTimer);
                             setTeam1Powerups(gameState.team1Powerups);
                             setTeam2Powerups(gameState.team2Powerups);
                             setBonusScore1(gameState.bonusScore1);
                             setBonusScore2(gameState.bonusScore2);
                             setBonusQuestionIndex(gameState.bonusQuestionIndex);
+                            setShowBonusAnswer(gameState.showBonusAnswer);
                             setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
                             setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers);
                             setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers);
+                            setIsTieBreaker(gameState.isTieBreaker);
+                            setTieBreakerType(gameState.tieBreakerType);
                             setShowWinnerScreen(gameState.showWinnerScreen);
                             setWinnerTeam(gameState.winnerTeam);
                             
@@ -894,9 +898,10 @@
                 team1Score, team2Score, currentRound, currentQuestion,
                 showCategory, showQuestion, showAnswer, activeTeam,
                 team1Time, team2Time, timerRunning, powerupPhase,
+                powerupTimer,
                 team1Powerups, team2Powerups, lastPowerupsUsed, bonusScore1, bonusScore2,
-                bonusQuestionIndex, shootoutBoardRevealed, shootoutRevealedAnswers,
-                shootoutShuffledAnswers, teamsConfirmed, gameStarted, showIntro,
+                bonusQuestionIndex, showBonusAnswer, shootoutBoardRevealed, shootoutRevealedAnswers,
+                shootoutShuffledAnswers, isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, socket, isConnected, roomCode
             ]);
             
@@ -1228,15 +1233,19 @@
                         team2Time,
                         timerRunning,
                         powerupPhase,
+                        powerupTimer,
                         team1Powerups,
                         team2Powerups,
                         lastPowerupsUsed,
                         bonusScore1,
                         bonusScore2,
                         bonusQuestionIndex,
+                        showBonusAnswer,
                         shootoutBoardRevealed,
                         shootoutRevealedAnswers,
                         shootoutShuffledAnswers,
+                        isTieBreaker,
+                        tieBreakerType,
                         teamsConfirmed,
                         gameStarted,
                         showIntro,
@@ -2736,7 +2745,7 @@
                                                                                 cursor: isRevealed ? 'default' : 'pointer'
                                                                             }}
                                                                         >
-                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : 0.15 }}>
+                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : 0 }}>
                                                                                 {item.answer}
                                                                             </span>
                                                                         </button>
@@ -2772,7 +2781,8 @@
                                             overflow: 'hidden'
                                         }}>
                                         {showQuestion && (currentRound === 7 || currentRound === 14) ? (
-                                            showBonusAnswer ? (
+                                            showBonusAnswer ? ({showQuestion && (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
+                                                showBonusAnswer ? (
                                                 <div className="flex items-center justify-between w-full px-4">
                                                     {/* Team 1 Side */}
                                                     <div className="flex items-center gap-8 flex-1">
@@ -2834,7 +2844,7 @@
                                 {userMode === 'host' && (
                                     <div className="flex gap-4">
                                         {/* UNDO BUTTON - Only show if a powerup was just used */}
-                                        {lastPowerupsUsed.length > 0 && (
+                                        {lastPowerupsUsed.length > 0 && !showQuestion && (
                                             <button 
                                                 onClick={handleUndoPowerup}
                                                 className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
