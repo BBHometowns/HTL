@@ -871,7 +871,7 @@
                         newSocket.close();
                     };
                 }
-            }, [userMode, roomCode, shouldConnect, socket]);
+            }, [userMode, roomCode, shouldConnect]);
 
             // Auto-broadcast game state when it changes (HOST only)
             useEffect(() => {
