@@ -18,8 +18,13 @@ app.use(express.json());
 // Store active game rooms
 const gameRooms = new Map();
 
-// Health check endpoint
+// Serve the index.html file
 app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
   res.json({ status: 'HTL Server Running', rooms: gameRooms.size });
 });
 
