@@ -784,6 +784,13 @@
                         console.log(`Joined room ${joinedRoom} as ${role}`);
                         setIsConnected(true);
                         
+                        // If host, show admin modal for setup
+                        if (role === 'host') {
+                            console.log('Setting showAdminModal to true');
+                            console.log('teamsConfirmed:', teamsConfirmed);
+                            setShowAdminModal(true);
+                        }
+                        
                         // If stream, request current game state
                         if (role === 'stream') {
                             newSocket.emit('requestGameState', { roomCode: joinedRoom });
