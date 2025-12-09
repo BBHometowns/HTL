@@ -784,13 +784,6 @@
                         console.log(`Joined room ${joinedRoom} as ${role}`);
                         setIsConnected(true);
                         
-                        // If host, show admin modal for setup
-                        if (role === 'host') {
-                            console.log('Setting showAdminModal to true');
-                            console.log('teamsConfirmed:', teamsConfirmed);
-                            setShowAdminModal(true);
-                        }
-                        
                         // If stream, request current game state
                         if (role === 'stream') {
                             newSocket.emit('requestGameState', { roomCode: joinedRoom });
@@ -1625,7 +1618,7 @@
             }
             
             // Admin Modal - Team & Match Selection (HOST ONLY)
-            if (showAdminModal && !teamsConfirmed && userMode === 'host') {
+            if (userMode === 'host' && !teamsConfirmed && !gameStarted && !showIntro) {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
@@ -1810,8 +1803,8 @@
                 );
             }
             
-            // Team Selection Screen
-            if (!gameStarted && !showIntro && !teamsConfirmed) {
+            // Team Selection Screen (DEPRECATED - Now using Admin Modal)
+            if (false && !gameStarted && !showIntro && !teamsConfirmed) {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
