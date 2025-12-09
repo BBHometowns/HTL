@@ -1010,7 +1010,7 @@
             };
 
             const handleAdminLogin = () => {
-                if (adminPassword === 'Silly') {
+                if (adminPassword === 'HaychTL3') {
                     setAdminAuthenticated(true);
                     setShowAdminModal(true);
                 } else {
@@ -1949,7 +1949,8 @@
                                 alt="Team 1 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
-                                    transform: 'perspective(1000px) rotateY(15deg)',
+                                    transform: showWinnerScreen ? 'perspective(1000px) rotateY(25deg) translateX(-100px)' : 'perspective(1000px) rotateY(15deg)',
+                                    transition: 'all 1s ease-out',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
@@ -1968,7 +1969,8 @@
                                 alt="Team 2 Background Logo" 
                                 className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
-                                    transform: 'perspective(1000px) rotateY(-15deg)',
+                                    transform: showWinnerScreen ? 'perspective(1000px) rotateY(-25deg) translateX(100px)' : 'perspective(1000px) rotateY(-15deg)',
+                                    transition: 'all 1s ease-out',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
