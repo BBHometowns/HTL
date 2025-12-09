@@ -777,22 +777,33 @@
                     const newSocket = io(SERVER_URL);
                     
                     newSocket.on('connect', () => {
-                        console.log('Connected to server');
+                        console.log('✅ Connected to server');
                         newSocket.emit('createRoom', { roomCode, role: userMode });
                     });
                     
                     newSocket.on('roomJoined', ({ roomCode: joinedRoom, role }) => {
-                        console.log(`Joined room ${joinedRoom} as ${role}`);
+                        console.log(`✅ Joined room ${joinedRoom} as ${role}`);
                         setIsConnected(true);
+                        
+                        // If host, show admin modal for setup
+                        if (role === 'host') {
+                            setShowAdminModal(true);
+                        }
                         
                         // If stream, request current game state
                         if (role === 'stream') {
+                            console.log('📡 Stream requesting game state...');
                             newSocket.emit('requestGameState', { roomCode: joinedRoom });
                         }
                     });
                     
                     newSocket.on('gameStateUpdated', (gameState) => {
-                        console.log('Received game state update:', gameState);
+                        console.log('📥 Received game state update:', gameState);
+                        
+                        // Update all game states from host
+                        if (userMode === 'stream') {
+                            console.log('🎮 Applying game state to stream...');
+                            // ... rest of the state updates
                         
                         // Update all game states from host
                         if (userMode === 'stream') {
@@ -1130,6 +1141,8 @@
 
             // Broadcast game state to all streams
             const broadcastGameState = () => {
+                console.log('broadcastGameState called', { userMode, socket: !!socket, isConnected, roomCode });
+                
                 if (userMode === 'host' && socket && isConnected) {
                     const gameState = {
                         selectedTeam1,
@@ -1163,7 +1176,10 @@
                         winnerTeam
                     };
                     
+                    console.log('Broadcasting game state:', gameState);
                     socket.emit('updateGameState', { roomCode, gameState });
+                } else {
+                    console.log('Broadcast blocked:', { userMode, hasSocket: !!socket, isConnected });
                 }
             };
             
