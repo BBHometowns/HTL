@@ -779,13 +779,17 @@
                 if (userMode && roomCode && shouldConnect && !socket) {
                     console.log('Creating new socket connection...');
                     const newSocket = io(SERVER_URL, {
-                        transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
+                        transports: ['websocket', 'polling'],
                         reconnection: true
                     });
                     
-                    // Set up ALL event listeners BEFORE connecting
+                    // SET SOCKET IMMEDIATELY
+                    setSocket(newSocket);
+                    
+                    // THEN set up event listeners
                     newSocket.on('connect', () => {
                         console.log('✅ Connected to server with socket ID:', newSocket.id);
+                        // ... rest of handlers
                         console.log('Emitting createRoom with:', { roomCode, role: userMode });
                         newSocket.emit('createRoom', { roomCode, role: userMode });
                     });
