@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
 
@@ -248,6 +249,13 @@
             const [tieBreakerType, setTieBreakerType] = useState(null);
             const [showWinnerScreen, setShowWinnerScreen] = useState(false);
             const [winnerTeam, setWinnerTeam] = useState(null);
+
+            // Stream profile states
+            const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
+            const [roomCode, setRoomCode] = useState('');
+            const [isConnected, setIsConnected] = useState(false);
+            const [socket, setSocket] = useState(null);
+            const [showRoomSetup, setShowRoomSetup] = useState(false);
             
             // All 16 teams data
             const teamsData = [
@@ -658,6 +666,8 @@
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
             const displayRound = currentRound === 7 ? 'BONUS' : currentRound > 7 ? currentRound - 1 : currentRound;
+            // Socket.IO server URL
+            const SERVER_URL = 'https://htl-dezi.onrender.com';
 
             // Auto-resize text to fit container
             useEffect(() => {
@@ -760,6 +770,81 @@
                 return () => clearInterval(interval);
             }, [powerupPhase]);
 
+            // Socket.IO connection and sync
+            useEffect(() => {
+                if (userMode && roomCode && !socket) {
+                    const newSocket = io(SERVER_URL);
+                    
+                    newSocket.on('connect', () => {
+                        console.log('Connected to server');
+                        newSocket.emit('createRoom', { roomCode, role: userMode });
+                    });
+                    
+                    newSocket.on('roomJoined', ({ roomCode: joinedRoom, role }) => {
+                        console.log(`Joined room ${joinedRoom} as ${role}`);
+                        setIsConnected(true);
+                        
+                        // If stream, request current game state
+                        if (role === 'stream') {
+                            newSocket.emit('requestGameState', { roomCode: joinedRoom });
+                        }
+                    });
+                    
+                    newSocket.on('gameStateUpdated', (gameState) => {
+                        console.log('Received game state update:', gameState);
+                        
+                        // Update all game states from host
+                        if (userMode === 'stream') {
+                            setSelectedTeam1(gameState.selectedTeam1);
+                            setSelectedTeam2(gameState.selectedTeam2);
+                            setSelectedMatch(gameState.selectedMatch);
+                            setBonusType(gameState.bonusType);
+                            setTeam1Score(gameState.team1Score);
+                            setTeam2Score(gameState.team2Score);
+                            setCurrentRound(gameState.currentRound);
+                            setCurrentQuestion(gameState.currentQuestion);
+                            setShowCategory(gameState.showCategory);
+                            setShowQuestion(gameState.showQuestion);
+                            setShowAnswer(gameState.showAnswer);
+                            setActiveTeam(gameState.activeTeam);
+                            setTeam1Time(gameState.team1Time);
+                            setTeam2Time(gameState.team2Time);
+                            setTimerRunning(gameState.timerRunning);
+                            setPowerupPhase(gameState.powerupPhase);
+                            setTeam1Powerups(gameState.team1Powerups);
+                            setTeam2Powerups(gameState.team2Powerups);
+                            setBonusScore1(gameState.bonusScore1);
+                            setBonusScore2(gameState.bonusScore2);
+                            setBonusQuestionIndex(gameState.bonusQuestionIndex);
+                            setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
+                            setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers);
+                            setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers);
+                            setShowWinnerScreen(gameState.showWinnerScreen);
+                            setWinnerTeam(gameState.winnerTeam);
+                            
+                            // Trigger appropriate screens
+                            if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
+                                setTeamsConfirmed(true);
+                            }
+                            if (gameState.showIntro) {
+                                setShowIntro(true);
+                                setTeamsConfirmed(true);
+                            }
+                            if (gameState.gameStarted) {
+                                setGameStarted(true);
+                                setTeamsConfirmed(true);
+                            }
+                        }
+                    });
+                    
+                    setSocket(newSocket);
+                    
+                    return () => {
+                        newSocket.close();
+                    };
+                }
+            }, [userMode, roomCode, socket]);
+            
             // Intro animation sequence
             useEffect(() => {
                 if (showIntro) {
@@ -1009,6 +1094,45 @@
                 setShowIntro(true);
             };
 
+            // Broadcast game state to all streams
+            const broadcastGameState = () => {
+                if (userMode === 'host' && socket && isConnected) {
+                    const gameState = {
+                        selectedTeam1,
+                        selectedTeam2,
+                        selectedMatch,
+                        bonusType,
+                        team1Score,
+                        team2Score,
+                        currentRound,
+                        currentQuestion,
+                        showCategory,
+                        showQuestion,
+                        showAnswer,
+                        activeTeam,
+                        team1Time,
+                        team2Time,
+                        timerRunning,
+                        powerupPhase,
+                        team1Powerups,
+                        team2Powerups,
+                        bonusScore1,
+                        bonusScore2,
+                        bonusQuestionIndex,
+                        shootoutBoardRevealed,
+                        shootoutRevealedAnswers,
+                        shootoutShuffledAnswers,
+                        teamsConfirmed,
+                        gameStarted,
+                        showIntro,
+                        showWinnerScreen,
+                        winnerTeam
+                    };
+                    
+                    socket.emit('updateGameState', { roomCode, gameState });
+                }
+            };
+            
             const handleAdminLogin = () => {
                 if (adminPassword === 'HaychTL3') {
                     setAdminAuthenticated(true);
