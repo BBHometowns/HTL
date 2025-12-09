@@ -1097,6 +1097,7 @@
                     setTimerRunning(false);
                     setPowerupPhase(false);
                     setPowerupTimer(30);
+                    setLastPowerupUsed(null); // Clear undo state
                 }
             };
 
@@ -1110,25 +1111,61 @@
                     if (powerup === 'pointDoubler' && team1Powerups.pointDoubler && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, pointDoubler: false});
                         setTeam1DoublerActive(true);
+                        setLastPowerupUsed({ team: 1, powerup: 'pointDoubler' });
                         console.log('Team 1 Doubler Activated');
                     } else if (powerup === 'extraTime' && team1Powerups.extraTime && powerupPhase) {
                         setTeam1Powerups({...team1Powerups, extraTime: false});
                         setTeam1Time(45);
+                        setLastPowerupUsed({ team: 1, powerup: 'extraTime' });
                     } else if (powerup === 'doubleDip' && team1Powerups.doubleDip && currentQuestion === 1 && !stealAttempted) {
                         setTeam1Powerups({...team1Powerups, doubleDip: false});
+                        setLastPowerupUsed({ team: 1, powerup: 'doubleDip' });
                     }
                 } else if (team === 2) {
                     if (powerup === 'pointDoubler' && team2Powerups.pointDoubler && powerupPhase) {
                         setTeam2Powerups({...team2Powerups, pointDoubler: false});
                         setTeam2DoublerActive(true);
+                        setLastPowerupUsed({ team: 2, powerup: 'pointDoubler' });
                         console.log('Team 2 Doubler Activated');
                     } else if (powerup === 'extraTime' && team2Powerups.extraTime && powerupPhase) {
                         setTeam2Powerups({...team2Powerups, extraTime: false});
+                        setLastPowerupUsed({ team: 2, powerup: 'extraTime' });
                         // Don't set the time here - it will be set when we move to Question 2
                     } else if (powerup === 'doubleDip' && team2Powerups.doubleDip && currentQuestion === 2 && !stealAttempted) {
                         setTeam2Powerups({...team2Powerups, doubleDip: false});
+                        setLastPowerupUsed({ team: 2, powerup: 'doubleDip' });
                     }
                 }
+            };
+
+            const handleUndoPowerup = () => {
+                if (!lastPowerupUsed) return;
+                
+                const { team, powerup } = lastPowerupUsed;
+                
+                if (team === 1) {
+                    if (powerup === 'pointDoubler') {
+                        setTeam1Powerups({...team1Powerups, pointDoubler: true});
+                        setTeam1DoublerActive(false);
+                    } else if (powerup === 'extraTime') {
+                        setTeam1Powerups({...team1Powerups, extraTime: true});
+                        setTeam1Time(30); // Reset to default
+                    } else if (powerup === 'doubleDip') {
+                        setTeam1Powerups({...team1Powerups, doubleDip: true});
+                    }
+                } else if (team === 2) {
+                    if (powerup === 'pointDoubler') {
+                        setTeam2Powerups({...team2Powerups, pointDoubler: true});
+                        setTeam2DoublerActive(false);
+                    } else if (powerup === 'extraTime') {
+                        setTeam2Powerups({...team2Powerups, extraTime: true});
+                        setTeam2Time(15); // Reset to default
+                    } else if (powerup === 'doubleDip') {
+                        setTeam2Powerups({...team2Powerups, doubleDip: true});
+                    }
+                }
+                
+                setLastPowerupUsed(null);
             };
 
             const handleTeamSelection = (team) => {
@@ -2746,7 +2783,7 @@
                                             ) : null
                                         ) : showQuestion ? (
                                             <p className="text-yellow-400 font-bold text-5xl" style={{
-                                                opacity: showAnswer ? 1 : 0.3
+                                                opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
                                             }}>
                                                 {currentAnswerText}
                                             </p>
@@ -2785,6 +2822,16 @@
 
                                 {userMode === 'host' && (
                                     <div className="flex gap-4">
+                                        {/* UNDO BUTTON - Only show if a powerup was just used */}
+                                        {lastPowerupUsed && (
+                                            <button 
+                                                onClick={handleUndoPowerup}
+                                                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                            >
+                                                UNDO POWERUP
+                                            </button>
+                                        )}
+                                        
                                         {(currentRound === 7 || currentRound === 14) ? (
                                             (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                                 // Closest To Buttons
