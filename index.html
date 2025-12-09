@@ -844,6 +844,22 @@
                     };
                 }
             }, [userMode, roomCode, socket]);
+
+            // Auto-broadcast game state when it changes (HOST only)
+            useEffect(() => {
+                if (userMode === 'host') {
+                    broadcastGameState();
+                }
+            }, [
+                selectedTeam1, selectedTeam2, selectedMatch, bonusType,
+                team1Score, team2Score, currentRound, currentQuestion,
+                showCategory, showQuestion, showAnswer, activeTeam,
+                team1Time, team2Time, timerRunning, powerupPhase,
+                team1Powerups, team2Powerups, bonusScore1, bonusScore2,
+                bonusQuestionIndex, shootoutBoardRevealed, shootoutRevealedAnswers,
+                shootoutShuffledAnswers, teamsConfirmed, gameStarted, showIntro,
+                showWinnerScreen, winnerTeam
+            ]);
             
             // Intro animation sequence
             useEffect(() => {
@@ -1092,6 +1108,8 @@
             
             const handleStartMatch = () => {
                 setShowIntro(true);
+                // Broadcast that match is starting
+                setTimeout(() => broadcastGameState(), 100);
             };
 
             // Broadcast game state to all streams
@@ -1152,6 +1170,8 @@
                 if (selectedTeam1 && selectedTeam2 && selectedMatch) {
                     setShowAdminModal(false);
                     setTeamsConfirmed(true);
+                    // Broadcast that setup is complete
+                    setTimeout(() => broadcastGameState(), 100);
                 } else {
                     alert('Please select both teams and a match before closing');
                 }
@@ -2208,8 +2228,8 @@
                         </div>
                     </div>
 
-                    {/* Bonus Round Input Boxes - Only for Closest To */}
-                    {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' && showQuestion && !showBonusAnswer && (
+                    {/* Bonus Round Input Boxes - Only for Closest To - HOST ONLY */}
+                    {userMode === 'host' && (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' && showQuestion && !showBonusAnswer && (
                         <>
                             {/* Team 1 Input */}
                             <div className="absolute" style={{left: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
@@ -2420,26 +2440,28 @@
                                 }}>
                                     {team1Score}
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        const newScore = prompt(`Edit Team 1 Score (${selectedTeam1.name}):`, team1Score);
-                                        if (newScore !== null && !isNaN(newScore)) {
-                                            setTeam1Score(parseInt(newScore));
-                                        }
-                                    }}
-                                    className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
-                                    style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        top: '20px',
-                                        right: '-80px',
-                                        fontSize: '24px',
-                                        pointerEvents: 'auto',
-                                        zIndex: 100
-                                    }}
-                                >
-                                    ✎
-                                </button>
+                                {userMode === 'host' && (
+                                    <button
+                                        onClick={() => {
+                                            const newScore = prompt(`Edit Team 1 Score (${selectedTeam1.name}):`, team1Score);
+                                            if (newScore !== null && !isNaN(newScore)) {
+                                                setTeam1Score(parseInt(newScore));
+                                            }
+                                        }}
+                                        className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
+                                        style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            top: '20px',
+                                            right: '-80px',
+                                            fontSize: '24px',
+                                            pointerEvents: 'auto',
+                                            zIndex: 100
+                                        }}
+                                    >
+                                        ✎
+                                    </button>
+                                )}
                             </div>
                         
                             <img 
@@ -2457,26 +2479,28 @@
                                 }}>
                                     {team2Score}
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        const newScore = prompt(`Edit Team 2 Score (${selectedTeam2.name}):`, team2Score);
-                                        if (newScore !== null && !isNaN(newScore)) {
-                                            setTeam2Score(parseInt(newScore));
-                                        }
-                                    }}
-                                    className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
-                                    style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        top: '20px',
-                                        left: '-80px',
-                                        fontSize: '24px',
-                                        pointerEvents: 'auto',
-                                        zIndex: 100
-                                    }}
-                                >
-                                    ✎
-                                </button>
+                                {userMode === 'host' && (
+                                    <button
+                                        onClick={() => {
+                                            const newScore = prompt(`Edit Team 2 Score (${selectedTeam2.name}):`, team2Score);
+                                            if (newScore !== null && !isNaN(newScore)) {
+                                                setTeam2Score(parseInt(newScore));
+                                            }
+                                        }}
+                                        className={`absolute bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full border-2 border-white ${showWinnerScreen ? 'hide-on-winner' : ''}`}
+                                        style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            top: '20px',
+                                            right: '-80px',
+                                            fontSize: '24px',
+                                            pointerEvents: 'auto',
+                                            zIndex: 100
+                                        }}
+                                    >
+                                        ✎
+                                    </button>
+                                )}
                             </div>
                         </div>
                         
@@ -2679,140 +2703,142 @@
                                         alt="Team 1 Point Doubler"
                                         className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'pointDoubler')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'pointDoubler') : undefined}
                                     />
                                     <img 
                                         src={`${imagePath}powerup-time.png`}
                                         alt="Team 1 Extra Time"
                                         className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'extraTime')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'extraTime') : undefined}
                                     />
                                     <img 
                                         src={`${imagePath}powerup-dip.png`}
                                         alt="Team 1 Double Dip"
                                         className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(1, 'doubleDip')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
                                     />
                                 </div>
 
-                                <div className="flex gap-4">
-                                    {(currentRound === 7 || currentRound === 14) ? (
-                                        (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
-                                            // Closest To Buttons
-                                            !showQuestion ? (
+                                {userMode === 'host' && (
+                                    <div className="flex gap-4">
+                                        {(currentRound === 7 || currentRound === 14) ? (
+                                            (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
+                                                // Closest To Buttons
+                                                !showQuestion ? (
+                                                    <button 
+                                                        onClick={handleRevealQuestion}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        REVEAL QUESTION
+                                                    </button>
+                                                ) : !showBonusAnswer && !timerRunning && team1Time === 30 && team2Time === 30 ? (
+                                                    <button 
+                                                        onClick={handleStartTimer}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        START TIMER
+                                                    </button>
+                                                ) : !showBonusAnswer ? (
+                                                    <button 
+                                                        onClick={handleRevealBonusAnswer}
+                                                        className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        REVEAL ANSWER
+                                                    </button>
+                                                ) : bonusWinnerAwarded ? (
+                                                    <button 
+                                                        onClick={handleBonusNext}
+                                                        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        NEXT
+                                                    </button>
+                                                ) : null
+                                            ) : (
+                                                // Shootout Buttons
+                                                !showQuestion ? (
+                                                    <button 
+                                                        onClick={handleRevealQuestion}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        REVEAL QUESTION
+                                                    </button>
+                                                ) : !shootoutBoardRevealed ? (
+                                                    <button 
+                                                        onClick={handleRevealShootoutBoard}
+                                                        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        REVEAL THE BOARD
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        onClick={handleShootoutIncorrect}
+                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        INCORRECT
+                                                    </button>
+                                                )
+                                            )
+                                        ) : (
+                                            // Regular Round Buttons
+                                            !showCategory ? (
+                                                <button 
+                                                    onClick={handleRevealCategory}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL CATEGORY
+                                                </button>
+                                            ) : powerupPhase ? (
+                                                <button 
+                                                    onClick={() => {
+                                                        setPowerupPhase(false);
+                                                        setPowerupTimer(30);
+                                                    }}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    SKIP POWERUPS
+                                                </button>
+                                            ) : !showQuestion ? (
                                                 <button 
                                                     onClick={handleRevealQuestion}
                                                     className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                 >
                                                     REVEAL QUESTION
                                                 </button>
-                                            ) : !showBonusAnswer && !timerRunning && team1Time === 30 && team2Time === 30 ? (
+                                            ) : !timerRunning && !showAnswer ? (
                                                 <button 
                                                     onClick={handleStartTimer}
                                                     className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                 >
                                                     START TIMER
                                                 </button>
-                                            ) : !showBonusAnswer ? (
+                                            ) : showAnswer ? (
                                                 <button 
-                                                    onClick={handleRevealBonusAnswer}
-                                                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    REVEAL ANSWER
-                                                </button>
-                                            ) : bonusWinnerAwarded ? (
-                                                <button 
-                                                    onClick={handleBonusNext}
+                                                    onClick={handleNext}
                                                     className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                 >
                                                     NEXT
                                                 </button>
-                                            ) : null
-                                        ) : (
-                                            // Shootout Buttons
-                                            !showQuestion ? (
-                                                <button 
-                                                    onClick={handleRevealQuestion}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    REVEAL QUESTION
-                                                </button>
-                                            ) : !shootoutBoardRevealed ? (
-                                                <button 
-                                                    onClick={handleRevealShootoutBoard}
-                                                    className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    REVEAL THE BOARD
-                                                </button>
                                             ) : (
-                                                <button 
-                                                    onClick={handleShootoutIncorrect}
-                                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    INCORRECT
-                                                </button>
+                                                <>
+                                                    <button 
+                                                        onClick={handleCorrect}
+                                                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        CORRECT
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleIncorrect}
+                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        INCORRECT
+                                                    </button>
+                                                </>
                                             )
-                                        )
-                                    ) : (
-                                        // Regular Round Buttons
-                                        !showCategory ? (
-                                            <button 
-                                                onClick={handleRevealCategory}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL CATEGORY
-                                            </button>
-                                        ) : powerupPhase ? (
-                                            <button 
-                                                onClick={() => {
-                                                    setPowerupPhase(false);
-                                                    setPowerupTimer(30);
-                                                }}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                SKIP POWERUPS
-                                            </button>
-                                        ) : !showQuestion ? (
-                                            <button 
-                                                onClick={handleRevealQuestion}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                REVEAL QUESTION
-                                            </button>
-                                        ) : !timerRunning && !showAnswer ? (
-                                            <button 
-                                                onClick={handleStartTimer}
-                                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                START TIMER
-                                            </button>
-                                        ) : showAnswer ? (
-                                            <button 
-                                                onClick={handleNext}
-                                                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                NEXT
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <button 
-                                                    onClick={handleCorrect}
-                                                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    CORRECT
-                                                </button>
-                                                <button 
-                                                    onClick={handleIncorrect}
-                                                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    INCORRECT
-                                                </button>
-                                            </>
-                                        )
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="flex gap-6">
                                     <img 
@@ -2820,21 +2846,21 @@
                                         alt="Team 2 Double Dip"
                                         className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'doubleDip')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
                                     />
                                     <img 
                                         src={`${imagePath}powerup-time.png`}
                                         alt="Team 2 Extra Time"
                                         className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'extraTime')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'extraTime') : undefined}
                                     />
                                     <img 
                                         src={`${imagePath}powerup-double.png`}
                                         alt="Team 2 Point Doubler"
                                         className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
                                         style={{width: '84px', height: '84px'}}
-                                        onClick={() => handlePowerup(2, 'pointDoubler')}
+                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'pointDoubler') : undefined}
                                     />
                                 </div>
                             </div>
