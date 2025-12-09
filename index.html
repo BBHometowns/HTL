@@ -2056,20 +2056,30 @@
                                         animation: moveScoreLeft 1s ease-out forwards !important;
                                     }
                                     @keyframes moveScoreLeft {
+                                        from {
+                                            left: 20%;
+                                            top: auto;
+                                            transform: none;
+                                        }
                                         to {
-                                            left: 20% !important;
-                                            top: 50% !important;
-                                            transform: translateY(-50%) !important;
+                                            left: 23%;
+                                            top: 50%;
+                                            transform: translateY(-50%);
                                         }
                                     }
                                     .winner-score-right {
                                         animation: moveScoreRight 1s ease-out forwards !important;
                                     }
                                     @keyframes moveScoreRight {
+                                        from {
+                                            right: 20%;
+                                            top: auto;
+                                            transform: none;
+                                        }
                                         to {
-                                            right: 20% !important;
-                                            top: 50% !important;
-                                            transform: translateY(-50%) !important;
+                                            right: 23%;
+                                            top: 50%;
+                                            transform: translateY(-50%);
                                         }
                                     }
                                 `}
@@ -2172,7 +2182,7 @@
                         
                         {/* HTL Logo and Scores */}
                         <div className="relative flex items-center justify-center mb-6" style={{width: '100%', height: '560px', marginTop: '50px'}}>
-                            <div className={`absolute ${showWinnerScreen ? 'winner-score-left' : ''}`} style={{left: '25%'}}>
+                            <div className={`absolute ${showWinnerScreen ? 'winner-score-left' : ''}`} style={{left: '20%'}}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
@@ -2209,7 +2219,7 @@
                                 style={{height: '560px'}}
                             />
                         
-                            <div className={`absolute ${showWinnerScreen ? 'winner-score-right' : ''}`} style={{right: '25%'}}>
+                            <div className={`absolute ${showWinnerScreen ? 'winner-score-right' : ''}`} style={{right: '20%'}}>
                                 <div className="score-text font-black text-black" style={{
                                     fontSize: '560px',
                                     lineHeight: '560px',
