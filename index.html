@@ -2780,36 +2780,36 @@
                                             height: '120px',
                                             overflow: 'hidden'
                                         }}>
-                                        {showQuestion && (currentRound === 7 || currentRound === 14) ? (
-                                            showBonusAnswer ? ({showQuestion && (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
-                                                <div className="flex items-center justify-between w-full px-4">
-                                                    {/* Team 1 Side */}
-                                                    <div className="flex items-center gap-8 flex-1">
-                                                        <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                        {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                            {showQuestion && (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
+                                                showBonusAnswer ? (
+                                                    <div className="flex items-center justify-between w-full px-4">
+                                                        {/* Team 1 Side */}
+                                                        <div className="flex items-center gap-8 flex-1">
+                                                            <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
+                                                            {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                        </div>
+                                                        
+                                                        {/* Correct Answer */}
+                                                        <div className="text-yellow-400 font-bold text-6xl mx-8">
+                                                            {(currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer}
+                                                        </div>
+                                                        
+                                                        {/* Team 2 Side */}
+                                                        <div className="flex items-center gap-8 flex-1">
+                                                            {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                            <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
+                                                        </div>
                                                     </div>
-                                                    
-                                                    {/* Correct Answer */}
-                                                    <div className="text-yellow-400 font-bold text-6xl mx-8">
-                                                        {closestToQuestions[bonusQuestionIndex].answer}
-                                                    </div>
-                                                    
-                                                    {/* Team 2 Side */}
-                                                    <div className="flex items-center gap-8 flex-1">
-                                                        {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
-                                                        <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
-                                                    </div>
-                                                </div>
-                                            ) : null
-                                        ) : showQuestion ? (
-                                            <p className="text-yellow-400 font-bold text-5xl" style={{
-                                                opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
-                                            }}>
-                                                {currentAnswerText}
-                                            </p>
-                                        ) : null}
-                                    </div>
-                                )}
+                                                ) : null
+                                            ) : showQuestion ? (
+                                                <p className="text-yellow-400 font-bold text-5xl" style={{
+                                                    opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
+                                                }}>
+                                                    {currentAnswerText}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    )}
                             </div>
                         </div>
 
