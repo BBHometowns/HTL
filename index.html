@@ -847,6 +847,10 @@
                             setBonusScore2(gameState.bonusScore2);
                             setBonusQuestionIndex(gameState.bonusQuestionIndex);
                             setShowBonusAnswer(gameState.showBonusAnswer);
+                            setTeam1Guess(gameState.team1Guess || '');
+                            setTeam2Guess(gameState.team2Guess || '');
+                            setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
+                            setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
                             setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
                             setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers);
                             setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers);
@@ -900,7 +904,8 @@
                 team1Time, team2Time, timerRunning, powerupPhase,
                 powerupTimer,
                 team1Powerups, team2Powerups, lastPowerupsUsed, bonusScore1, bonusScore2,
-                bonusQuestionIndex, showBonusAnswer, shootoutBoardRevealed, shootoutRevealedAnswers,
+                bonusQuestionIndex, showBonusAnswer, team1Guess, team2Guess,
+                team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, socket, isConnected, roomCode
             ]);
@@ -1241,6 +1246,10 @@
                         bonusScore2,
                         bonusQuestionIndex,
                         showBonusAnswer,
+                        team1Guess,
+                        team2Guess,
+                        team1GuessSubmitted,
+                        team2GuessSubmitted,
                         shootoutBoardRevealed,
                         shootoutRevealedAnswers,
                         shootoutShuffledAnswers,
@@ -1589,12 +1598,12 @@
             
             // For tie-breaker (round 14) - use opposite data
             const tieBreakerClosestToQuestions = selectedMatch && tieBreakerType === 'closestTo'
-                ? selectedMatch.tieBreakerQuestions
-                : null;
+                ? (selectedMatch.tieBreakerQuestions || selectedMatch.bonusQuestions)
+                : selectedMatch?.bonusQuestions || [];
             
             const tieBreakerShootoutQuestion = selectedMatch && tieBreakerType === 'shootout'
-                ? selectedMatch.tieBreakerQuestions[0]
-                : null;
+                ? (selectedMatch.tieBreakerQuestions?.[0] || selectedMatch.bonusQuestions?.[0] || {})
+                : (selectedMatch?.bonusQuestions?.[0] || {});
 
             // Shuffle shootout answers when match is selected
             useEffect(() => {
@@ -2760,7 +2769,7 @@
                                                         fontSize: '40px',
                                                         margin: 0
                                                     }}>
-                                                        {(currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).longQuestion}
+                                                        {((currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion) || {}).longQuestion || 'Loading...'}
                                                     </p>
                                                 )
                                             )
