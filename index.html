@@ -854,6 +854,9 @@
                             setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
                             setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers);
                             setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers);
+                            setShootoutTurnCount(gameState.shootoutTurnCount);
+                            setShootoutActiveTeam(gameState.shootoutActiveTeam);
+                            setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
                             setIsTieBreaker(gameState.isTieBreaker);
                             setTieBreakerType(gameState.tieBreakerType);
                             setShowWinnerScreen(gameState.showWinnerScreen);
@@ -906,7 +909,8 @@
                 team1Powerups, team2Powerups, lastPowerupsUsed, bonusScore1, bonusScore2,
                 bonusQuestionIndex, showBonusAnswer, team1Guess, team2Guess,
                 team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
-                shootoutShuffledAnswers, isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
+                shootoutShuffledAnswers, shootoutTurnCount, shootoutActiveTeam, shootoutSuddenDeath,
+                isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, socket, isConnected, roomCode
             ]);
             
@@ -1253,6 +1257,9 @@
                         shootoutBoardRevealed,
                         shootoutRevealedAnswers,
                         shootoutShuffledAnswers,
+                        shootoutTurnCount,
+                        shootoutActiveTeam,
+                        shootoutSuddenDeath,
                         isTieBreaker,
                         tieBreakerType,
                         teamsConfirmed,
@@ -2498,7 +2505,7 @@
                     <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
-                        {(currentRound === 7 || currentRound === 14) && (
+                        {(currentRound === 7 || currentRound === 14) && !showWinnerScreen && (
                             <div className="absolute flex flex-col items-center justify-center gap-2" style={{
                                 top: '550px',
                                 left: '50%',
@@ -2754,7 +2761,7 @@
                                                                                 cursor: isRevealed ? 'default' : 'pointer'
                                                                             }}
                                                                         >
-                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : 0 }}>
+                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
                                                                                 {item.answer}
                                                                             </span>
                                                                         </button>
