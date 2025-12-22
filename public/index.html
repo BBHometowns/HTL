@@ -787,85 +787,85 @@
 
             // Firebase Realtime Database connection
             useEffect(() => {
-    if (userMode && roomCode && shouldConnect) {
-        console.log('Setting up Firebase connection for room:', roomCode);
-        setIsConnected(true);
-        setShowRoomSetup(false);
-        
-        if (userMode === 'host') {
-            setShowAdminModal(true);
-        }
-        
-        if (userMode === 'stream') {
-            // Stream listens for game state updates
-            const gameStateRef = database.ref(`rooms/${roomCode}/gameState`);
-            
-            gameStateRef.on('value', (snapshot) => {
-                const gameState = snapshot.val();
-                if (gameState) {
-                    console.log('📥 Received game state update:', gameState);
+                if (userMode && roomCode && shouldConnect) {
+                    console.log('Setting up Firebase connection for room:', roomCode);
+                    setIsConnected(true);
+                    setShowRoomSetup(false);
                     
-                    // Apply all game states from host
-                    setSelectedTeam1(gameState.selectedTeam1);
-                    setSelectedTeam2(gameState.selectedTeam2);
-                    setSelectedMatch(gameState.selectedMatch);
-                    setBonusType(gameState.bonusType);
-                    setTeam1Score(gameState.team1Score);
-                    setTeam2Score(gameState.team2Score);
-                    setCurrentRound(gameState.currentRound);
-                    setCurrentQuestion(gameState.currentQuestion);
-                    setShowCategory(gameState.showCategory);
-                    setShowQuestion(gameState.showQuestion);
-                    setShowAnswer(gameState.showAnswer);
-                    setActiveTeam(gameState.activeTeam);
-                    setTeam1Time(gameState.team1Time);
-                    setTeam2Time(gameState.team2Time);
-                    setTimerRunning(gameState.timerRunning);
-                    setPowerupPhase(gameState.powerupPhase);
-                    setPowerupTimer(gameState.powerupTimer);
-                    setTeam1Powerups(gameState.team1Powerups);
-                    setTeam2Powerups(gameState.team2Powerups);
-                    setBonusScore1(gameState.bonusScore1);
-                    setBonusScore2(gameState.bonusScore2);
-                    setBonusQuestionIndex(gameState.bonusQuestionIndex);
-                    setShowBonusAnswer(gameState.showBonusAnswer);
-                    setTeam1Guess(gameState.team1Guess || '');
-                    setTeam2Guess(gameState.team2Guess || '');
-                    setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
-                    setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
-                    setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
-                    setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
-                    setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
-                    setShootoutTurnCount(gameState.shootoutTurnCount);
-                    setShootoutActiveTeam(gameState.shootoutActiveTeam);
-                    setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
-                    setIsTieBreaker(gameState.isTieBreaker);
-                    setTieBreakerType(gameState.tieBreakerType);
-                    setShowWinnerScreen(gameState.showWinnerScreen);
-                    setWinnerTeam(gameState.winnerTeam);
+                    if (userMode === 'host') {
+                        setShowAdminModal(true);
+                    }
                     
-                    // Trigger appropriate screens
-                    if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
-                        setTeamsConfirmed(true);
-                    }
-                    if (gameState.showIntro) {
-                        setShowIntro(true);
-                        setTeamsConfirmed(true);
-                    }
-                    if (gameState.gameStarted) {
-                        setGameStarted(true);
-                        setTeamsConfirmed(true);
+                    if (userMode === 'stream') {
+                        // Stream listens for game state updates
+                        const gameStateRef = database.ref(`rooms/${roomCode}/gameState`);
+                        
+                        gameStateRef.on('value', (snapshot) => {
+                            const gameState = snapshot.val();
+                            if (gameState) {
+                                console.log('📥 Received game state update:', gameState);
+                                
+                                // Apply all game states from host
+                                setSelectedTeam1(gameState.selectedTeam1);
+                                setSelectedTeam2(gameState.selectedTeam2);
+                                setSelectedMatch(gameState.selectedMatch);
+                                setBonusType(gameState.bonusType);
+                                setTeam1Score(gameState.team1Score);
+                                setTeam2Score(gameState.team2Score);
+                                setCurrentRound(gameState.currentRound);
+                                setCurrentQuestion(gameState.currentQuestion);
+                                setShowCategory(gameState.showCategory);
+                                setShowQuestion(gameState.showQuestion);
+                                setShowAnswer(gameState.showAnswer);
+                                setActiveTeam(gameState.activeTeam);
+                                setTeam1Time(gameState.team1Time);
+                                setTeam2Time(gameState.team2Time);
+                                setTimerRunning(gameState.timerRunning);
+                                setPowerupPhase(gameState.powerupPhase);
+                                setPowerupTimer(gameState.powerupTimer);
+                                setTeam1Powerups(gameState.team1Powerups);
+                                setTeam2Powerups(gameState.team2Powerups);
+                                setBonusScore1(gameState.bonusScore1);
+                                setBonusScore2(gameState.bonusScore2);
+                                setBonusQuestionIndex(gameState.bonusQuestionIndex);
+                                setShowBonusAnswer(gameState.showBonusAnswer);
+                                setTeam1Guess(gameState.team1Guess || '');
+                                setTeam2Guess(gameState.team2Guess || '');
+                                setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
+                                setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
+                                setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
+                                setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
+                                setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
+                                setShootoutTurnCount(gameState.shootoutTurnCount);
+                                setShootoutActiveTeam(gameState.shootoutActiveTeam);
+                                setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
+                                setIsTieBreaker(gameState.isTieBreaker);
+                                setTieBreakerType(gameState.tieBreakerType);
+                                setShowWinnerScreen(gameState.showWinnerScreen);
+                                setWinnerTeam(gameState.winnerTeam);
+                                
+                                // Trigger appropriate screens
+                                if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
+                                    setTeamsConfirmed(true);
+                                }
+                                if (gameState.showIntro) {
+                                    setShowIntro(true);
+                                    setTeamsConfirmed(true);
+                                }
+                                if (gameState.gameStarted) {
+                                    setGameStarted(true);
+                                    setTeamsConfirmed(true);
+                                }
+                            }
+                        });
+                        
+                        // Cleanup listener on unmount
+                        return () => {
+                            gameStateRef.off();
+                        };
                     }
                 }
-            });
-            
-            // Cleanup listener on unmount
-            return () => {
-                gameStateRef.off();
-            };
-        }
-    }
-}, [userMode, roomCode, shouldConnect]); 
+            }, [userMode, roomCode, shouldConnect]); 
 
             // Auto-broadcast game state when it changes (HOST only)
             useEffect(() => {
@@ -1604,7 +1604,8 @@
             const currentRoundData = roundIndex !== null ? rounds[roundIndex] : null;
             const currentQuestionText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2) : '';
             const currentAnswerText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2) : '';
-
+        }
+        
             // Password Login Screen
             if (!adminAuthenticated) {
                 return (
