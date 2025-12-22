@@ -2110,6 +2110,14 @@
                                             {team2Score}
                                         </div>
                                     </div>
+
+                                    // Timer color based on remaining time
+                                    const getTimerColor = (time) => {
+                                        if (time > 30) return '#22c55e'; // green for extra time
+                                        if (time >= 10) return '#ffffff'; // white for 30-10
+                                        if (time >= 5) return '#ef4444'; // red for 10-5
+                                        return '#991b1b'; // dark red for 5-0
+                                    };
                                     
                                     {/* Round Title with Timers */}
                                     <div className="flex items-center justify-center mb-8 gap-4">
@@ -2120,10 +2128,18 @@
                                             height: '200px',
                                             opacity: 1
                                         }}>
-                                            <div className="text-8xl font-black text-white" style={{
+                                            <div className="text-8xl font-black" style={{
                                                 WebkitTextStroke: '2px black',
-                                                textStroke: '2px black'
+                                                textStroke: '2px black',
+                                                color: getTimerColor((currentRound === 7 || currentRound === 14) ? 
+                                                    ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
+                                                    powerupPhase ? powerupTimer : team1Time),
+                                                transition: 'color 0.3s ease'
                                             }}>
+                                                {(currentRound === 7 || currentRound === 14) ? (
+                                                    (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
+                                                ) : powerupPhase ? powerupTimer : team1Time}
+                                            </div>
                                                 {team1Time}
                                             </div>
                                         </div>
@@ -2150,10 +2166,18 @@
                                             height: '200px',
                                             opacity: 1
                                         }}>
-                                            <div className="text-8xl font-black text-white" style={{
+                                            <div className="text-8xl font-black" style={{
                                                 WebkitTextStroke: '2px black',
-                                                textStroke: '2px black'
+                                                textStroke: '2px black',
+                                                color: getTimerColor((currentRound === 7 || currentRound === 14) ? 
+                                                    ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)) : 
+                                                    powerupPhase ? powerupTimer : team2Time),
+                                                transition: 'color 0.3s ease'
                                             }}>
+                                                {(currentRound === 7 || currentRound === 14) ? (
+                                                    (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
+                                                ) : powerupPhase ? powerupTimer : team2Time}
+                                            </div>
                                                 {team2Time}
                                             </div>
                                         </div>
