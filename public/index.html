@@ -676,6 +676,14 @@
             const database = firebase.database();
             const displayRound = currentRound === 7 ? 'BONUS' : currentRound > 7 ? currentRound - 1 : currentRound;
 
+            // Timer color based on remaining time
+            const getTimerColor = (time) => {
+                if (time > 30) return '#22c55e'; // green for extra time
+                if (time >= 10) return '#ffffff'; // white for 30-10
+                if (time >= 5) return '#ef4444'; // red for 10-5
+                return '#991b1b'; // dark red for 5-0
+            };
+
             // Auto-resize text to fit container
             useEffect(() => {
                 if (showQuestion && questionTextRef.current) {
@@ -2110,14 +2118,6 @@
                                             {team2Score}
                                         </div>
                                     </div>
-
-                                    // Timer color based on remaining time
-                                    const getTimerColor = (time) => {
-                                        if (time > 30) return '#22c55e'; // green for extra time
-                                        if (time >= 10) return '#ffffff'; // white for 30-10
-                                        if (time >= 5) return '#ef4444'; // red for 10-5
-                                        return '#991b1b'; // dark red for 5-0
-                                    };
                                     
                                     {/* Round Title with Timers */}
                                     <div className="flex items-center justify-center mb-8 gap-4">
