@@ -8,7 +8,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
 
@@ -668,9 +669,12 @@
             ];
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
+            const firebaseConfig = {
+                databaseURL: "https://hometowns-trivia-league-default-rtdb.firebaseio.com/"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
             const displayRound = currentRound === 7 ? 'BONUS' : currentRound > 7 ? currentRound - 1 : currentRound;
-            // Socket.IO server URL
-            const SERVER_URL = 'https://htl-dezi.onrender.com';
 
             // Auto-resize text to fit container
             useEffect(() => {
@@ -779,119 +783,81 @@
                 return () => clearInterval(interval);
             }, [powerupPhase, userMode]);
 
-            // Socket.IO connection - triggers when room code is entered
+            // Firebase Realtime Database connection
             useEffect(() => {
-                console.log('Socket useEffect triggered:', { userMode, roomCode, hasSocket: !!socket, shouldConnect });
-                
-                if (userMode && roomCode && shouldConnect && !socket) {
-                    console.log('Creating new socket connection...');
-                    const newSocket = io(SERVER_URL, {
-                        transports: ['websocket', 'polling'],
-                        reconnection: true
-                    });
+                if (userMode && roomCode && shouldConnect) {
+                    console.log('Setting up Firebase connection for room:', roomCode);
+                    setIsConnected(true);
+                    setShowRoomSetup(false);
                     
-                    // SET SOCKET IMMEDIATELY
-                    setSocket(newSocket);
+                    if (userMode === 'host') {
+                        setShowAdminModal(true);
+                    }
                     
-                    // THEN set up event listeners
-                    newSocket.on('connect', () => {
-                        console.log('✅ Connected to server with socket ID:', newSocket.id);
-                        // ... rest of handlers
-                        console.log('Emitting createRoom with:', { roomCode, role: userMode });
-                        newSocket.emit('createRoom', { roomCode, role: userMode });
-                    });
-                    
-                    newSocket.on('roomJoined', ({ roomCode: joinedRoom, role }) => {
-                        console.log(`✅ Joined room ${joinedRoom} as ${role}`);
-                        setIsConnected(true);
-                        setShowRoomSetup(false); // Close the room setup modal
+                    if (userMode === 'stream') {
+                        const gameStateRef = database.ref(`rooms/${roomCode}/gameState`);
                         
-                        // If host, show admin modal for setup
-                        if (role === 'host') {
-                            setShowAdminModal(true);
-                        }
+                        gameStateRef.on('value', (snapshot) => {
+                            const gameState = snapshot.val();
+                            if (gameState) {
+                                console.log('📥 Received game state update:', gameState);
+                                
+                                setSelectedTeam1(gameState.selectedTeam1);
+                                setSelectedTeam2(gameState.selectedTeam2);
+                                setSelectedMatch(gameState.selectedMatch);
+                                setBonusType(gameState.bonusType);
+                                setTeam1Score(gameState.team1Score);
+                                setTeam2Score(gameState.team2Score);
+                                setCurrentRound(gameState.currentRound);
+                                setCurrentQuestion(gameState.currentQuestion);
+                                setShowCategory(gameState.showCategory);
+                                setShowQuestion(gameState.showQuestion);
+                                setShowAnswer(gameState.showAnswer);
+                                setActiveTeam(gameState.activeTeam);
+                                setTeam1Time(gameState.team1Time);
+                                setTeam2Time(gameState.team2Time);
+                                setTimerRunning(gameState.timerRunning);
+                                setPowerupPhase(gameState.powerupPhase);
+                                setPowerupTimer(gameState.powerupTimer);
+                                setTeam1Powerups(gameState.team1Powerups);
+                                setTeam2Powerups(gameState.team2Powerups);
+                                setBonusScore1(gameState.bonusScore1);
+                                setBonusScore2(gameState.bonusScore2);
+                                setBonusQuestionIndex(gameState.bonusQuestionIndex);
+                                setShowBonusAnswer(gameState.showBonusAnswer);
+                                setTeam1Guess(gameState.team1Guess || '');
+                                setTeam2Guess(gameState.team2Guess || '');
+                                setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
+                                setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
+                                setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
+                                setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
+                                setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
+                                setShootoutTurnCount(gameState.shootoutTurnCount);
+                                setShootoutActiveTeam(gameState.shootoutActiveTeam);
+                                setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
+                                setIsTieBreaker(gameState.isTieBreaker);
+                                setTieBreakerType(gameState.tieBreakerType);
+                                setShowWinnerScreen(gameState.showWinnerScreen);
+                                setWinnerTeam(gameState.winnerTeam);
+                                
+                                if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
+                                    setTeamsConfirmed(true);
+                                }
+                                if (gameState.showIntro) {
+                                    setShowIntro(true);
+                                    setTeamsConfirmed(true);
+                                }
+                                if (gameState.gameStarted) {
+                                    setGameStarted(true);
+                                    setTeamsConfirmed(true);
+                                }
+                            }
+                        });
                         
-                        // If stream, request current game state
-                        if (role === 'stream') {
-                            console.log('📡 Stream requesting game state...');
-                            newSocket.emit('requestGameState', { roomCode: joinedRoom });
-                        }
-                    });
-                    
-                    newSocket.on('gameStateUpdated', (gameState) => {
-                        console.log('📥 Received game state update:', gameState);
-                        
-                        // Update all game states from host
-                        if (userMode === 'stream') {
-                            console.log('🎮 Applying game state to stream...');
-                            setSelectedTeam1(gameState.selectedTeam1);
-                            setSelectedTeam2(gameState.selectedTeam2);
-                            setSelectedMatch(gameState.selectedMatch);
-                            setBonusType(gameState.bonusType);
-                            setTeam1Score(gameState.team1Score);
-                            setTeam2Score(gameState.team2Score);
-                            setCurrentRound(gameState.currentRound);
-                            setCurrentQuestion(gameState.currentQuestion);
-                            setShowCategory(gameState.showCategory);
-                            setShowQuestion(gameState.showQuestion);
-                            setShowAnswer(gameState.showAnswer);
-                            setActiveTeam(gameState.activeTeam);
-                            setTeam1Time(gameState.team1Time);
-                            setTeam2Time(gameState.team2Time);
-                            setTimerRunning(gameState.timerRunning);
-                            setPowerupPhase(gameState.powerupPhase);
-                            setPowerupTimer(gameState.powerupTimer);
-                            setTeam1Powerups(gameState.team1Powerups);
-                            setTeam2Powerups(gameState.team2Powerups);
-                            setBonusScore1(gameState.bonusScore1);
-                            setBonusScore2(gameState.bonusScore2);
-                            setBonusQuestionIndex(gameState.bonusQuestionIndex);
-                            setShowBonusAnswer(gameState.showBonusAnswer);
-                            setTeam1Guess(gameState.team1Guess || '');
-                            setTeam2Guess(gameState.team2Guess || '');
-                            setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
-                            setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
-                            setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
-                            setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers);
-                            setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers);
-                            setShootoutTurnCount(gameState.shootoutTurnCount);
-                            setShootoutActiveTeam(gameState.shootoutActiveTeam);
-                            setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
-                            setIsTieBreaker(gameState.isTieBreaker);
-                            setTieBreakerType(gameState.tieBreakerType);
-                            setShowWinnerScreen(gameState.showWinnerScreen);
-                            setWinnerTeam(gameState.winnerTeam);
-                            
-                            // Trigger appropriate screens
-                            if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
-                                setTeamsConfirmed(true);
-                            }
-                            if (gameState.showIntro) {
-                                setShowIntro(true);
-                                setTeamsConfirmed(true);
-                            }
-                            if (gameState.gameStarted) {
-                                setGameStarted(true);
-                                setTeamsConfirmed(true);
-                            }
-                        }
-                    });
-                    
-                    newSocket.on('connect_error', (error) => {
-                        console.error('❌ Connection error:', error);
-                    });
-                    
-                    newSocket.on('disconnect', (reason) => {
-                        console.log('🔌 Disconnected:', reason);
-                        setIsConnected(false);
-                    });
-                    
-                    setSocket(newSocket);
-                    
-                    return () => {
-                        console.log('Cleaning up socket...');
-                        newSocket.close();
-                    };
+                        return () => {
+                            gameStateRef.off();
+                        };
+                    }
                 }
             }, [userMode, roomCode, shouldConnect]);
 
@@ -911,7 +877,7 @@
                 team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, shootoutTurnCount, shootoutActiveTeam, shootoutSuddenDeath,
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
-                showWinnerScreen, winnerTeam, userMode, socket, isConnected, roomCode
+                showWinnerScreen, winnerTeam, userMode, roomCode
             ]);
             
             // Intro animation sequence
@@ -1222,9 +1188,7 @@
 
             // Broadcast game state to all streams
             const broadcastGameState = () => {
-                console.log('broadcastGameState called', { userMode, socket: !!socket, isConnected, roomCode });
-                
-                if (userMode === 'host' && socket && isConnected) {
+                if (userMode === 'host' && roomCode) {
                     const gameState = {
                         selectedTeam1,
                         selectedTeam2,
@@ -1269,10 +1233,7 @@
                         winnerTeam
                     };
                     
-                    console.log('Broadcasting game state:', gameState);
-                    socket.emit('updateGameState', { roomCode, gameState });
-                } else {
-                    console.log('Broadcast blocked:', { userMode, hasSocket: !!socket, isConnected });
+                    database.ref(`rooms/${roomCode}/gameState`).set(gameState);
                 }
             };
             
