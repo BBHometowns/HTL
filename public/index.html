@@ -166,6 +166,11 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        .timer-text {
+            -webkit-text-stroke: 2px black;
+            text-stroke: 2px black;
+        }
     </style>
 </head>
 <body>
@@ -2156,13 +2161,9 @@
                                             opacity: 1
                                         }}>
                                             <div 
-                                                key={`timer1-${timer1Color}`}
-                                                className="text-8xl font-black" 
+                                                className="text-8xl font-black timer-text"
                                                 style={{
-                                                    WebkitTextStroke: '2px black',
-                                                    textStroke: '2px black',
-                                                    color: timer1Color,
-                                                    transition: 'color 0.3s ease'
+                                                    color: timer1Color
                                                 }}
                                             >
                                                 {timer1Value}
@@ -2192,13 +2193,9 @@
                                             opacity: 1
                                         }}>
                                             <div 
-                                                key={`timer2-${timer2Color}`}
-                                                className="text-8xl font-black" 
+                                                className="text-8xl font-black timer-text"
                                                 style={{
-                                                    WebkitTextStroke: '2px black',
-                                                    textStroke: '2px black',
-                                                    color: timer2Color,
-                                                    transition: 'color 0.3s ease'
+                                                    color: timer2Color
                                                 }}
                                             >
                                                 {timer2Value}
