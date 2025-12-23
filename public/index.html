@@ -676,13 +676,39 @@
             const database = firebase.database();
             const displayRound = currentRound === 7 ? 'BONUS' : currentRound > 7 ? currentRound - 1 : currentRound;
 
-            // Timer color based on remaining time
+            // Calculate timer colors with gradients
             const getTimerColor = (time) => {
-                if (time > 30) return '#22c55e'; // green for extra time
-                if (time >= 10) return '#ffffff'; // white for 30-10
-                if (time >= 5) return '#ef4444'; // red for 10-5
-                return '#991b1b'; // dark red for 5-0
+                if (time >= 30) {
+                    const ratio = Math.min((time - 30) / 15, 1);
+                    const r = Math.round(255 - (255 - 34) * ratio);
+                    const g = Math.round(255 - (255 - 197) * ratio);
+                    const b = Math.round(255 - (255 - 94) * ratio);
+                    return `rgb(${r}, ${g}, ${b})`;
+                } else if (time >= 15) {
+                    const ratio = (time - 15) / 15;
+                    const r = 255;
+                    const g = Math.round(193 + (255 - 193) * ratio);
+                    const b = Math.round(7 + (255 - 7) * ratio);
+                    return `rgb(${r}, ${g}, ${b})`;
+                } else {
+                    const ratio = time / 15;
+                    const r = 239;
+                    const g = Math.round(68 + (193 - 68) * ratio);
+                    const b = Math.round(68 + (7 - 68) * ratio);
+                    return `rgb(${r}, ${g}, ${b})`;
+                }
             };
+            
+            const timer1Value = (currentRound === 7 || currentRound === 14) ? 
+                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
+                powerupPhase ? powerupTimer : team1Time;
+            
+            const timer2Value = (currentRound === 7 || currentRound === 14) ? 
+                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)) : 
+                powerupPhase ? powerupTimer : team2Time;
+            
+            const timer1Color = getTimerColor(timer1Value);
+            const timer2Color = getTimerColor(timer2Value);
 
             // Auto-resize text to fit container
             useEffect(() => {
@@ -2131,40 +2157,10 @@
                                             <div className="text-8xl font-black" style={{
                                                 WebkitTextStroke: '2px black',
                                                 textStroke: '2px black',
-                                                color: (() => {
-                                                    const time = (currentRound === 7 || currentRound === 14) ? 
-                                                        ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
-                                                        powerupPhase ? powerupTimer : team1Time;
-                                                    
-                                                    // Interpolate between colors
-                                                    if (time >= 30) {
-                                                        // White (30) to Green (45)
-                                                        const ratio = Math.min((time - 30) / 15, 1);
-                                                        const r = Math.round(255 - (255 - 34) * ratio);
-                                                        const g = Math.round(255 - (255 - 197) * ratio);
-                                                        const b = Math.round(255 - (255 - 94) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    } else if (time >= 15) {
-                                                        // Yellow (15) to White (30)
-                                                        const ratio = (time - 15) / 15;
-                                                        const r = Math.round(255);
-                                                        const g = Math.round(193 + (255 - 193) * ratio);
-                                                        const b = Math.round(7 + (255 - 7) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    } else {
-                                                        // Red (0) to Yellow (15)
-                                                        const ratio = time / 15;
-                                                        const r = Math.round(239);
-                                                        const g = Math.round(68 + (193 - 68) * ratio);
-                                                        const b = Math.round(68 + (7 - 68) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    }
-                                                })(),
+                                                color: timer1Color,
                                                 transition: 'color 0.3s ease'
                                             }}>
-                                                {(currentRound === 7 || currentRound === 14) ? (
-                                                    (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
-                                                ) : powerupPhase ? powerupTimer : team1Time}
+                                                {timer1Value}
                                             </div>
                                         </div>
                                     
@@ -2191,43 +2187,13 @@
                                             opacity: 1
                                         }}>
                                             <div className="text-8xl font-black" style={{
-                                                WebkitTextStroke: '2px black',
-                                                textStroke: '2px black',
-                                                color: (() => {
-                                                    const time = (currentRound === 7 || currentRound === 14) ? 
-                                                        ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
-                                                        powerupPhase ? powerupTimer : team2Time;
-                                                    
-                                                    // Interpolate between colors
-                                                    if (time >= 30) {
-                                                        // White (30) to Green (45)
-                                                        const ratio = Math.min((time - 30) / 15, 1);
-                                                        const r = Math.round(255 - (255 - 34) * ratio);
-                                                        const g = Math.round(255 - (255 - 197) * ratio);
-                                                        const b = Math.round(255 - (255 - 94) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    } else if (time >= 15) {
-                                                        // Yellow (15) to White (30)
-                                                        const ratio = (time - 15) / 15;
-                                                        const r = Math.round(255);
-                                                        const g = Math.round(193 + (255 - 193) * ratio);
-                                                        const b = Math.round(7 + (255 - 7) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    } else {
-                                                        // Red (0) to Yellow (15)
-                                                        const ratio = time / 15;
-                                                        const r = Math.round(239);
-                                                        const g = Math.round(68 + (193 - 68) * ratio);
-                                                        const b = Math.round(68 + (7 - 68) * ratio);
-                                                        return `rgb(${r}, ${g}, ${b})`;
-                                                    }
-                                                })(),
-                                                transition: 'color 0.3s ease'
-                                            }}>
-                                                {(currentRound === 7 || currentRound === 14) ? (
-                                                    (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
-                                                ) : powerupPhase ? powerupTimer : team2Time}
-                                            </div>
+                                            WebkitTextStroke: '2px black',
+                                            textStroke: '2px black',
+                                            color: timer2Color,
+                                            transition: 'color 0.3s ease'
+                                        }}>
+                                            {timer2Value}
+                                        </div>
                                         </div>
                                     </div>
                         
