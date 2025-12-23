@@ -2658,10 +2658,11 @@
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') ||
                                          (activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
-                                <div className="text-8xl font-black text-white" style={{
-                                    WebkitTextStroke: '2px black',
-                                    textStroke: '2px black'
+                                <div className="text-8xl font-black timer-text" style={{
+                                    color: timer1Color
                                 }}>
+                                    {timer1Value}
+                                </div>
                                     {(currentRound === 7 || currentRound === 14) ? (
                                         (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)
                                     ) : powerupPhase ? powerupTimer : team1Time}
@@ -2694,10 +2695,11 @@
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') || 
                                          (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
                             }}>
-                                <div className="text-8xl font-black text-white" style={{
-                                    WebkitTextStroke: '2px black',
-                                    textStroke: '2px black'
+                                <div className="text-8xl font-black timer-text" style={{
+                                    color: timer2Color
                                 }}>
+                                    {timer2Value}
+                                </div>
                                     {(currentRound === 7 || currentRound === 14) ? (
                                         (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)
                                     ) : powerupPhase ? powerupTimer : team2Time}
