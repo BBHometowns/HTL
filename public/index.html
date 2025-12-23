@@ -2953,7 +2953,7 @@
                                                 >
                                                     REVEAL QUESTION
                                                 </button>
-                                            ) : !timerRunning && !showAnswer ? (
+                                            ) : !timerRunning && !showAnswer && ((activeTimer === 1 && team1Time > 0) || (activeTimer === 2 && team2Time > 0)) ? (
                                                 <button 
                                                     onClick={handleStartTimer}
                                                     className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
