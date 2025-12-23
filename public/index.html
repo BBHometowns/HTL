@@ -1684,7 +1684,7 @@
                                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter' && roomCode) {
-                                        setShowRoomSetup(false);
+                                        setShouldConnect(true);
                                     }
                                 }}
                                 className="w-full text-center text-3xl font-bold bg-gray-800 text-white rounded p-4 mb-4 uppercase"
