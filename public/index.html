@@ -683,26 +683,28 @@
 
             // Calculate timer colors with gradients
             const getTimerColor = (time) => {
-                console.log('Timer color for time:', time); // ADD THIS LINE
+                let color;
                 if (time >= 30) {
                     const ratio = Math.min((time - 30) / 15, 1);
                     const r = Math.round(255 - (255 - 34) * ratio);
                     const g = Math.round(255 - (255 - 197) * ratio);
                     const b = Math.round(255 - (255 - 94) * ratio);
-                    return `rgb(${r}, ${g}, ${b})`;
+                    color = `rgb(${r}, ${g}, ${b})`;
                 } else if (time >= 15) {
                     const ratio = (time - 15) / 15;
                     const r = 255;
                     const g = Math.round(193 + (255 - 193) * ratio);
                     const b = Math.round(7 + (255 - 7) * ratio);
-                    return `rgb(${r}, ${g}, ${b})`;
+                    color = `rgb(${r}, ${g}, ${b})`;
                 } else {
                     const ratio = time / 15;
                     const r = 239;
                     const g = Math.round(68 + (193 - 68) * ratio);
                     const b = Math.round(68 + (7 - 68) * ratio);
-                    return `rgb(${r}, ${g}, ${b})`;
+                    color = `rgb(${r}, ${g}, ${b})`;
                 }
+                console.log(`Timer color for time ${time}: ${color}`); // More detailed log
+                return color;
             };
             
             const timer1Value = (currentRound === 7 || currentRound === 14) ? 
@@ -715,6 +717,7 @@
             
             const timer1Color = getTimerColor(timer1Value);
             const timer2Color = getTimerColor(timer2Value);
+            console.log('Timer 1 color:', timer1Color, 'Timer 2 color:', timer2Color);
 
             // Auto-resize text to fit container
             useEffect(() => {
