@@ -678,6 +678,7 @@
 
             // Calculate timer colors with gradients
             const getTimerColor = (time) => {
+                console.log('Timer color for time:', time); // ADD THIS LINE
                 if (time >= 30) {
                     const ratio = Math.min((time - 30) / 15, 1);
                     const r = Math.round(255 - (255 - 34) * ratio);
