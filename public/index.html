@@ -2135,10 +2135,30 @@
                                                     const time = (currentRound === 7 || currentRound === 14) ? 
                                                         ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
                                                         powerupPhase ? powerupTimer : team1Time;
-                                                    if (time > 30) return '#22c55e';
-                                                    if (time >= 10) return '#ffffff';
-                                                    if (time >= 5) return '#ef4444';
-                                                    return '#991b1b';
+                                                    
+                                                    // Interpolate between colors
+                                                    if (time >= 30) {
+                                                        // White (30) to Green (45)
+                                                        const ratio = Math.min((time - 30) / 15, 1);
+                                                        const r = Math.round(255 - (255 - 34) * ratio);
+                                                        const g = Math.round(255 - (255 - 197) * ratio);
+                                                        const b = Math.round(255 - (255 - 94) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    } else if (time >= 15) {
+                                                        // Yellow (15) to White (30)
+                                                        const ratio = (time - 15) / 15;
+                                                        const r = Math.round(255);
+                                                        const g = Math.round(193 + (255 - 193) * ratio);
+                                                        const b = Math.round(7 + (255 - 7) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    } else {
+                                                        // Red (0) to Yellow (15)
+                                                        const ratio = time / 15;
+                                                        const r = Math.round(239);
+                                                        const g = Math.round(68 + (193 - 68) * ratio);
+                                                        const b = Math.round(68 + (7 - 68) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    }
                                                 })(),
                                                 transition: 'color 0.3s ease'
                                             }}>
@@ -2176,11 +2196,31 @@
                                                 color: (() => {
                                                     const time = (currentRound === 7 || currentRound === 14) ? 
                                                         ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
-                                                        powerupPhase ? powerupTimer : team1Time;
-                                                    if (time > 30) return '#22c55e';
-                                                    if (time >= 10) return '#ffffff';
-                                                    if (time >= 5) return '#ef4444';
-                                                    return '#991b1b';
+                                                        powerupPhase ? powerupTimer : team2Time;
+                                                    
+                                                    // Interpolate between colors
+                                                    if (time >= 30) {
+                                                        // White (30) to Green (45)
+                                                        const ratio = Math.min((time - 30) / 15, 1);
+                                                        const r = Math.round(255 - (255 - 34) * ratio);
+                                                        const g = Math.round(255 - (255 - 197) * ratio);
+                                                        const b = Math.round(255 - (255 - 94) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    } else if (time >= 15) {
+                                                        // Yellow (15) to White (30)
+                                                        const ratio = (time - 15) / 15;
+                                                        const r = Math.round(255);
+                                                        const g = Math.round(193 + (255 - 193) * ratio);
+                                                        const b = Math.round(7 + (255 - 7) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    } else {
+                                                        // Red (0) to Yellow (15)
+                                                        const ratio = time / 15;
+                                                        const r = Math.round(239);
+                                                        const g = Math.round(68 + (193 - 68) * ratio);
+                                                        const b = Math.round(68 + (7 - 68) * ratio);
+                                                        return `rgb(${r}, ${g}, ${b})`;
+                                                    }
                                                 })(),
                                                 transition: 'color 0.3s ease'
                                             }}>
