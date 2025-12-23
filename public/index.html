@@ -2155,12 +2155,16 @@
                                             height: '200px',
                                             opacity: 1
                                         }}>
-                                            <div className="text-8xl font-black" style={{
-                                                WebkitTextStroke: '2px black',
-                                                textStroke: '2px black',
-                                                color: timer1Color,
-                                                transition: 'color 0.3s ease'
-                                            }}>
+                                            <div 
+                                                key={`timer1-${timer1Color}`}
+                                                className="text-8xl font-black" 
+                                                style={{
+                                                    WebkitTextStroke: '2px black',
+                                                    textStroke: '2px black',
+                                                    color: timer1Color,
+                                                    transition: 'color 0.3s ease'
+                                                }}
+                                            >
                                                 {timer1Value}
                                             </div>
                                         </div>
@@ -2187,14 +2191,18 @@
                                             height: '200px',
                                             opacity: 1
                                         }}>
-                                            <div className="text-8xl font-black" style={{
-                                            WebkitTextStroke: '2px black',
-                                            textStroke: '2px black',
-                                            color: timer2Color,
-                                            transition: 'color 0.3s ease'
-                                        }}>
-                                            {timer2Value}
-                                        </div>
+                                            <div 
+                                                key={`timer2-${timer2Color}`}
+                                                className="text-8xl font-black" 
+                                                style={{
+                                                    WebkitTextStroke: '2px black',
+                                                    textStroke: '2px black',
+                                                    color: timer2Color,
+                                                    transition: 'color 0.3s ease'
+                                                }}
+                                            >
+                                                {timer2Value}
+                                            </div>
                                         </div>
                                     </div>
                         
