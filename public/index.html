@@ -2131,9 +2131,15 @@
                                             <div className="text-8xl font-black" style={{
                                                 WebkitTextStroke: '2px black',
                                                 textStroke: '2px black',
-                                                color: getTimerColor((currentRound === 7 || currentRound === 14) ? 
-                                                    ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
-                                                    powerupPhase ? powerupTimer : team1Time),
+                                                color: (() => {
+                                                    const time = (currentRound === 7 || currentRound === 14) ? 
+                                                        ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
+                                                        powerupPhase ? powerupTimer : team1Time;
+                                                    if (time > 30) return '#22c55e';
+                                                    if (time >= 10) return '#ffffff';
+                                                    if (time >= 5) return '#ef4444';
+                                                    return '#991b1b';
+                                                })(),
                                                 transition: 'color 0.3s ease'
                                             }}>
                                                 {(currentRound === 7 || currentRound === 14) ? (
@@ -2167,9 +2173,15 @@
                                             <div className="text-8xl font-black" style={{
                                                 WebkitTextStroke: '2px black',
                                                 textStroke: '2px black',
-                                                color: getTimerColor((currentRound === 7 || currentRound === 14) ? 
-                                                    ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)) : 
-                                                    powerupPhase ? powerupTimer : team2Time),
+                                                color: (() => {
+                                                    const time = (currentRound === 7 || currentRound === 14) ? 
+                                                        ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
+                                                        powerupPhase ? powerupTimer : team1Time;
+                                                    if (time > 30) return '#22c55e';
+                                                    if (time >= 10) return '#ffffff';
+                                                    if (time >= 5) return '#ef4444';
+                                                    return '#991b1b';
+                                                })(),
                                                 transition: 'color 0.3s ease'
                                             }}>
                                                 {(currentRound === 7 || currentRound === 14) ? (
