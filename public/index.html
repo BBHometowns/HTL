@@ -46,7 +46,6 @@
         }
         .score-text {
             -webkit-text-stroke: 6px white;
-            text-stroke: 6px white;
         }
         .fade-in {
             animation: fadeIn 0.8s ease-in;
@@ -164,12 +163,11 @@
             margin: 0;
         }
         input[type=number] {
-            -moz-appearance: textfield;
+            appearance: textfield;
         }
 
         .timer-text {
             -webkit-text-stroke: 2px black;
-            text-stroke: 2px black;
         }
     </style>
 </head>
@@ -265,6 +263,16 @@
             const [showRoomSetup, setShowRoomSetup] = useState(false);
             const [waitingDots, setWaitingDots] = useState('.');
             const [lastPowerupsUsed, setLastPowerupsUsed] = useState([]); // Track multiple powerups
+            const [adminStep, setAdminStep] = useState(1);
+            const [selectedBonusType, setSelectedBonusType] = useState(null);
+            const [selectedTiebreakerType, setSelectedTiebreakerType] = useState(null);
+
+            // Google Sheets data
+            const [sheetsMatches, setSheetsMatches] = useState([]);
+            const [closestToQuestions, setClosestToQuestions] = useState([]);
+            const [shootoutQuestions, setShootoutQuestions] = useState([]);
+            const [sheetsLoading, setSheetsLoading] = useState(true);
+            const [sheetsError, setSheetsError] = useState(null);
             
             // All 16 teams data
             const teamsData = [
@@ -286,394 +294,9 @@
                 { id: 16, name: "Weathermen", logo: "Weathermen.png", color: "#FEC8D8" }
             ];
 
-            // Match Data - Each match contains rounds, bonus type, and bonus questions
-            const matchesData = [
-                {
-                    id: 1,
-                    name: "Consalvo 1",
-                    bonusType: "closestTo", // or "shootout"
-                    rounds: [
-                        { 
-                            category: "BOARD GAMES", 
-                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
-                            answer1: "Scythe",
-                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
-                            answer2: "Risk"
-                        },
-                        { 
-                            category: "SCIENCE", 
-                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
-                            answer1: "Higgs Boson",
-                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
-                            answer2: "Jupiter"
-                        },
-                        { 
-                            category: "MUSIC", 
-                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
-                            answer1: "Bohemian Rhapsody",
-                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
-                            answer2: "Beyoncé"
-                        },
-                        { 
-                            category: "MOVIES", 
-                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
-                            answer1: "The Shawshank Redemption",
-                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
-                            answer2: "John Ford"
-                        },
-                        { 
-                            category: "GEOGRAPHY", 
-                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
-                            answer1: "South Africa",
-                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
-                            answer2: "Istanbul"
-                        },
-                        { 
-                            category: "SPORTS", 
-                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
-                            answer1: "Michael Phelps",
-                            question2: "This is the only sport to have been played on the moon.",
-                            answer2: "Golf"
-                        },
-                        { 
-                            category: "HISTORY", 
-                            question1: "This ancient wonder of the world is the only one still standing today.",
-                            answer1: "Great Pyramid of Giza",
-                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
-                            answer2: "The Hundred Years' War"
-                        },
-                        { 
-                            category: "LITERATURE", 
-                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
-                            answer1: "Leo Tolstoy",
-                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
-                            answer2: "Hamlet"
-                        },
-                        { 
-                            category: "FOOD & DRINK", 
-                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
-                            answer1: "Saffron",
-                            question2: "This fruit is technically a berry, while strawberries are not.",
-                            answer2: "Banana"
-                        },
-                        { 
-                            category: "TECHNOLOGY", 
-                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
-                            answer1: "Python",
-                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
-                            answer2: "Intel"
-                        },
-                        { 
-                            category: "ART", 
-                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
-                            answer1: "Vincent van Gogh",
-                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
-                            answer2: "Michelangelo"
-                        },
-                        { 
-                            category: "NATURE", 
-                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
-                            answer1: "Great Barrier Reef",
-                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
-                            answer2: "Elephant"
-                        }
-                    ],
-                    bonusQuestions: [
-                        {
-                            question: "In what year did the first iPhone release?",
-                            answer: 2007
-                        },
-                        {
-                            question: "How many bones are in the adult human body?",
-                            answer: 206
-                        },
-                        {
-                            question: "What is the distance in miles from New York City to Los Angeles?",
-                            answer: 2789
-                        },
-                        {
-                            question: "How many episodes of The Office (US) were produced?",
-                            answer: 201
-                        },
-                        {
-                            question: "What is the height in feet of the Eiffel Tower?",
-                            answer: 1083
-                        }
-                    ],
-                    tieBreakerQuestions: [
-                        {
-                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen. Name the Top 30 highest-earning US businesses of 2023.",
-                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
-                            answers: [
-                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
-                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
-                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
-                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
-                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
-                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    name: "CLC 1",
-                    bonusType: "shootout", // Placeholder - we'll build shootout later
-                    rounds: [
-                        // Copy same rounds structure as above - you can change questions later
-                        { 
-                            category: "BOARD GAMES", 
-                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
-                            answer1: "Scythe",
-                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
-                            answer2: "Risk"
-                        },
-                        { 
-                            category: "SCIENCE", 
-                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
-                            answer1: "Higgs Boson",
-                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
-                            answer2: "Jupiter"
-                        },
-                        { 
-                            category: "MUSIC", 
-                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
-                            answer1: "Bohemian Rhapsody",
-                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
-                            answer2: "Beyoncé"
-                        },
-                        { 
-                            category: "MOVIES", 
-                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
-                            answer1: "The Shawshank Redemption",
-                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
-                            answer2: "John Ford"
-                        },
-                        { 
-                            category: "GEOGRAPHY", 
-                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
-                            answer1: "South Africa",
-                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
-                            answer2: "Istanbul"
-                        },
-                        { 
-                            category: "SPORTS", 
-                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
-                            answer1: "Michael Phelps",
-                            question2: "This is the only sport to have been played on the moon.",
-                            answer2: "Golf"
-                        },
-                        { 
-                            category: "HISTORY", 
-                            question1: "This ancient wonder of the world is the only one still standing today.",
-                            answer1: "Great Pyramid of Giza",
-                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
-                            answer2: "The Hundred Years' War"
-                        },
-                        { 
-                            category: "LITERATURE", 
-                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
-                            answer1: "Leo Tolstoy",
-                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
-                            answer2: "Hamlet"
-                        },
-                        { 
-                            category: "FOOD & DRINK", 
-                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
-                            answer1: "Saffron",
-                            question2: "This fruit is technically a berry, while strawberries are not.",
-                            answer2: "Banana"
-                        },
-                        { 
-                            category: "TECHNOLOGY", 
-                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
-                            answer1: "Python",
-                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
-                            answer2: "Intel"
-                        },
-                        { 
-                            category: "ART", 
-                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
-                            answer1: "Vincent van Gogh",
-                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
-                            answer2: "Michelangelo"
-                        },
-                        { 
-                            category: "NATURE", 
-                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
-                            answer1: "Great Barrier Reef",
-                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
-                            answer2: "Elephant"
-                        }
-                    ],
-                    bonusQuestions: [
-                        {
-                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen and several became trillion-dollar companies. Name the Top 30 highest-earning US businesses of 2023.",
-                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
-                            answers: [
-                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
-                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
-                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
-                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
-                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
-                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
-                            ]
-                        }
-                    ],
-                    tieBreakerQuestions: [
-                        {
-                            question: "In what year did the first iPhone release?",
-                            answer: 2007
-                        },
-                        {
-                            question: "How many bones are in the adult human body?",
-                            answer: 206
-                        },
-                        {
-                            question: "What is the distance in miles from New York City to Los Angeles?",
-                            answer: 2789
-                        },
-                        {
-                            question: "How many episodes of The Office (US) were produced?",
-                            answer: 201
-                        },
-                        {
-                            question: "What is the height in feet of the Eiffel Tower?",
-                            answer: 1083
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    name: "Focer 1",
-                    bonusType: "closestTo",
-                    rounds: [
-                        // Copy same rounds structure - you can customize later
-                        { 
-                            category: "BOARD GAMES", 
-                            question1: "In this 2016 title, now the 19th ranked board game of all time on BoardGameGeek, players take one of five factions vying for dominance in a war-torn, mech-filled, dieselpunk 1920s Europe.",
-                            answer1: "Scythe",
-                            question2: "This classic strategy game, created in 1957, challenges players to conquer territories across a world map through dice-based combat and strategic deployment of armies.",
-                            answer2: "Risk"
-                        },
-                        { 
-                            category: "SCIENCE", 
-                            question1: "This fundamental particle, discovered at CERN in 2012, gives other particles their mass and was theorized by Peter Higgs in 1964.",
-                            answer1: "Higgs Boson",
-                            question2: "This planet in our solar system has the most moons, with over 90 confirmed natural satellites orbiting it.",
-                            answer2: "Jupiter"
-                        },
-                        { 
-                            category: "MUSIC", 
-                            question1: "This 1975 song by Queen features an operatic section and was initially considered too long for radio play at nearly 6 minutes.",
-                            answer1: "Bohemian Rhapsody",
-                            question2: "This artist holds the record for most Grammy wins by any artist with 32 total awards as of 2023.",
-                            answer2: "Beyoncé"
-                        },
-                        { 
-                            category: "MOVIES", 
-                            question1: "This 1994 film, directed by Frank Darabont and starring Tim Robbins and Morgan Freeman, is the highest-rated movie on IMDB.",
-                            answer1: "The Shawshank Redemption",
-                            question2: "This director has won the most Academy Awards for Best Director, with four Oscars to his name.",
-                            answer2: "John Ford"
-                        },
-                        { 
-                            category: "GEOGRAPHY", 
-                            question1: "This is the only country that borders both the Atlantic and Indian Oceans.",
-                            answer1: "South Africa",
-                            question2: "This European capital city is located on two continents, split by the Bosphorus Strait.",
-                            answer2: "Istanbul"
-                        },
-                        { 
-                            category: "SPORTS", 
-                            question1: "This athlete has won the most Olympic gold medals in history with 23 golds across multiple Summer Olympics.",
-                            answer1: "Michael Phelps",
-                            question2: "This is the only sport to have been played on the moon.",
-                            answer2: "Golf"
-                        },
-                        { 
-                            category: "HISTORY", 
-                            question1: "This ancient wonder of the world is the only one still standing today.",
-                            answer1: "Great Pyramid of Giza",
-                            question2: "This war, lasting from 1337 to 1453, was actually a series of conflicts between England and France.",
-                            answer2: "The Hundred Years' War"
-                        },
-                        { 
-                            category: "LITERATURE", 
-                            question1: "This Russian author wrote 'War and Peace,' one of the longest novels ever written.",
-                            answer1: "Leo Tolstoy",
-                            question2: "This Shakespeare play is his longest, with over 4,000 lines.",
-                            answer2: "Hamlet"
-                        },
-                        { 
-                            category: "FOOD & DRINK", 
-                            question1: "This is the most expensive spice in the world by weight, derived from crocus flowers.",
-                            answer1: "Saffron",
-                            question2: "This fruit is technically a berry, while strawberries are not.",
-                            answer2: "Banana"
-                        },
-                        { 
-                            category: "TECHNOLOGY", 
-                            question1: "This programming language, created by Guido van Rossum in 1991, is named after a British comedy group.",
-                            answer1: "Python",
-                            question2: "This company created the first commercial microprocessor in 1971, the Intel 4004.",
-                            answer2: "Intel"
-                        },
-                        { 
-                            category: "ART", 
-                            question1: "This Dutch post-impressionist painter cut off part of his own ear and only sold one painting during his lifetime.",
-                            answer1: "Vincent van Gogh",
-                            question2: "This Italian Renaissance artist painted the ceiling of the Sistine Chapel between 1508 and 1512.",
-                            answer2: "Michelangelo"
-                        },
-                        { 
-                            category: "NATURE", 
-                            question1: "This is the largest living structure on Earth, visible from space, located off the coast of Australia.",
-                            answer1: "Great Barrier Reef",
-                            question2: "This mammal has the longest gestation period of any animal, lasting approximately 22 months.",
-                            answer2: "Elephant"
-                        }
-                    ],
-                    bonusQuestions: [
-                        {
-                            question: "In what year did the first iPhone release?",
-                            answer: 2007
-                        },
-                        {
-                            question: "How many bones are in the adult human body?",
-                            answer: 206
-                        },
-                        {
-                            question: "What is the distance in miles from New York City to Los Angeles?",
-                            answer: 2789
-                        },
-                        {
-                            question: "How many episodes of The Office (US) were produced?",
-                            answer: 201
-                        },
-                        {
-                            question: "What is the height in feet of the Eiffel Tower?",
-                            answer: 1083
-                        }
-                    ],
-                    tieBreakerQuestions: [
-                        {
-                            longQuestion: "According to an article published in Forbes Magazine in 2023, businesses earned the highest profits they've ever seen. Name the Top 30 highest-earning US businesses of 2023.",
-                            shortQuestion: "Top 30 highest-earning US businesses of 2023",
-                            answers: [
-                                "Apple", "Microsoft", "Alphabet (Google)", "Amazon", "Berkshire Hathaway",
-                                "UnitedHealth Group", "ExxonMobil", "Johnson & Johnson", "JPMorgan Chase", "Visa",
-                                "Procter & Gamble", "Walmart", "Mastercard", "Chevron", "Home Depot",
-                                "Eli Lilly", "Merck", "Coca-Cola", "Bank of America", "AbbVie",
-                                "PepsiCo", "Costco", "Pfizer", "Cisco", "McDonald's",
-                                "Broadcom", "Thermo Fisher", "Abbott Laboratories", "Oracle", "Comcast"
-                            ]
-                        }
-                    ]
-                }
-            ];
-
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
+            const SHEETS_API_KEY = 'AIzaSyBLbJVMfP7vCU0ccKwVcwNBJPOlN8BAFvI';
+            const SHEETS_ID = '1EN3FSORt1A0TKcHcnaz62CDF0rdGABVGG_2IuYEja7o';
             const firebaseConfig = {
                 databaseURL: "https://hometowns-trivia-league-default-rtdb.firebaseio.com/"
             };
@@ -703,7 +326,6 @@
                     const b = Math.round(68 + (7 - 68) * ratio);
                     color = `rgb(${r}, ${g}, ${b})`;
                 }
-                console.log(`Timer color for time ${time}: ${color}`); // More detailed log
                 return color;
             };
             
@@ -717,7 +339,11 @@
             
             const timer1Color = getTimerColor(timer1Value);
             const timer2Color = getTimerColor(timer2Value);
-            console.log('Timer 1 color:', timer1Color, 'Timer 2 color:', timer2Color);
+
+            // Load Google Sheets data on page load
+            useEffect(() => {
+                fetchSheetsData();
+            }, []);
 
             // Auto-resize text to fit container
             useEffect(() => {
@@ -956,6 +582,141 @@
                 }
             }, [userMode, gameStarted, showIntro]);
 
+            // Fetch all data from Google Sheets
+            const fetchSheetsData = async () => {
+                setSheetsLoading(true);
+                setSheetsError(null);
+                
+                try {
+                    // First, get the list of all tabs (sheets) in the spreadsheet
+                    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}?key=${SHEETS_API_KEY}`;
+                    const metaResponse = await fetch(metaUrl);
+                    
+                    if (!metaResponse.ok) {
+                        throw new Error('Failed to connect to Google Sheets. Check your API key and Sheet ID.');
+                    }
+                    
+                    const metaData = await metaResponse.json();
+                    const allSheets = metaData.sheets.map(s => s.properties.title);
+                    
+                    // Separate match tabs from bonus tabs
+                    const matchTabs = allSheets.filter(name => name.toUpperCase().startsWith('MATCH'));
+                    const closestToTab = allSheets.find(name => name.toUpperCase() === 'CLOSEST TO');
+                    const shootoutTab = allSheets.find(name => name.toUpperCase() === 'SHOOTOUT');
+                    const hasClosestTo = !!closestToTab;
+                    const hasShootout = !!shootoutTab;
+                    
+                    // --- LOAD MATCH TABS ---
+                    const loadedMatches = [];
+                    
+                    for (const tabName of matchTabs) {
+                        const matchName = tabName.substring(5).trim(); // Remove "MATCH" prefix
+                        
+                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(tabName)}!A2:E25?key=${SHEETS_API_KEY}`;
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        const rows = data.values || [];
+                        
+                        // Parse rows into rounds
+                        const rounds = [];
+                        for (let i = 0; i < rows.length; i += 2) {
+                            const row1 = rows[i] || [];
+                            const row2 = rows[i + 1] || [];
+                            
+                            if (row1.length < 5) continue; // Skip incomplete rows
+                            
+                            rounds.push({
+                                category: row1[1] || '',      // Column B
+                                question1: row1[3] || '',     // Column D
+                                answer1: row1[4] || '',       // Column E
+                                question2: row2[3] || '',     // Column D
+                                answer2: row2[4] || ''        // Column E
+                            });
+                        }
+                        
+                        loadedMatches.push({
+                            id: tabName,
+                            name: matchName,
+                            rounds: rounds
+                        });
+                    }
+                    
+                    setSheetsMatches(loadedMatches);
+                    
+                    // --- LOAD CLOSEST TO TAB ---
+                    if (hasClosestTo) {
+                        const ctUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(closestToTab)}!A2:C1000?key=${SHEETS_API_KEY}`;
+                        const ctResponse = await fetch(ctUrl);
+                        const ctData = await ctResponse.json();
+                        const ctRows = ctData.values || [];
+                        
+                        // Skip Row 1 (labels), load all questions
+                        const questions = ctRows
+                            .filter(row => row[0] && row[1]) // Must have question and answer
+                            .map(row => ({
+                                question: row[0],
+                                answer: parseFloat(row[1]),
+                                lastUsed: row[2] || ''
+                            }));
+                        
+                        // Shuffle so they come out in random order each game
+                        const shuffled = questions.sort(() => Math.random() - 0.5);
+                        setClosestToQuestions(shuffled);
+                    }
+                    
+                    // --- LOAD SHOOTOUT TAB ---
+                    if (hasShootout) {
+                        const soUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(shootoutTab)}!A1:Z200?key=${SHEETS_API_KEY}`;
+                        const soResponse = await fetch(soUrl);
+                        const soData = await soResponse.json();
+                        const soRows = soData.values || [];
+                        
+                        if (soRows.length > 0) {
+                            const questions = [];
+                            
+                            // Column A has row labels, data starts at column B (index 1)
+                            // Each column from B onward is one question
+                            const numCols = soRows[0]?.length || 0;
+
+                            for (let col = 1; col < numCols; col++) {
+                                const longQuestion = soRows[0]?.[col] || '';   // Row 1, this column
+                                const lastUsed = soRows[1]?.[col] || '';       // Row 2, this column
+                                const shortQuestion = soRows[2]?.[col] || '';  // Row 3, this column
+                                
+                                // Answers start at Row 4 (index 3)
+                                const answers = [];
+                                for (let row = 3; row < soRows.length; row++) {
+                                    const answer = soRows[row]?.[col];
+                                    if (answer && answer.trim() !== '') {
+                                        answers.push(answer.trim());
+                                    }
+                                }
+                                
+                                if (longQuestion && answers.length > 0) {
+                                    questions.push({
+                                        colIndex: col,
+                                        longQuestion,
+                                        shortQuestion,
+                                        lastUsed,
+                                        answers
+                                    });
+                                }
+                            }
+                            
+                            setShootoutQuestions(questions);
+                        }
+                    }
+                    
+                    setSheetsLoading(false);
+                    console.log('✅ Google Sheets data loaded successfully');
+                    
+                } catch (error) {
+                    console.error('❌ Error loading Google Sheets data:', error);
+                    setSheetsError(error.message);
+                    setSheetsLoading(false);
+                }
+            };
+
             const handleRevealCategory = () => {
                 setShowCategory(true);
                 setTimerRunning(false); // Stop timer when revealing category
@@ -1015,6 +776,25 @@
 
             const handleStartTimer = () => {
                 setTimerRunning(true);
+            };
+
+            const handleResetTimer = () => {
+                setTimerRunning(false);
+                if (stealAttempted) {
+                    // During a steal, always reset to 15 regardless of powerups
+                    if (activeTimer === 1) {
+                        setTeam1Time(15);
+                    } else {
+                        setTeam2Time(15);
+                    }
+                } else {
+                    // Normal turn - reset to original time for that team
+                    if (activeTimer === 1) {
+                        setTeam1Time(!team1Powerups.extraTime ? 45 : 30);
+                    } else {
+                        setTeam2Time(!team2Powerups.extraTime ? 45 : 30);
+                    }
+                }
             };
 
             const handleCorrect = () => {
@@ -1219,10 +999,17 @@
             
             const handleConfirmTeams = () => {
                 if (selectedTeam1 && selectedTeam2) {
-                    setTeamsConfirmed(true);
+                    setAdminStep(2);
                 }
             };
             
+            const handleConfirmSetup = () => {
+                setBonusType(selectedBonusType);
+                setTieBreakerType(selectedTiebreakerType);
+                setTeamsConfirmed(true);
+                setTimeout(() => broadcastGameState(), 100);
+            };
+
             const handleStartMatch = () => {
                 setShowIntro(true);
                 // Broadcast that match is starting
@@ -1292,18 +1079,6 @@
             
             const handleMatchSelection = (match) => {
                 setSelectedMatch(match);
-                setBonusType(match.bonusType);
-            };
-            
-            const handleCloseAdmin = () => {
-                if (selectedTeam1 && selectedTeam2 && selectedMatch) {
-                    setShowAdminModal(false);
-                    setTeamsConfirmed(true);
-                    // Broadcast that setup is complete
-                    setTimeout(() => broadcastGameState(), 100);
-                } else {
-                    alert('Please select both teams and a match before closing');
-                }
             };
 
             const handleSubmitGuess = (team) => {
@@ -1592,29 +1367,15 @@
             };
 
             // Use selected match data
-            const rounds = selectedMatch ? selectedMatch.rounds : matchesData[0].rounds;
+            const rounds = selectedMatch ? selectedMatch.rounds : [];
 
-            // For bonus round (round 7)
-            const closestToQuestions = selectedMatch && bonusType === 'closestTo' 
-                ? selectedMatch.bonusQuestions 
-                : selectedMatch && bonusType === 'shootout' && selectedMatch.tieBreakerQuestions
-                ? selectedMatch.tieBreakerQuestions
-                : matchesData[0].bonusQuestions;
-            
-            const shootoutQuestion = selectedMatch && bonusType === 'shootout'
-                ? selectedMatch.bonusQuestions[0]
-                : selectedMatch && bonusType === 'closestTo' && selectedMatch.tieBreakerQuestions
-                ? selectedMatch.tieBreakerQuestions[0]
-                : matchesData[1].bonusQuestions[0];
-            
-            // For tie-breaker (round 14) - use opposite data
-            const tieBreakerClosestToQuestions = selectedMatch && tieBreakerType === 'closestTo'
-                ? (selectedMatch.tieBreakerQuestions || selectedMatch.bonusQuestions)
-                : selectedMatch?.bonusQuestions || [];
-            
-            const tieBreakerShootoutQuestion = selectedMatch && tieBreakerType === 'shootout'
-                ? (selectedMatch.tieBreakerQuestions?.[0] || selectedMatch.bonusQuestions?.[0] || {})
-                : (selectedMatch?.bonusQuestions?.[0] || {});
+            // Bonus and tiebreaker data now comes from Google Sheets state variables
+            // closestToQuestions is already loaded as state from the Sheets fetch
+            // shootoutQuestions is already loaded as state from the Sheets fetch
+            const legacyClosestToQuestions = closestToQuestions;
+            const shootoutQuestion = shootoutQuestions.length > 0 ? shootoutQuestions[0] : null;
+            const tieBreakerClosestToQuestions = closestToQuestions;
+            const tieBreakerShootoutQuestion = shootoutQuestions.length > 0 ? shootoutQuestions[0] : null;
 
             // Shuffle shootout answers when match is selected
             useEffect(() => {
@@ -1759,8 +1520,8 @@
                 );
             }
             
-            // Admin Modal - Team & Match Selection (HOST ONLY)
-            if (userMode === 'host' && !teamsConfirmed && !gameStarted && !showIntro) {
+            // Admin Setup Wizard (HOST ONLY) - Steps 1-5
+            if (userMode === 'host' && !gameStarted && !showIntro && (!teamsConfirmed || adminStep === 5)) {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
@@ -1768,21 +1529,24 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
-                        <div className="bg-gray-900 rounded-3xl p-8 border-8 max-w-7xl w-full max-h-[90vh] overflow-y-auto" style={{borderColor: '#7d3ad4'}}>
-                            <h1 className="text-5xl font-bold text-white mb-8 text-center">MATCH SETUP</h1>
-                            
-                            <div className="flex gap-8">
-                                {/* Left Side - Team Selection */}
-                                <div className="flex-1">
-                                    <h2 className="text-3xl font-bold text-cyan-400 mb-6">SELECT TEAMS</h2>
-                                    
+                        <div className="bg-gray-900 rounded-3xl p-8 border-8 w-full max-h-[90vh] overflow-y-auto" style={{
+                            borderColor: '#7d3ad4',
+                            maxWidth: '1200px',
+                            minHeight: '700px'
+                        }}>
+
+                            {/* ─── STEP 1: TEAM SELECTION ─── */}
+                            {adminStep === 1 && (
+                                <div className="flex flex-col h-full">
+                                    <h1 className="text-5xl font-bold text-white mb-8 text-center">Team Selection</h1>
+
                                     {/* Selected Teams Display */}
                                     <div className="flex gap-4 mb-6">
                                         <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
                                             <h3 className="text-xl font-bold text-cyan-400 mb-2">TEAM 1</h3>
                                             {selectedTeam1 ? (
                                                 <div className="text-center">
-                                                    <img src={`${imagePath}${selectedTeam1.logo}`} alt={selectedTeam1.name} 
+                                                    <img src={`${imagePath}${selectedTeam1.logo}`} alt={selectedTeam1.name}
                                                         className="w-24 h-24 mx-auto mb-2 object-contain" />
                                                     <p className="text-white text-sm font-bold mb-2">{selectedTeam1.name}</p>
                                                     <button onClick={() => handleDeselectTeam(1)}
@@ -1797,12 +1561,12 @@
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
                                             <h3 className="text-xl font-bold text-orange-400 mb-2">TEAM 2</h3>
                                             {selectedTeam2 ? (
                                                 <div className="text-center">
-                                                    <img src={`${imagePath}${selectedTeam2.logo}`} alt={selectedTeam2.name} 
+                                                    <img src={`${imagePath}${selectedTeam2.logo}`} alt={selectedTeam2.name}
                                                         className="w-24 h-24 mx-auto mb-2 object-contain" />
                                                     <p className="text-white text-sm font-bold mb-2">{selectedTeam2.name}</p>
                                                     <button onClick={() => handleDeselectTeam(2)}
@@ -1818,101 +1582,362 @@
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     {/* Team Grid */}
-                                    <div className="grid grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-4 gap-3 flex-1">
                                         {teamsData.map(team => {
                                             const isSelected = selectedTeam1?.id === team.id || selectedTeam2?.id === team.id;
-                                            const isDisabled = isSelected;
-                                            
                                             return (
                                                 <div
                                                     key={team.id}
-                                                    onClick={() => !isDisabled && handleTeamSelection(team)}
-                                                    className={`team-card bg-gray-800 rounded-lg p-3 border-4 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    style={{
-                                                        borderColor: isSelected ? '#FFD700' : '#7d3ad4'
-                                                    }}
+                                                    onClick={() => !isSelected && handleTeamSelection(team)}
+                                                    className={`team-card bg-gray-800 rounded-lg p-3 border-4 ${isSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    style={{ borderColor: isSelected ? '#FFD700' : '#7d3ad4' }}
                                                 >
-                                                    <img src={`${imagePath}${team.logo}`} alt={team.name} 
+                                                    <img src={`${imagePath}${team.logo}`} alt={team.name}
                                                         className="w-full h-20 object-contain mb-2" />
                                                     <p className="text-white text-center text-xs font-bold">{team.name}</p>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                </div>
-                                
-                                {/* Right Side - Match Selection */}
-                                <div className="w-80">
-                                    <h2 className="text-3xl font-bold text-purple-400 mb-6">SELECT MATCH</h2>
-                                    
-                                    <div className="flex flex-col gap-4">
-                                        {matchesData.map(match => {
-                                            const isSelected = selectedMatch?.id === match.id;
-                                            
-                                            return (
-                                                <div
-                                                    key={match.id}
-                                                    onClick={() => handleMatchSelection(match)}
-                                                    className={`bg-gray-800 rounded-lg p-6 border-4 cursor-pointer hover:scale-105 transition ${
-                                                        isSelected ? 'border-yellow-400' : ''
-                                                    }`}
-                                                    style={{
-                                                        borderColor: isSelected ? '#FFD700' : '#7d3ad4'
-                                                    }}
-                                                >
-                                                    <h3 className="text-2xl font-bold text-white mb-2">{match.name}</h3>
-                                                    <p className="text-gray-400 text-sm mb-1">Bonus: <span className="text-purple-400 font-bold">
-                                                        {match.bonusType === 'closestTo' ? 'Closest To' : 'Shootout'}
-                                                    </span></p>
-                                                    <p className="text-gray-400 text-sm">{match.rounds.length} Rounds</p>
-                                                    {isSelected && (
-                                                        <div className="mt-3 text-yellow-400 font-bold text-center">
-                                                            ✓ SELECTED
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+
+                                    {/* Confirm Button */}
+                                    <div className="mt-8 text-center">
+                                        <button
+                                            onClick={handleConfirmTeams}
+                                            disabled={!selectedTeam1 || !selectedTeam2}
+                                            className={`font-bold py-4 px-12 rounded-lg text-2xl border-4 border-black ${
+                                                selectedTeam1 && selectedTeam2
+                                                    ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+                                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            CONFIRM TEAMS
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            {/* Close Button */}
-                            <div className="mt-8 text-center">
-                                <button
-                                    onClick={handleCloseAdmin}
-                                    disabled={!selectedTeam1 || !selectedTeam2 || !selectedMatch}
-                                    className={`font-bold py-4 px-12 rounded-lg text-2xl border-4 border-black ${
-                                        selectedTeam1 && selectedTeam2 && selectedMatch 
-                                            ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer' 
-                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    CONTINUE
-                                </button>
-                            </div>
+                            )}
+
+                            {/* ─── STEP 2: MATCH SELECTION ─── */}
+                            {adminStep === 2 && (
+                                <div className="flex flex-col h-full">
+                                    <h1 className="text-5xl font-bold text-white mb-8 text-center">Match Selection</h1>
+
+                                    {/* Refresh Button */}
+                                    <div className="flex justify-end mb-4">
+                                        <button
+                                            onClick={fetchSheetsData}
+                                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg border-2 border-gray-500 text-sm"
+                                        >
+                                            ↺ Refresh Matches
+                                        </button>
+                                    </div>
+
+                                    {/* Match Cards */}
+                                    <div className="flex flex-wrap gap-4 flex-1 content-start">
+                                        {sheetsLoading ? (
+                                            <p className="text-gray-400 text-xl">Loading matches...</p>
+                                        ) : sheetsError ? (
+                                            <p className="text-red-400 text-xl">Error: {sheetsError}</p>
+                                        ) : sheetsMatches.length === 0 ? (
+                                            <p className="text-gray-400 text-xl">No matches found. Make sure your Google Sheet has tabs starting with "MATCH".</p>
+                                        ) : (
+                                            sheetsMatches.map(match => {
+                                                const isSelected = selectedMatch?.id === match.id;
+                                                return (
+                                                    <div
+                                                        key={match.id}
+                                                        onClick={() => handleMatchSelection(match)}
+                                                        className="bg-gray-800 rounded-lg p-6 border-4 cursor-pointer hover:scale-105 transition"
+                                                        style={{
+                                                            borderColor: isSelected ? '#FFD700' : '#7d3ad4',
+                                                            minWidth: '200px'
+                                                        }}
+                                                    >
+                                                        <h3 className="text-2xl font-bold text-white mb-2">{match.name}</h3>
+                                                        {isSelected && (
+                                                            <div className="mt-2 text-yellow-400 font-bold text-center">✓ SELECTED</div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {/* Navigation */}
+                                    <div className="mt-8 flex justify-between">
+                                        <button
+                                            onClick={() => setAdminStep(1)}
+                                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                        >
+                                            ← Back
+                                        </button>
+                                        <button
+                                            onClick={() => setAdminStep(3)}
+                                            disabled={!selectedMatch}
+                                            className={`font-bold py-4 px-12 rounded-lg text-xl border-4 border-black ${
+                                                selectedMatch
+                                                    ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+                                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            Continue →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ─── STEP 3: BONUS ROUND SELECTION ─── */}
+                            {adminStep === 3 && (
+                                <div className="flex flex-col h-full">
+                                    <h1 className="text-5xl font-bold text-white mb-8 text-center">Bonus Round Selection</h1>
+
+                                    <div className="flex gap-6 flex-1 justify-center items-center">
+                                        {/* Closest To Card */}
+                                        <div
+                                            onClick={() => setSelectedBonusType('closestTo')}
+                                            className="bg-gray-800 rounded-lg p-8 border-4 cursor-pointer hover:scale-105 transition flex flex-col items-center"
+                                            style={{
+                                                borderColor: selectedBonusType === 'closestTo' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Closest To</h3>
+                                            <p className="text-gray-400 text-center">{closestToQuestions.length} questions available</p>
+                                            {selectedBonusType === 'closestTo' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+
+                                        {/* Shootout Card */}
+                                        <div
+                                            onClick={() => setSelectedBonusType('shootout')}
+                                            className="bg-gray-800 rounded-lg p-8 border-4 cursor-pointer hover:scale-105 transition flex flex-col items-center"
+                                            style={{
+                                                borderColor: selectedBonusType === 'shootout' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Shootout</h3>
+                                            <p className="text-gray-400 text-center">{shootoutQuestions.length} questions available</p>
+                                            {selectedBonusType === 'shootout' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Navigation */}
+                                    <div className="mt-8 flex justify-between">
+                                        <button
+                                            onClick={() => setAdminStep(2)}
+                                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                        >
+                                            ← Back
+                                        </button>
+                                        <button
+                                            onClick={() => setAdminStep(4)}
+                                            disabled={!selectedBonusType}
+                                            className={`font-bold py-4 px-12 rounded-lg text-xl border-4 border-black ${
+                                                selectedBonusType
+                                                    ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+                                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            Continue →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ─── STEP 4: TIEBREAKER SELECTION ─── */}
+                            {adminStep === 4 && (
+                                <div className="flex flex-col h-full">
+                                    <h1 className="text-5xl font-bold text-white mb-8 text-center">Tiebreaker Selection</h1>
+
+                                    <div className="flex gap-6 flex-1 justify-center items-center">
+                                        {/* Closest To Card */}
+                                        <div
+                                            onClick={() => selectedBonusType !== 'closestTo' && setSelectedTiebreakerType('closestTo')}
+                                            className={`bg-gray-800 rounded-lg p-8 border-4 flex flex-col items-center ${
+                                                selectedBonusType === 'closestTo' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 transition'
+                                            }`}
+                                            style={{
+                                                borderColor: selectedTiebreakerType === 'closestTo' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Closest To</h3>
+                                            <p className="text-gray-400 text-center">{closestToQuestions.length} questions available</p>
+                                            {selectedBonusType === 'closestTo' && (
+                                                <p className="text-red-400 text-sm mt-2">Already used for Bonus Round</p>
+                                            )}
+                                            {selectedTiebreakerType === 'closestTo' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+
+                                        {/* Shootout Card */}
+                                        <div
+                                            onClick={() => selectedBonusType !== 'shootout' && setSelectedTiebreakerType('shootout')}
+                                            className={`bg-gray-800 rounded-lg p-8 border-4 flex flex-col items-center ${
+                                                selectedBonusType === 'shootout' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 transition'
+                                            }`}
+                                            style={{
+                                                borderColor: selectedTiebreakerType === 'shootout' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Shootout</h3>
+                                            <p className="text-gray-400 text-center">{shootoutQuestions.length} questions available</p>
+                                            {selectedBonusType === 'shootout' && (
+                                                <p className="text-red-400 text-sm mt-2">Already used for Bonus Round</p>
+                                            )}
+                                            {selectedTiebreakerType === 'shootout' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Navigation */}
+                                    <div className="mt-8 flex justify-between">
+                                        <button
+                                            onClick={() => setAdminStep(3)}
+                                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                        >
+                                            ← Back
+                                        </button>
+                                        <button
+                                            onClick={() => setAdminStep(5)}
+                                            disabled={!selectedTiebreakerType}
+                                            className={`font-bold py-4 px-12 rounded-lg text-xl border-4 border-black ${
+                                                selectedTiebreakerType
+                                                    ? 'bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+                                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            Continue →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ─── STEP 5: RECAP ─── */}
+                            {adminStep === 5 && (
+                                <div className="flex flex-col h-full">
+                                    <h1 className="text-5xl font-bold text-white mb-8 text-center">Match Recap</h1>
+
+                                    {/* Teams */}
+                                    <div className="flex gap-4 mb-8">
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1 text-center" style={{borderColor: '#7d3ad4'}}>
+                                            <img src={`${imagePath}${selectedTeam1?.logo}`} alt={selectedTeam1?.name}
+                                                className="w-20 h-20 mx-auto mb-2 object-contain" />
+                                            <p className="text-cyan-400 font-bold text-lg">{selectedTeam1?.name}</p>
+                                        </div>
+                                        <div className="flex items-center text-white text-4xl font-bold px-4">VS</div>
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1 text-center" style={{borderColor: '#7d3ad4'}}>
+                                            <img src={`${imagePath}${selectedTeam2?.logo}`} alt={selectedTeam2?.name}
+                                                className="w-20 h-20 mx-auto mb-2 object-contain" />
+                                            <p className="text-orange-400 font-bold text-lg">{selectedTeam2?.name}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Match Questions */}
+                                    <div className="bg-gray-800 rounded-lg p-6 border-4 mb-6" style={{borderColor: '#7d3ad4'}}>
+                                        <h2 className="text-2xl font-bold text-purple-400 mb-4">Match: {selectedMatch?.name}</h2>
+                                        {selectedMatch?.rounds.map((round, index) => (
+                                            <div key={index} className="mb-4 pb-4 border-b border-gray-700">
+                                                <p className="text-cyan-400 font-bold text-sm mb-1">
+                                                    Round {index + 1} — {round.category}
+                                                </p>
+                                                <p className="text-white text-sm mb-1">Q1: {round.question1}</p>
+                                                <p className="text-yellow-400 text-sm mb-2">A1: {round.answer1}</p>
+                                                <p className="text-white text-sm mb-1">Q2: {round.question2}</p>
+                                                <p className="text-yellow-400 text-sm">A2: {round.answer2}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Bonus Round */}
+                                    <div className="bg-gray-800 rounded-lg p-6 border-4 mb-6" style={{borderColor: '#7d3ad4'}}>
+                                        <h2 className="text-2xl font-bold text-purple-400 mb-4">
+                                            Bonus Round: {selectedBonusType === 'closestTo' ? 'Closest To' : 'Shootout'}
+                                        </h2>
+                                        {selectedBonusType === 'closestTo' ? (
+                                            closestToQuestions.slice(0, 5).map((q, i) => (
+                                                <div key={i} className="mb-3 pb-3 border-b border-gray-700">
+                                                    <p className="text-white text-sm">Q{i + 1}: {q.question}</p>
+                                                    <p className="text-yellow-400 text-sm">A: {q.answer}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            (() => {
+                                                const q = shootoutQuestions[0];
+                                                return q ? (
+                                                    <div>
+                                                        <p className="text-white text-sm mb-2">{q.longQuestion}</p>
+                                                        <p className="text-cyan-400 text-sm mb-2 font-bold">Short: {q.shortQuestion}</p>
+                                                        <p className="text-gray-400 text-sm mb-1">First answers:</p>
+                                                        {q.answers.slice(0, 5).map((a, i) => (
+                                                            <p key={i} className="text-yellow-400 text-sm">• {a}</p>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-gray-400">No shootout question found.</p>;
+                                            })()
+                                        )}
+                                    </div>
+
+                                    {/* Tiebreaker */}
+                                    <div className="bg-gray-800 rounded-lg p-6 border-4 mb-8" style={{borderColor: '#7d3ad4'}}>
+                                        <h2 className="text-2xl font-bold text-purple-400 mb-4">
+                                            Tiebreaker: {selectedTiebreakerType === 'closestTo' ? 'Closest To' : 'Shootout'}
+                                        </h2>
+                                        {selectedTiebreakerType === 'closestTo' ? (
+                                            closestToQuestions.slice(0, 5).map((q, i) => (
+                                                <div key={i} className="mb-3 pb-3 border-b border-gray-700">
+                                                    <p className="text-white text-sm">Q{i + 1}: {q.question}</p>
+                                                    <p className="text-yellow-400 text-sm">A: {q.answer}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            (() => {
+                                                const q = shootoutQuestions[0];
+                                                return q ? (
+                                                    <div>
+                                                        <p className="text-white text-sm mb-2">{q.longQuestion}</p>
+                                                        <p className="text-cyan-400 text-sm mb-2 font-bold">Short: {q.shortQuestion}</p>
+                                                        <p className="text-gray-400 text-sm mb-1">First answers:</p>
+                                                        {q.answers.slice(0, 5).map((a, i) => (
+                                                            <p key={i} className="text-yellow-400 text-sm">• {a}</p>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-gray-400">No shootout question found.</p>;
+                                            })()
+                                        )}
+                                    </div>
+
+                                    {/* Navigation */}
+                                    <div className="flex justify-between">
+                                        <button
+                                            onClick={() => setAdminStep(4)}
+                                            className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                        >
+                                            ← Go Back
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleConfirmSetup();
+                                                handleStartMatch();
+                                            }}
+                                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-lg border-4 border-black text-2xl"
+                                        >
+                                            START MATCH
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
-                    </div>
-                );
-            }
-            
-            // Confirmation Screen - Just background and Start Match button (HOST)
-            if (!gameStarted && !showIntro && teamsConfirmed && userMode === 'host') {
-                return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
-                        backgroundImage: `url(${imagePath}background.png)`,
-                        backgroundSize: '115%',
-                        backgroundPosition: '35% center',
-                        backgroundRepeat: 'no-repeat'
-                    }}>
-                        <button
-                            onClick={handleStartMatch}
-                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-6 px-12 rounded-lg text-3xl border-4 border-black"
-                        >
-                            START MATCH
-                        </button>
                     </div>
                 );
             }
@@ -2486,7 +2511,7 @@
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-300px'
+                                        marginTop: '-250px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -2567,7 +2592,7 @@
                                                 </div>
                                             ))
                                         )}
-                                    ))}
+                                    )
                                 </div>
                             )}
                         </div>
@@ -2678,7 +2703,7 @@
                                 <h2 className="text-5xl font-bold text-white">
                                     {currentRound === 7 ? 'BONUS ROUND' : 
                                      currentRound === 14 ? 'TIE-BREAKER' : 
-                                     `ROUND ${displayRound}${showCategory && currentRoundData ? `: ${currentRoundData.category}` : ''}`}
+                                     showCategory && currentRoundData ? currentRoundData.category : `ROUND ${displayRound}`}
                                 </h2>
                             </div>
                         
@@ -2736,7 +2761,7 @@
                                                     fontSize: '40px',
                                                     margin: 0
                                                 }}>
-                                                    {(currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].question}
+                                                    {(currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].question}
                                                 </p>
                                             ) : (
                                                 // Shootout UI
@@ -2804,17 +2829,17 @@
                                                         {/* Team 1 Side */}
                                                         <div className="flex items-center gap-8 flex-1">
                                                             <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                            {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                            {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
                                                         </div>
                                                         
                                                         {/* Correct Answer */}
                                                         <div className="text-yellow-400 font-bold text-6xl mx-8">
-                                                            {(currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer}
+                                                            {(currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer}
                                                         </div>
                                                         
                                                         {/* Team 2 Side */}
                                                         <div className="flex items-center gap-8 flex-1">
-                                                            {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : closestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                            {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
                                                             <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
                                                         </div>
                                                     </div>
@@ -2834,28 +2859,30 @@
                         {/* Powerups and Control Buttons */}
                         <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px'}}>
                             <div className="flex justify-between items-center">
-                                <div className="flex gap-6">
-                                    <img 
-                                        src={`${imagePath}powerup-double.png`}
-                                        alt="Team 1 Point Doubler"
-                                        className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'pointDoubler') : undefined}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-time.png`}
-                                        alt="Team 1 Extra Time"
-                                        className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'extraTime') : undefined}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-dip.png`}
-                                        alt="Team 1 Double Dip"
-                                        className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
-                                    />
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-6">
+                                        <img 
+                                            src={`${imagePath}powerup-double.png`}
+                                            alt="Team 1 Point Doubler"
+                                            className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'pointDoubler') : undefined}
+                                        />
+                                        <img 
+                                            src={`${imagePath}powerup-time.png`}
+                                            alt="Team 1 Extra Time"
+                                            className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'extraTime') : undefined}
+                                        />
+                                        <img 
+                                            src={`${imagePath}powerup-dip.png`}
+                                            alt="Team 1 Double Dip"
+                                            className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
+                                        />
+                                    </div>
                                 </div>
 
                                 {userMode === 'host' && (
@@ -2953,19 +2980,19 @@
                                                 >
                                                     REVEAL QUESTION
                                                 </button>
-                                            ) : !timerRunning && !showAnswer && ((activeTimer === 1 && team1Time > 0) || (activeTimer === 2 && team2Time > 0)) ? (
-                                                <button 
-                                                    onClick={handleStartTimer}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
-                                                    START TIMER
-                                                </button>
                                             ) : showAnswer ? (
                                                 <button 
                                                     onClick={handleNext}
                                                     className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                 >
                                                     NEXT
+                                                </button>
+                                            ) : !timerRunning && !showAnswer && ((activeTimer === 1 && team1Time > 0) || (activeTimer === 2 && team2Time > 0)) ? (
+                                                <button 
+                                                    onClick={handleStartTimer}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    START TIMER
                                                 </button>
                                             ) : (
                                                 <>
@@ -2974,6 +3001,12 @@
                                                         className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
                                                     >
                                                         CORRECT
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleResetTimer}
+                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                    >
+                                                        RESET TIMER
                                                     </button>
                                                     <button 
                                                         onClick={handleIncorrect}
@@ -2987,28 +3020,30 @@
                                     </div>
                                 )}
 
-                                <div className="flex gap-6">
-                                    <img 
-                                        src={`${imagePath}powerup-dip.png`}
-                                        alt="Team 2 Double Dip"
-                                        className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-time.png`}
-                                        alt="Team 2 Extra Time"
-                                        className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'extraTime') : undefined}
-                                    />
-                                    <img 
-                                        src={`${imagePath}powerup-double.png`}
-                                        alt="Team 2 Point Doubler"
-                                        className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                        style={{width: '84px', height: '84px'}}
-                                        onClick={userMode === 'host' ? () => handlePowerup(2, 'pointDoubler') : undefined}
-                                    />
+                                <div className="flex flex-col gap-2 items-end">
+                                    <div className="flex gap-6">
+                                        <img 
+                                            src={`${imagePath}powerup-dip.png`}
+                                            alt="Team 2 Double Dip"
+                                            className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
+                                        />
+                                        <img 
+                                            src={`${imagePath}powerup-time.png`}
+                                            alt="Team 2 Extra Time"
+                                            className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'extraTime') : undefined}
+                                        />
+                                        <img 
+                                            src={`${imagePath}powerup-double.png`}
+                                            alt="Team 2 Point Doubler"
+                                            className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
+                                            style={{width: '84px', height: '84px'}}
+                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'pointDoubler') : undefined}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
