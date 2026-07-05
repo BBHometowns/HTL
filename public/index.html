@@ -292,7 +292,7 @@
                 { id: 11, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
                 { id: 12, name: "The Weathermen", logo: "Weathermen.png", color: "#FEC8D8" },
                 { id: 13, name: "PLACEHOLDER", logo: "Texas Two Step.png", color: "#FFB6B9" },
-                { id: 14, name: "Too Thawt To Handle", logo: "Glitterati.jpg", color: "#F38181"},
+                { id: 14, name: "Too Thawt To Handle", logo: "Glitterati.png", color: "#F38181"},
                 { id: 15, name: "Trivia Rodrigo", logo: "VaticanCityCardinals.png", color: "#8EC5FC"},
                 { id: 16, name: "TBD", logo: "Smartboards.png", color: "#FF8DC7"}
             ];
@@ -1145,9 +1145,9 @@
             const broadcastGameState = () => {
                 if (userMode === 'host' && roomCode) {
                     const gameState = {
-                        selectedTeam1,
-                        selectedTeam2,
-                        selectedMatch,
+                        selectedTeam1: selectedTeam1 ?? null,
+                        selectedTeam2: selectedTeam2 ?? null,
+                        selectedMatch: selectedMatch ?? null,
                         bonusType,
                         team1Score,
                         team2Score,
@@ -1185,7 +1185,7 @@
                         gameStarted,
                         showIntro,
                         showWinnerScreen,
-                        winnerTeam
+                        winnerTeam: winnerTeam ?? null
                     };
                     
                     database.ref(`rooms/${roomCode}/gameState`).set(gameState);
