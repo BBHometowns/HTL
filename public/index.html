@@ -264,6 +264,9 @@
             const [waitingDots, setWaitingDots] = useState('.');
             const [lastPowerupsUsed, setLastPowerupsUsed] = useState([]); // Track multiple powerups
             const [adminStep, setAdminStep] = useState(1);
+            const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
+            const [roomCheckData, setRoomCheckData] = useState(null);
+            const [roomCheckLoading, setRoomCheckLoading] = useState(false);
             const [selectedBonusType, setSelectedBonusType] = useState(null);
             const [selectedTiebreakerType, setSelectedTiebreakerType] = useState(null);
 
@@ -532,7 +535,7 @@
 
             // Auto-broadcast game state when it changes (HOST only)
             useEffect(() => {
-                if (userMode === 'host') {
+                if (userMode === 'host' && isConnected && roomCode && gameStarted) {
                     broadcastGameState();
                 }
             }, [
@@ -718,6 +721,53 @@
                 }
             };
 
+            // Restore full game state from Firebase data (used when resuming a saved session)
+            const restoreGameState = (gameState) => {
+                setSelectedTeam1(gameState.selectedTeam1);
+                setSelectedTeam2(gameState.selectedTeam2);
+                setSelectedMatch(gameState.selectedMatch);
+                setBonusType(gameState.bonusType);
+                setTieBreakerType(gameState.tieBreakerType);
+                setTeam1Score(gameState.team1Score);
+                setTeam2Score(gameState.team2Score);
+                setCurrentRound(gameState.currentRound);
+                setCurrentQuestion(gameState.currentQuestion);
+                setShowCategory(gameState.showCategory);
+                setShowQuestion(gameState.showQuestion);
+                setShowAnswer(gameState.showAnswer);
+                setActiveTeam(gameState.activeTeam);
+                setActiveTimer(gameState.activeTimer || 1);
+                setTeam1Time(gameState.team1Time);
+                setTeam2Time(gameState.team2Time);
+                setTimerRunning(false); // Always start paused when resuming
+                setPowerupPhase(gameState.powerupPhase);
+                setPowerupTimer(gameState.powerupTimer);
+                setTeam1Powerups(gameState.team1Powerups);
+                setTeam2Powerups(gameState.team2Powerups);
+                setBonusScore1(gameState.bonusScore1);
+                setBonusScore2(gameState.bonusScore2);
+                setBonusQuestionIndex(gameState.bonusQuestionIndex);
+                setShowBonusAnswer(gameState.showBonusAnswer);
+                setTeam1Guess(gameState.team1Guess || '');
+                setTeam2Guess(gameState.team2Guess || '');
+                setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
+                setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
+                setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
+                setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
+                setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
+                setShootoutTurnCount(gameState.shootoutTurnCount);
+                setShootoutActiveTeam(gameState.shootoutActiveTeam);
+                setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
+                setIsTieBreaker(gameState.isTieBreaker);
+                setShowWinnerScreen(gameState.showWinnerScreen);
+                setWinnerTeam(gameState.winnerTeam);
+                setTeamsConfirmed(true);
+                setGameStarted(true);
+                setIsConnected(true);
+                setShowRoomSetup(false);
+                setShowRoomCheckModal(false);
+            };
+
             // Mark a bonus/tiebreaker question as used in Google Sheets
             const markQuestionUsed = async (tabName, matchName, row = null, col = null) => {
                 try {
@@ -738,6 +788,52 @@
                     console.log('✅ Marked question as used:', result.message);
                 } catch (error) {
                     console.error('❌ Error marking question as used:', error);
+                }
+            };
+
+            // Check if a room code already exists in Firebase before connecting
+            const checkRoomCode = async () => {
+                if (!roomCode) return;
+                
+                setRoomCheckLoading(true);
+                
+                try {
+                    // Read the existing data for this room code from Firebase
+                    const roomRef = database.ref(`rooms/${roomCode}`);
+                    const snapshot = await roomRef.once('value');
+                    const roomData = snapshot.val();
+
+                    console.log('Room data from Firebase:', roomData);
+                    console.log('Has gameState:', roomData?.gameState ? 'YES' : 'NO');
+                    
+                    if (!roomData || !roomData.gameState) {
+                        // No existing session - connect normally
+                        setRoomCheckLoading(false);
+                        setShouldConnect(true);
+                        return;
+                    }
+                    
+                    // Existing session found - store the data and show the modal
+                    const gameState = roomData.gameState;
+                    const lastActive = roomData.lastActive || 0;
+                    const now = Date.now();
+                    const minutesSinceActive = (now - lastActive) / 1000 / 60;
+                    const isActive = minutesSinceActive < 5;
+                    
+                    setRoomCheckData({
+                        gameState,
+                        isActive,
+                        minutesSinceActive: Math.round(minutesSinceActive)
+                    });
+                    
+                    setRoomCheckLoading(false);
+                    setShowRoomCheckModal(true);
+                    
+                } catch (error) {
+                    console.error('Error checking room code:', error);
+                    setRoomCheckLoading(false);
+                    // If there's an error checking, just connect normally
+                    setShouldConnect(true);
                 }
             };
 
@@ -1093,6 +1189,7 @@
                     };
                     
                     database.ref(`rooms/${roomCode}/gameState`).set(gameState);
+                    database.ref(`rooms/${roomCode}/lastActive`).set(Date.now());
                 }
             };
             
@@ -1505,6 +1602,165 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
+                        {/* Room Check Modal */}
+                        {showRoomCheckModal && roomCheckData && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center" style={{
+                                backgroundColor: 'rgba(0,0,0,0.85)'
+                            }}>
+                                <div className="bg-gray-900 rounded-3xl p-8 border-8 max-w-2xl w-full" style={{borderColor: '#7d3ad4'}}>
+                                    
+                                    {/* Modal Title */}
+                                    <h2 className="text-4xl font-bold text-white mb-2 text-center">
+                                        {roomCheckData.isActive ? 'Session In Progress' : 'Saved Session Found'}
+                                    </h2>
+                                    <p className="text-gray-400 text-center mb-6">
+                                        Room Code: <span className="text-white font-bold">{roomCode}</span>
+                                        {!roomCheckData.isActive && (
+                                            <span className="text-gray-500 text-sm ml-2">
+                                                (last active {roomCheckData.minutesSinceActive} minutes ago)
+                                            </span>
+                                        )}
+                                    </p>
+
+                                    {/* Session Info */}
+                                    <div className="bg-gray-800 rounded-2xl p-6 border-4 mb-6" style={{borderColor: '#7d3ad4'}}>
+                                        
+                                        {/* Teams */}
+                                        <div className="flex items-center justify-center gap-8 mb-4">
+                                            <div className="text-center">
+                                                {roomCheckData.gameState.selectedTeam1?.logo && (
+                                                    <img 
+                                                        src={`${imagePath}${roomCheckData.gameState.selectedTeam1.logo}`}
+                                                        alt={roomCheckData.gameState.selectedTeam1.name}
+                                                        className="w-16 h-16 mx-auto mb-1 object-contain"
+                                                    />
+                                                )}
+                                                <p className="text-cyan-400 font-bold text-sm" style={{
+                                                    width: '120px',
+                                                    wordWrap: 'break-word',
+                                                    overflowWrap: 'break-word'
+                                                }}>
+                                                    {roomCheckData.gameState.selectedTeam1?.name || 'Team 1'}
+                                                </p>
+                                            </div>
+
+                                            <div className="text-center">
+                                                <p className="text-white text-4xl font-bold">
+                                                    {roomCheckData.gameState.team1Score ?? 0} - {roomCheckData.gameState.team2Score ?? 0}
+                                                </p>
+                                                <p className="text-gray-400 text-sm mt-1">
+                                                    {roomCheckData.gameState.currentRound === 7 ? 'Bonus Round' :
+                                                    roomCheckData.gameState.currentRound === 14 ? 'Tiebreaker' :
+                                                    `Round ${roomCheckData.gameState.currentRound}`}
+                                                </p>
+                                                {roomCheckData.gameState.selectedMatch && (
+                                                    <p className="text-purple-400 text-xs mt-1">
+                                                        {roomCheckData.gameState.selectedMatch.name}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="text-center">
+                                                {roomCheckData.gameState.selectedTeam2?.logo && (
+                                                    <img 
+                                                        src={`${imagePath}${roomCheckData.gameState.selectedTeam2.logo}`}
+                                                        alt={roomCheckData.gameState.selectedTeam2.name}
+                                                        className="w-16 h-16 mx-auto mb-1 object-contain"
+                                                    />
+                                                )}
+                                                <p className="text-orange-400 font-bold text-sm" style={{
+                                                    width: '120px',
+                                                    wordWrap: 'break-word',
+                                                    overflowWrap: 'break-word'
+                                                }}>
+                                                    {roomCheckData.gameState.selectedTeam2?.name || 'Team 2'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Buttons */}
+                                    {roomCheckData.isActive ? (
+                                        // Active session buttons
+                                        <div className="flex flex-col gap-3">
+                                            <p className="text-yellow-400 text-center text-sm mb-2">
+                                                This session appears to be currently active.
+                                            </p>
+                                            <button
+                                                onClick={() => {
+                                                    // Rejoin as host - restore state and connect
+                                                    setUserMode('host');
+                                                    restoreGameState(roomCheckData.gameState);
+                                                    setShouldConnect(true);
+                                                }}
+                                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                            >
+                                                Rejoin as Host
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    // Switch to stream mode and connect
+                                                    setUserMode('stream');
+                                                    setShowRoomCheckModal(false);
+                                                    setShouldConnect(true);
+                                                }}
+                                                className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                            >
+                                                Join as Stream
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowRoomCheckModal(false);
+                                                    setRoomCheckData(null);
+                                                }}
+                                                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg border-4 border-black text-lg"
+                                            >
+                                                Use Different Code
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        // Inactive session buttons
+                                        <div className="flex flex-col gap-3">
+                                            <p className="text-gray-400 text-center text-sm mb-2">
+                                                A saved game was found for this room code.
+                                            </p>
+                                            <button
+                                                onClick={() => {
+                                                    // Resume - restore state and connect as host
+                                                    restoreGameState(roomCheckData.gameState);
+                                                    setShouldConnect(true);
+                                                }}
+                                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                            >
+                                                Resume Game
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowRoomCheckModal(false);
+                                                    setRoomCheckData(null);
+                                                }}
+                                                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg border-4 border-black text-lg"
+                                            >
+                                                Use Different Code
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading overlay while checking room code */}
+                        {roomCheckLoading && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center" style={{
+                                backgroundColor: 'rgba(0,0,0,0.7)'
+                            }}>
+                                <div className="bg-gray-900 rounded-2xl p-8 border-4" style={{borderColor: '#7d3ad4'}}>
+                                    <p className="text-white text-2xl font-bold">Checking room code...</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Original Room Code Entry Form */}
                         <div className="bg-gray-900 rounded-lg p-8 border-4" style={{borderColor: '#7d3ad4'}}>
                             <h2 className="text-4xl font-bold text-white mb-6 text-center">
                                 {userMode === 'host' ? 'CREATE ROOM CODE' : 'ENTER ROOM CODE'}
@@ -1515,7 +1771,7 @@
                                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                                 onKeyPress={(e) => {
                                     if (e.key === 'Enter' && roomCode) {
-                                        setShouldConnect(true);
+                                        checkRoomCode();
                                     }
                                 }}
                                 className="w-full text-center text-3xl font-bold bg-gray-800 text-white rounded p-4 mb-4 uppercase"
@@ -1526,15 +1782,10 @@
                             <button
                                 onClick={() => {
                                     if (roomCode) {
-                                        setShouldConnect(true);
+                                        checkRoomCode();
                                     }
                                 }}
                                 disabled={!roomCode}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && roomCode) {
-                                        setShouldConnect(true);
-                                    }
-                                }}
                                 className={`w-full font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl ${
                                     roomCode ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
@@ -2567,6 +2818,29 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {/* End Match Button - Host Only */}
+                            {userMode === 'host' && (
+                                <div className="absolute bottom-8 left-50% z-50" style={{
+                                    position: 'fixed',
+                                    bottom: '40px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)'
+                                }}>
+                                    <button
+                                        onClick={() => {
+                                            // Delete the Firebase room data
+                                            database.ref(`rooms/${roomCode}`).remove();
+                                            // Reset everything by reloading the page
+                                            window.location.reload();
+                                        }}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-12 rounded-lg border-4 border-black text-2xl"
+                                        style={{pointerEvents: 'auto'}}
+                                    >
+                                        END MATCH
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
                     
