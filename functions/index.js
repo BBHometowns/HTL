@@ -1,121 +1,77 @@
-const functions = require('firebase-functions');
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
+const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
+const { GoogleAuth } = require("google-auth-library");
+const { google } = require("googleapis");
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+// Reference the secret we stored
+const SERVICE_ACCOUNT_KEY = defineSecret("GOOGLE_SERVICE_ACCOUNT_KEY");
 
-// Store active game rooms
-const gameRooms = new Map();
+// Your Google Sheet ID
+const SHEET_ID = "1EN3FSORt1A0TKcHcnaz62CDF0rdGABVGG_2IuYEja7o";
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'HTL Server Running', rooms: gameRooms.size });
-});
+exports.markQuestionUsed = onRequest(
+    { secrets: [SERVICE_ACCOUNT_KEY], cors: true },
+    async (req, res) => {
+        try {
+            // Only allow POST requests
+            if (req.method !== "POST") {
+                return res.status(405).json({ error: "Method not allowed" });
+            }
 
-// Create HTTP server and Socket.IO
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+            // Get the data sent from the game
+            const { tabName, row, col, matchName } = req.body;
 
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
-  socket.on('createRoom', ({ roomCode, role }) => {
-    socket.join(roomCode);
-    
-    if (!gameRooms.has(roomCode)) {
-      gameRooms.set(roomCode, {
-        host: socket.id,
-        streams: [],
-        gameState: null
-      });
+            if (!tabName || (!row && !col) || !matchName) {
+                return res.status(400).json({ error: "Missing required fields" });
+            }
+
+            // Build the "Last Used" stamp
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            const dateStamp = `${month}.${day}`;
+            const usedStamp = `${matchName} - ${dateStamp}`;
+
+            // Authenticate using the Service Account
+            const keyFile = JSON.parse(SERVICE_ACCOUNT_KEY.value());
+            const auth = new GoogleAuth({
+                credentials: keyFile,
+                scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+            });
+
+            const sheets = google.sheets({ version: "v4", auth });
+
+            // Build the cell range to write to
+            // For Closest To: col C (column 3), specific row
+            // For Shootout: row 2, specific column
+            let range;
+            if (row) {
+                // Closest To - write to column C of the given row
+                range = `${tabName}!C${row}`;
+            } else {
+                // Shootout - write to row 2 of the given column
+                const colLetter = String.fromCharCode(65 + col); // 0=A, 1=B, etc.
+                range = `${tabName}!${colLetter}2`;
+            }
+
+            // Write to the Sheet
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: SHEET_ID,
+                range: range,
+                valueInputOption: "RAW",
+                requestBody: {
+                    values: [[usedStamp]],
+                },
+            });
+
+            return res.status(200).json({ 
+                success: true, 
+                message: `Marked ${range} as used: ${usedStamp}` 
+            });
+
+        } catch (error) {
+            console.error("Error marking question as used:", error);
+            return res.status(500).json({ error: error.message });
+        }
     }
-    
-    if (role === 'host') {
-      gameRooms.get(roomCode).host = socket.id;
-    } else if (role === 'stream') {
-      gameRooms.get(roomCode).streams.push(socket.id);
-    }
-    
-    socket.emit('roomJoined', { roomCode, role });
-    console.log(`${role} joined room: ${roomCode}`);
-  });
-  
-  socket.on('updateGameState', ({ roomCode, gameState }) => {
-    if (gameRooms.has(roomCode)) {
-      gameRooms.get(roomCode).gameState = gameState;
-      socket.to(roomCode).emit('gameStateUpdated', gameState);
-    }
-  });
-  
-  socket.on('requestGameState', ({ roomCode }) => {
-    if (gameRooms.has(roomCode)) {
-      const room = gameRooms.get(roomCode);
-      if (room.gameState) {
-        socket.emit('gameStateUpdated', room.gameState);
-      }
-    }
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-    for (const [roomCode, room] of gameRooms.entries()) {
-      if (room.host === socket.id) {
-        gameRooms.delete(roomCode);
-        console.log(`Room ${roomCode} deleted (host left)`);
-      } else {
-        room.streams = room.streams.filter(id => id !== socket.id);
-      }
-    }
-  });
-});
-
-// Export the Express app wrapped in a Firebase Function
-exports.api = functions.https.onRequest(app);
-
-// Export Socket.IO as a separate function
-exports.socketio = functions.https.onRequest((req, res) => {
-  if (!req.path) {
-    req.url = `/${req.url}`;
-  }
-  return server(req, res);
-});/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
-
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
-
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+);

@@ -277,21 +277,21 @@
             // All 16 teams data
             const teamsData = [
                 { id: 1, name: "Bear Essentials", logo: "BearEssentials.png", color: "#FF6B35" },
-                { id: 2, name: "Beef With A Q", logo: "BeefwithaQ.png", color: "#4ECDC4" },
-                { id: 3, name: "Edgewood High School", logo: "EdgewoodHighSchool.png", color: "#95E1D3" },
-                { id: 4, name: "Glitterati", logo: "Glitterati.png", color: "#F38181" },
-                { id: 5, name: "Identity Thieves", logo: "IdentityThieves.png", color: "#AA96DA" },
-                { id: 6, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
-                { id: 7, name: "Nerd Word Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
-                { id: 8, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
-                { id: 9, name: "Pacific Midwest", logo: "PacificMidwest.png", color: "#FFD93D" },
-                { id: 10, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
-                { id: 11, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
-                { id: 12, name: "The Smartboards", logo: "Smartboards.png", color: "#FF8DC7" },
-                { id: 13, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
-                { id: 14, name: "Texas Two Step", logo: "Texas Two Step.png", color: "#FFB6B9" },
-                { id: 15, name: "Vatican City Cardinals", logo: "VaticanCityCardinals.png", color: "#8EC5FC" },
-                { id: 16, name: "Weathermen", logo: "Weathermen.png", color: "#FEC8D8" }
+                { id: 2, name: "Edgewood High School", logo: "EdgewoodHighSchool.png", color: "#95E1D3" },
+                { id: 3, name: "F*ck It We Ball", logoo: "BeefWithAW.png", color: "#4ECDC4"},
+                { id: 4, name: "Identity Thieves", logo: "IdentityThieves.png", color: "#AA96DA" },
+                { id: 5, name: "Nerd World Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
+                { id: 6, name: "New Directions", logo: "PacificMidwest.png", color: "#FFD93D" },
+                { id: 7, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
+                { id: 8, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
+                { id: 9, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
+                { id: 10, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
+                { id: 11, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
+                { id: 12, name: "The Weathermen", logo: "Weathermen.png", color: "#FEC8D8" },
+                { id: 13, name: "PLACEHOLDER", logo: "Texas Two Step.png", color: "#FFB6B9" },
+                { id: 14, name: "Too Thawt To Handle", logo: "Glitterati.jpg", color: "#F38181"},
+                { id: 15, name: "Trivia Rodrigo", logo: "VaticanCityCardinals.png", color: "#8EC5FC"},
+                { id: 16, name: "TBD", logo: "Smartboards.png", color: "#FF8DC7"}
             ];
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
@@ -653,10 +653,11 @@
                         // Skip Row 1 (labels), load all questions
                         const questions = ctRows
                             .filter(row => row[0] && row[1]) // Must have question and answer
-                            .map(row => ({
+                            .map((row, index) => ({
                                 question: row[0],
                                 answer: parseFloat(row[1]),
-                                lastUsed: row[2] || ''
+                                lastUsed: row[2] || '',
+                                rowIndex: index + 2 // +2 because row 1 is the header, data starts at row 2
                             }));
                         
                         // Shuffle so they come out in random order each game
@@ -717,6 +718,29 @@
                 }
             };
 
+            // Mark a bonus/tiebreaker question as used in Google Sheets
+            const markQuestionUsed = async (tabName, matchName, row = null, col = null) => {
+                try {
+                    const body = { tabName, matchName };
+                    if (row) body.row = row;
+                    if (col !== null) body.col = col;
+                    
+                    const response = await fetch(
+                        'https://us-central1-hometowns-trivia-league.cloudfunctions.net/markQuestionUsed',
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        }
+                    );
+                    
+                    const result = await response.json();
+                    console.log('✅ Marked question as used:', result.message);
+                } catch (error) {
+                    console.error('❌ Error marking question as used:', error);
+                }
+            };
+
             const handleRevealCategory = () => {
                 setShowCategory(true);
                 setTimerRunning(false); // Stop timer when revealing category
@@ -750,9 +774,14 @@
                 // For bonus round setup
                 if (currentRound === 7 || currentRound === 14) {
                     const activeBonusType = currentRound === 7 ? bonusType : tieBreakerType;
-                    if (activeBonusType === 'closestTo' && bonusQuestionIndex === 0) {
+                    if (activeBonusType === 'closestTo') {
                         setTeam1Time(30);
                         setTeam2Time(30);
+                        // Mark this Closest To question as used
+                        const currentQ = closestToQuestions[bonusQuestionIndex];
+                        if (currentQ && selectedMatch) {
+                            markQuestionUsed('CLOSEST TO', selectedMatch.name, currentQ.rowIndex);
+                        }
                     } else if (activeBonusType === 'shootout') {
                         setTeam1Time(15);
                         setTeam2Time(15);
@@ -1205,6 +1234,12 @@
                 setShootoutActiveTeam(1);
                 setShootoutTurnCount(0);
                 setTimerRunning(true); // Auto-start timer for Team 1
+                
+                // Mark this Shootout question as used
+                const activeShootoutQ = shootoutQuestions[0];
+                if (activeShootoutQ && selectedMatch) {
+                    markQuestionUsed('SHOOTOUT', selectedMatch.name, null, activeShootoutQ.colIndex);
+                }
             };
             
             const handleShootoutAnswer = (answerIndex) => {
