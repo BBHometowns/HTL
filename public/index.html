@@ -267,6 +267,7 @@
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
             const [roomCheckLoading, setRoomCheckLoading] = useState(false);
+            const [isResuming, setIsResuming] = useState(false);
             const [selectedBonusType, setSelectedBonusType] = useState(null);
             const [selectedTiebreakerType, setSelectedTiebreakerType] = useState(null);
 
@@ -723,6 +724,8 @@
 
             // Restore full game state from Firebase data (used when resuming a saved session)
             const restoreGameState = (gameState) => {
+                setIsResuming(true);
+                setTimeout(() => setIsResuming(false), 500);
                 setSelectedTeam1(gameState.selectedTeam1);
                 setSelectedTeam2(gameState.selectedTeam2);
                 setSelectedMatch(gameState.selectedMatch);
@@ -763,6 +766,7 @@
                 setWinnerTeam(gameState.winnerTeam);
                 setTeamsConfirmed(true);
                 setShowIntro(false);
+                setIntroStep(5);
                 setGameStarted(true);
                 setIsConnected(true);
                 setShowRoomSetup(false);
@@ -2468,7 +2472,7 @@
                                     
                                     {/* Round Title with Timers */}
                                     <div className="flex items-center justify-center mb-8 gap-4">
-                                        <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                        <div className={`rounded-2xl border-8 flex items-center justify-center ${isResuming ? '' : 'team-logo-transition'}`} style={{
                                             borderColor: '#7d3ad4',
                                             backgroundColor: `${selectedTeam1.color}65`,
                                             width: '200px',
@@ -2500,7 +2504,7 @@
                                             </h2>
                                         </div>
                                     
-                                        <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                                        <div className={`rounded-2xl border-8 flex items-center justify-center ${isResuming ? '' : 'team-logo-transition'}`} style={{
                                             borderColor: '#7d3ad4',
                                             backgroundColor: `${selectedTeam2.color}65`,
                                             width: '200px',
@@ -2642,7 +2646,7 @@
                 }}>
                     {/* Team Logos */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute team-logo-transition" style={{
+                        <div className="absolute" style={{
                             left: '5%',
                             top: '50%',
                             transform: 'translateY(-50%)'
@@ -2650,10 +2654,10 @@
                             <img 
                                 src={`${imagePath}${selectedTeam1.logo}`}
                                 alt="Team 1 Background Logo" 
-                                className={`team-logo-transition ${activeTeam === 1 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
+                                className={`${isResuming ? '' : 'team-logo-transition'} ${activeTeam === 1 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
                                     transform: showWinnerScreen ? 'perspective(1000px) rotateY(25deg) translateX(-100px)' : 'perspective(1000px) rotateY(15deg)',
-                                    transition: 'all 1s ease-out',
+                                    transition: isResuming ? 'none' : 'all 1s ease-out',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
@@ -2662,7 +2666,7 @@
                             />
                         </div>
                         
-                        <div className="absolute team-logo-transition" style={{
+                        <div className="absolute" style={{
                             right: '5%',
                             top: '50%',
                             transform: 'translateY(-50%)'
@@ -2670,10 +2674,10 @@
                             <img 
                                 src={`${imagePath}${selectedTeam2.logo}`}
                                 alt="Team 2 Background Logo" 
-                                className={`team-logo-transition ${activeTeam === 2 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
+                                className={`${isResuming ? '' : 'team-logo-transition'} ${activeTeam === 2 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
                                     transform: showWinnerScreen ? 'perspective(1000px) rotateY(-25deg) translateX(100px)' : 'perspective(1000px) rotateY(-15deg)',
-                                    transition: 'all 1s ease-out',
+                                    transition: isResuming ? 'none' : 'all 1s ease-out',
                                     width: '1000px',
                                     height: '1000px',
                                     objectFit: 'contain',
