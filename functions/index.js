@@ -27,10 +27,14 @@ exports.markQuestionUsed = onRequest(
 
             // Build the "Last Used" stamp
             const now = new Date();
-            const month = String(now.getMonth() + 1).padStart(2, "0");
-            const day = String(now.getDate()).padStart(2, "0");
+            const easternDate = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(now);
+            const month = easternDate.find(p => p.type === 'month').value;
+            const day = easternDate.find(p => p.type === 'day').value;
             const dateStamp = `${month}.${day}`;
-            const usedStamp = `${matchName} - ${dateStamp}`;
 
             // Authenticate using the Service Account
             const keyFile = JSON.parse(SERVICE_ACCOUNT_KEY.value());
