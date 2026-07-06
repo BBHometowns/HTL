@@ -682,8 +682,8 @@
                     
                     const metaData = await metaResponse.json();
                     const allSheets = metaData.sheets
-                    .filter(s => !s.hidden)
-                    .map(s => s.properties.title);
+                        .filter(s => !s.properties.hidden)
+                        .map(s => s.properties.title);
                     
                     // Separate match tabs from bonus tabs
                     const matchTabs = allSheets.filter(name => name.toUpperCase().startsWith('MATCH'));
@@ -3410,6 +3410,18 @@
                         </>
                     )}
 
+                    {/* Image Dark Overlay */}
+                    {showImageOverlay && (
+                        <div style={{
+                            position: 'fixed',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.88)',
+                            zIndex: 44,
+                            pointerEvents: 'none',
+                            animation: 'imageFadeIn 0.5s ease-in forwards'
+                        }} />
+                    )}
+
                     {/* Image Overlay */}
                     {showImageOverlay && (
                         <div
@@ -4094,7 +4106,10 @@
                                 </div>
 
                                 {userMode === 'host' && (
-                                    <div className="flex gap-4">
+                                    <div className="flex gap-4" style={{
+                                        position: 'relative',
+                                        zIndex: 50
+                                    }}>
                                         {/* UNDO BUTTON - Only show if a powerup was just used */}
                                         {lastPowerupsUsed.length > 0 && !showQuestion && (
                                             <button 
