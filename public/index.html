@@ -681,7 +681,9 @@
                     }
                     
                     const metaData = await metaResponse.json();
-                    const allSheets = metaData.sheets.map(s => s.properties.title);
+                    const allSheets = metaData.sheets
+                    .filter(s => !s.hidden)
+                    .map(s => s.properties.title);
                     
                     // Separate match tabs from bonus tabs
                     const matchTabs = allSheets.filter(name => name.toUpperCase().startsWith('MATCH'));
