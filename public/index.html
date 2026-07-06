@@ -3862,7 +3862,7 @@
                         </div>
 
                         {/* Round Title with Timers */}
-                        <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`}>
+                        <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{position: 'relative', zIndex: timersExpanded ? 60 : 'auto'}}>
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
                                 borderColor: '#7d3ad4',
                                 backgroundColor: `${selectedTeam1.color}65`,
@@ -4077,7 +4077,7 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px'}}>
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', zIndex: showImageOverlay ? 50 : 'auto'}}>
                             <div className="flex justify-between items-center">
                                 <div className="flex flex-col gap-2">
                                     <div className="flex gap-6">
