@@ -169,6 +169,13 @@
         .timer-text {
             -webkit-text-stroke: 2px black;
         }
+        .image-overlay-fade {
+            animation: imageFadeIn 0.5s ease-in forwards;
+        }
+        @keyframes imageFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
         @keyframes bottomsUpPulse {
             0% { transform: translateX(-50%) scale(1); }
             50% { transform: translateX(-50%) scale(1.1); }
@@ -312,6 +319,10 @@
             const [bottomsUpFlyingScore, setBottomsUpFlyingScore] = useState(false);
             const [bottomsUpShowAnswer, setBottomsUpShowAnswer] = useState(false);
             const [bottomsUpGlowing, setBottomsUpGlowing] = useState(false);
+            const [showImageOverlay, setShowImageOverlay] = useState(false);
+            const [currentImageUrl, setCurrentImageUrl] = useState(null);
+            const [timersExpanded, setTimersExpanded] = useState(false);
+            const [imageLoadError, setImageLoadError] = useState(false);
 
             // Google Sheets data
             const [sheetsMatches, setSheetsMatches] = useState([]);
@@ -322,7 +333,7 @@
             
             // All 16 teams data
             const teamsData = [
-                { id: 1, name: "Bear Essentials", logo: "BearEssentials.png", color: "#FF6B35" },
+                { id: 1, name: "Bear Essentials", logo: "Bear Essentials.png", color: "#FF6B35" }, // New Logo
                 { id: 2, name: "Edgewood High School", logo: "EdgewoodHighSchool.png", color: "#95E1D3" },
                 { id: 3, name: "F*ck It We Ball", logo: "BeefwithaQ.png", color: "#4ECDC4" },
                 { id: 4, name: "Identity Thieves", logo: "IdentityThieves.png", color: "#AA96DA" },
@@ -683,7 +694,7 @@
                     for (const tabName of matchTabs) {
                         const matchName = tabName.substring(5).trim(); // Remove "MATCH" prefix
                         
-                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(tabName)}!A2:E25?key=${SHEETS_API_KEY}`;
+                        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(tabName)}!A2:F25?key=${SHEETS_API_KEY}`;
                         const response = await fetch(url);
                         const data = await response.json();
                         const rows = data.values || [];
@@ -700,8 +711,10 @@
                                 category: row1[1] || '',      // Column B
                                 question1: row1[3] || '',     // Column D
                                 answer1: row1[4] || '',       // Column E
+                                imageUrl1: row1[5] || null,   // Column F (optional image for Q1)
                                 question2: row2[3] || '',     // Column D
-                                answer2: row2[4] || ''        // Column E
+                                answer2: row2[4] || '',       // Column E
+                                imageUrl2: row2[5] || null    // Column F (optional image for Q2)
                             });
                         }
                         
@@ -885,6 +898,24 @@
                 setIsConnected(true);
                 setShowRoomSetup(false);
                 setShowRoomCheckModal(false);
+            };
+
+            // Converts a Google Drive sharing URL to a direct image URL
+            const convertDriveUrl = (url) => {
+                if (!url) return null;
+                
+                // Already a direct URL - return as is
+                if (url.includes('lh3.googleusercontent.com')) return url;
+                
+                // Extract the file ID from a standard sharing URL
+                // Format: https://drive.google.com/file/d/FILE_ID/view
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+                
+                // If we can't parse it, return the original URL and hope for the best
+                return url;
             };
 
             // Mark a bonus/tiebreaker question as used in Google Sheets
@@ -1074,6 +1105,11 @@
             };
 
             const handleNext = () => {
+                // Reset image state for next question
+                setShowImageOverlay(false);
+                setCurrentImageUrl(null);
+                setTimersExpanded(false);
+                setImageLoadError(false);
                 if (currentQuestion === 1) {
                     setCurrentQuestion(2);
                     setActiveTeam(2);
@@ -1443,6 +1479,32 @@
                 // Reset timers for next bonus question
                 setTeam1Time(30);
                 setTeam2Time(30);
+            };
+
+            // Handles the host clicking "Reveal Image" during a question with an image
+            const handleRevealImage = () => {
+                // Figure out which question we're on (Q1 or Q2) and get its image URL
+                const imageUrl = currentQuestion === 1 
+                    ? currentRoundData?.imageUrl1 
+                    : currentRoundData?.imageUrl2;
+                
+                // Convert the Google Drive sharing URL to a direct image URL
+                const directUrl = convertDriveUrl(imageUrl);
+                
+                // Store the converted URL so the overlay knows what image to show
+                setCurrentImageUrl(directUrl);
+                
+                // Reset any previous image load error
+                setImageLoadError(false);
+                
+                // Slide the timer boxes outward immediately
+                setTimersExpanded(true);
+                
+                // After 500ms, fade the image in
+                setTimeout(() => {
+                    console.log('Image URL being shown:', directUrl);
+                    setShowImageOverlay(true);
+                }, 500);
             };
 
             const handleBottomsUpReveal = () => {
@@ -2909,7 +2971,13 @@
                                             backgroundColor: `${selectedTeam1.color}65`,
                                             width: '200px',
                                             height: '200px',
-                                            opacity: 1
+                                            opacity: 1,
+                                            position: timersExpanded ? 'fixed' : 'relative',
+                                            left: timersExpanded ? '10%' : 'auto',
+                                            top: timersExpanded ? '35%' : 'auto',
+                                            transform: timersExpanded ? 'translateY(-50%)' : 'none',
+                                            transition: 'all 0.8s ease-in-out',
+                                            zIndex: timersExpanded ? 60 : 'auto'
                                         }}>
                                             <div 
                                                 className="text-8xl font-black timer-text"
@@ -2941,7 +3009,13 @@
                                             backgroundColor: `${selectedTeam2.color}65`,
                                             width: '200px',
                                             height: '200px',
-                                            opacity: 1
+                                            opacity: 1,
+                                            position: timersExpanded ? 'fixed' : 'relative',
+                                            right: timersExpanded ? '10%' : 'auto',
+                                            top: timersExpanded ? '35%' : 'auto',
+                                            transform: timersExpanded ? 'translateY(-50%)' : 'none',
+                                            transition: 'all 0.8s ease-in-out',
+                                            zIndex: timersExpanded ? 60 : 'auto'
                                         }}>
                                             <div 
                                                 className="text-8xl font-black timer-text"
@@ -3174,6 +3248,53 @@
                         </>
                     )}
             
+                    {/* Image Overlay */}
+                    {showImageOverlay && (
+                        <div
+                            className="image-overlay-fade"
+                            style={{
+                                position: 'fixed',
+                                top: '5%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                zIndex: 45,
+                                pointerEvents: 'none',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            {imageLoadError ? (
+                                <div style={{
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                    border: '4px solid #7d3ad4',
+                                    borderRadius: '16px',
+                                    padding: '32px 48px',
+                                    color: 'white',
+                                    fontSize: '32px',
+                                    fontWeight: 'bold',
+                                    textAlign: 'center'
+                                }}>
+                                    Image Unavailable
+                                </div>
+                            ) : (
+                                <img
+                                    src={currentImageUrl}
+                                    alt="Question Image"
+                                    onError={() => setImageLoadError(true)}
+                                    style={{
+                                        maxWidth: '800px',
+                                        maxHeight: '70vh',
+                                        width: 'auto',
+                                        height: 'auto',
+                                        objectFit: 'contain',
+                                        display: 'block'
+                                    }}
+                                />
+                            )}
+                        </div>
+                    )}
+
                     {/* Bottoms Up Animation Overlay - Host and Stream */}
                     {bottomsUpAnimating && (
                         <div className="absolute inset-0 z-50"
@@ -3565,7 +3686,7 @@
                                 )}
                             </div>
                         </div>
-                        
+
                         {/* Round Title with Timers */}
                         <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`}>
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
@@ -3573,6 +3694,9 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
+                                transform: timersExpanded ? 'translateX(-900px)' : 'translateX(0)',
+                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
+                                zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 1) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') ||
                                          (activeTeam === 1 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
@@ -3588,6 +3712,7 @@
                                 borderColor: '#7d3ad4',
                                 padding: '16px 48px',
                                 minWidth: '800px',
+                                maxWidth: '800px',
                                 textAlign: 'center',
                                 height: '100px',
                                 display: 'flex',
@@ -3606,6 +3731,9 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
+                                transform: timersExpanded ? 'translateX(900px)' : 'translateX(0)',
+                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
+                                zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 2) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') || 
                                          (activeTeam === 2 || powerupPhase || (currentQuestion === 1 && !showQuestion)) ? 1 : 0.3
@@ -3891,8 +4019,18 @@
                                                     SKIP POWERUPS
                                                 </button>
                                             ) : !showQuestion ? (
-                                                <button onClick={handleRevealQuestion} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                <button 
+                                                    onClick={handleRevealQuestion}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
                                                     REVEAL QUESTION
+                                                </button>
+                                            ) : showQuestion && !showImageOverlay && (currentQuestion === 1 ? currentRoundData?.imageUrl1 : currentRoundData?.imageUrl2) ? (
+                                                <button
+                                                    onClick={handleRevealImage}
+                                                    className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
+                                                >
+                                                    REVEAL IMAGE
                                                 </button>
                                             ) : showAnswer ? (
                                                 <button onClick={handleNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
