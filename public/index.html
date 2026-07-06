@@ -169,6 +169,31 @@
         .timer-text {
             -webkit-text-stroke: 2px black;
         }
+        @keyframes bottomsUpPulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        @keyframes flyToScoreLeft {
+            0% { 
+                transform: translateX(-50%) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateX(calc(-50% - 250px)) translateY(-800px) scale(0.05); 
+                opacity: 0; 
+            }
+        }
+        @keyframes flyToScoreRight {
+            0% { 
+                transform: translateX(-50%) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateX(calc(-50% + 250px)) translateY(-800px) scale(0.05); 
+                opacity: 0; 
+            }
+        }
     </style>
 </head>
 <body>
@@ -271,6 +296,23 @@
             const [selectedBonusType, setSelectedBonusType] = useState(null);
             const [selectedTiebreakerType, setSelectedTiebreakerType] = useState(null);
 
+            // Bottoms Up bonus round states
+            const [bottomsUpQuestions, setBottomsUpQuestions] = useState([]);
+            const [bottomsUpQuestion, setBottomsUpQuestion] = useState(null);
+            const [bottomsUpTurnNumber, setBottomsUpTurnNumber] = useState(1);
+            const [bottomsUpActiveTeam, setBottomsUpActiveTeam] = useState(1);
+            const [bottomsUpUsedAnswers, setBottomsUpUsedAnswers] = useState([]);
+            const [bottomsUpHostInput, setBottomsUpHostInput] = useState('');
+            const [bottomsUpModalMatches, setBottomsUpModalMatches] = useState([]);
+            const [bottomsUpShowModal, setBottomsUpShowModal] = useState(false);
+            const [bottomsUpConfirmedAnswer, setBottomsUpConfirmedAnswer] = useState(null);
+            const [bottomsUpAnimating, setBottomsUpAnimating] = useState(false);
+            const [bottomsUpAnimationValue, setBottomsUpAnimationValue] = useState(0);
+            const [bottomsUpPhase, setBottomsUpPhase] = useState('question');
+            const [bottomsUpFlyingScore, setBottomsUpFlyingScore] = useState(false);
+            const [bottomsUpShowAnswer, setBottomsUpShowAnswer] = useState(false);
+            const [bottomsUpGlowing, setBottomsUpGlowing] = useState(false);
+
             // Google Sheets data
             const [sheetsMatches, setSheetsMatches] = useState([]);
             const [closestToQuestions, setClosestToQuestions] = useState([]);
@@ -287,12 +329,12 @@
                 { id: 5, name: "Nerd World Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
                 { id: 6, name: "New Directions", logo: "PacificMidwest.png", color: "#FFD93D" },
                 { id: 7, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
-                { id: 8, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
-                { id: 9, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
-                { id: 10, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
-                { id: 11, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
-                { id: 12, name: "The Weathermen", logo: "Weathermen.png", color: "#FEC8D8" },
-                { id: 13, name: "PLACEHOLDER", logo: "Texas Two Step.png", color: "#FFB6B9" },
+                { id: 8, name: "Placeholder", logo: "Texas Two Step.png", color: "#FFB6B9" },
+                { id: 9, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
+                { id: 10, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
+                { id: 11, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
+                { id: 12, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
+                { id: 13, name: "The Weathermen", logo: "Weathermen.png", color: "#FEC8D8" },
                 { id: 14, name: "Too Thawt To Handle", logo: "Glitterati.png", color: "#F38181"},
                 { id: 15, name: "Trivia Rodrigo", logo: "VaticanCityCardinals.png", color: "#8EC5FC"},
                 { id: 16, name: "TBD", logo: "Smartboards.png", color: "#FF8DC7"}
@@ -334,11 +376,15 @@
             };
             
             const timer1Value = (currentRound === 7 || currentRound === 14) ? 
-                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : Math.max(team1Time, team2Time)) : 
+                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team1Time : 
+                (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? team1Time :
+                Math.max(team1Time, team2Time)) : 
                 powerupPhase ? powerupTimer : team1Time;
-            
+
             const timer2Value = (currentRound === 7 || currentRound === 14) ? 
-                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : Math.max(team1Time, team2Time)) : 
+                ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? team2Time : 
+                (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? team2Time :
+                Math.max(team1Time, team2Time)) : 
                 powerupPhase ? powerupTimer : team2Time;
             
             const timer1Color = getTimerColor(timer1Value);
@@ -413,6 +459,25 @@
                                         return prev - 1;
                                     });
                                 }
+                            } else if (activeBonusType === 'bottomsUp') {
+                                // For Bottoms Up, only the active team's timer counts down
+                                if (bottomsUpActiveTeam === 1) {
+                                    setTeam1Time(prev => {
+                                        if (prev <= 1) {
+                                            setTimerRunning(false);
+                                            return 0;
+                                        }
+                                        return prev - 1;
+                                    });
+                                } else {
+                                    setTeam2Time(prev => {
+                                        if (prev <= 1) {
+                                            setTimerRunning(false);
+                                            return 0;
+                                        }
+                                        return prev - 1;
+                                    });
+                                }
                             }
                         } else if (activeTimer === 1) {
                             setTeam1Time(prev => {
@@ -434,7 +499,7 @@
                     }, 1000);
                 }
                 return () => clearInterval(interval);
-            }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam, userMode]);
+            }, [timerRunning, activeTimer, currentRound, bonusType, shootoutActiveTeam, bottomsUpActiveTeam, userMode]);
 
             // Powerup phase timer countdown
             useEffect(() => {
@@ -607,8 +672,10 @@
                     const matchTabs = allSheets.filter(name => name.toUpperCase().startsWith('MATCH'));
                     const closestToTab = allSheets.find(name => name.toUpperCase() === 'CLOSEST TO');
                     const shootoutTab = allSheets.find(name => name.toUpperCase() === 'SHOOTOUT');
+                    const bottomsUpTab = allSheets.find(name => name.toUpperCase() === 'BOTTOMS UP');
                     const hasClosestTo = !!closestToTab;
                     const hasShootout = !!shootoutTab;
+                    const hasBottomsUp = !!bottomsUpTab;
                     
                     // --- LOAD MATCH TABS ---
                     const loadedMatches = [];
@@ -709,6 +776,53 @@
                             }
                             
                             setShootoutQuestions(questions);
+                        }
+                    }
+
+                    // --- LOAD BOTTOMS UP TAB ---
+                    if (hasBottomsUp) {
+                        const buUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(bottomsUpTab)}!A1:Z200?key=${SHEETS_API_KEY}`;
+                        const buResponse = await fetch(buUrl);
+                        const buData = await buResponse.json();
+                        const buRows = buData.values || [];
+                        
+                        if (buRows.length > 0) {
+                            const buQuestions = [];
+                            const numCols = buRows[0]?.length || 0;
+                            
+                            // Each column is one question
+                            // Row 1 (index 0) = question text
+                            // Row 2 (index 1) = Last Used (blank)
+                            // Row 3+ (index 2+) = answer choices, where Row 3 = 1 point, Row 4 = 2 points, etc.
+                            for (let col = 1; col < numCols; col++) {
+                                const questionText = buRows[0]?.[col] || '';
+                                const lastUsed = buRows[1]?.[col] || '';
+                                
+                                // Answers start at row index 2 (Row 3 in Sheet)
+                                const answers = [];
+                                for (let row = 2; row < buRows.length; row++) {
+                                    const answer = buRows[row]?.[col];
+                                    if (answer && answer.trim() !== '') {
+                                        answers.push({
+                                            text: answer.trim(),
+                                            pointValue: row - 1, // Row 3 (index 2) = 1 point, Row 4 (index 3) = 2 points, etc.
+                                            rowIndex: row + 1    // Actual Sheet row number for Last Used tracking
+                                        });
+                                    }
+                                }
+                                
+                                if (questionText && answers.length > 0) {
+                                    buQuestions.push({
+                                        colIndex: col,
+                                        questionText,
+                                        lastUsed,
+                                        answers
+                                    });
+                                }
+                            }
+                            
+                            setBottomsUpQuestions(buQuestions);
+                            console.log(`✅ Loaded ${buQuestions.length} Bottoms Up questions`);
                         }
                     }
                     
@@ -1330,6 +1444,249 @@
                 setTeam1Time(30);
                 setTeam2Time(30);
             };
+
+            const handleBottomsUpReveal = () => {
+                setShowQuestion(true);
+                setBottomsUpPhase('ready');
+                // Mark this question as used in Google Sheets
+                const activeQ = bottomsUpQuestion;
+                if (activeQ && selectedMatch) {
+                    markQuestionUsed('BOTTOMS UP', selectedMatch.name, null, activeQ.colIndex);
+                }
+            };
+
+            const handleBottomsUpStartTimer = () => {
+                if (bottomsUpActiveTeam === 1) {
+                    setTeam1Time(30);
+                    setActiveTimer(1);
+                } else {
+                    setTeam2Time(30);
+                    setActiveTimer(2);
+                }
+                setActiveTeam(bottomsUpActiveTeam);
+                setTimerRunning(true);
+                setBottomsUpPhase('input');
+                setBottomsUpHostInput('');
+            };
+
+            const handleBottomsUpSearch = () => {
+                console.log('handleBottomsUpSearch called, input:', bottomsUpHostInput, 'question:', bottomsUpQuestion?.answers?.length, 'answers');
+                if (!bottomsUpHostInput.trim() || !bottomsUpQuestion) return;
+                
+                const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+                const typedNormalized = normalize(bottomsUpHostInput);
+                
+                const matches = bottomsUpQuestion.answers
+                    .filter(answer => {
+                        const answerNormalized = normalize(answer.text);
+                        return answerNormalized.includes(typedNormalized) || 
+                            typedNormalized.includes(answerNormalized);
+                    })
+                    .map(answer => ({
+                        ...answer,
+                        isExact: normalize(answer.text) === typedNormalized,
+                        alreadyUsed: bottomsUpUsedAnswers.includes(answer.pointValue)
+                    }));
+                
+                setBottomsUpModalMatches(matches);
+                setTimerRunning(false);
+                setBottomsUpPhase('modal');
+                setBottomsUpShowModal(true);
+            };
+
+            const handleBottomsUpConfirm = (answer) => {
+                setBottomsUpConfirmedAnswer({...answer, text: answer.text.toUpperCase()});
+                setBottomsUpUsedAnswers(prev => [...prev, answer.pointValue]);
+                setBottomsUpShowModal(false);
+                setTimerRunning(false);
+                setBottomsUpPhase('animating');
+                runBottomsUpAnimation(answer.pointValue, true, bottomsUpActiveTeam);
+            };
+
+            const handleBottomsUpNotOnList = () => {
+                setBottomsUpConfirmedAnswer({ text: bottomsUpHostInput.toUpperCase(), pointValue: 0 });
+                setBottomsUpShowModal(false);
+                setTimerRunning(false);
+                setBottomsUpPhase('animating');
+                runBottomsUpAnimation(0, false, bottomsUpActiveTeam);
+            };
+
+            const handleBottomsUpNoGuess = () => {
+                setTimerRunning(false);
+                setBottomsUpHostInput('');
+                setBottomsUpConfirmedAnswer(null);
+                
+                // Advance to next team/turn
+                if (bottomsUpActiveTeam === 1) {
+                    // Move to Team 2's turn (same turn number)
+                    setBottomsUpActiveTeam(2);
+                    setActiveTimer(2);
+                } else {
+                    // Team 2 just went - check if round is over
+                    const nextTurn = bottomsUpTurnNumber + 1;
+                    if (bottomsUpTurnNumber >= 5) {
+                        // Check for tie
+                        if (bonusScore1 !== bonusScore2) {
+                            handleBottomsUpComplete();
+                            return;
+                        }
+                        // Tied - continue to next turn
+                    }
+                    setBottomsUpTurnNumber(nextTurn);
+                    setBottomsUpActiveTeam(1);
+                    setActiveTimer(1);
+                }
+                
+                setTeam1Time(30);
+                setTeam2Time(30);
+                setBottomsUpPhase('ready');
+            };
+
+            const handleBottomsUpNextTurn = () => {
+                setBottomsUpConfirmedAnswer(null);
+                setBottomsUpAnimating(false);
+                setBottomsUpAnimationValue(0);
+                setBottomsUpHostInput('');
+                
+                if (bottomsUpActiveTeam === 1) {
+                    // Move to Team 2's turn (same turn number)
+                    setBottomsUpActiveTeam(2);
+                    setActiveTimer(2);
+                    setTeam1Time(30);
+                    setTeam2Time(30);
+                    setBottomsUpPhase('ready');
+                } else {
+                    // Team 2 just finished - check if round is over
+                    const nextTurn = bottomsUpTurnNumber + 1;
+                    if (bottomsUpTurnNumber >= 5 && bonusScore1 !== bonusScore2) {
+                        // All turns done and there's a winner
+                        handleBottomsUpComplete();
+                        return;
+                    }
+                    // Continue to next turn (or keep going if tied)
+                    setBottomsUpTurnNumber(nextTurn);
+                    setBottomsUpActiveTeam(1);
+                    setActiveTimer(1);
+                    setTeam1Time(30);
+                    setTeam2Time(30);
+                    setBottomsUpPhase('ready');
+                }
+            };
+
+            const handleBottomsUpComplete = () => {
+                const winner = bonusScore1 > bonusScore2 ? 1 : 2;
+                
+                if (currentRound === 14) {
+                    // Tiebreaker - worth 1 match point
+                    if (winner === 1) {
+                        setTeam1Score(team1Score + 1);
+                    } else {
+                        setTeam2Score(team2Score + 1);
+                    }
+                    // Check final scores to declare match winner
+                    const finalScore1 = team1Score + (winner === 1 ? 1 : 0);
+                    const finalScore2 = team2Score + (winner === 2 ? 1 : 0);
+                    setTimeout(() => {
+                        setWinnerTeam(finalScore1 > finalScore2 ? selectedTeam1 : selectedTeam2);
+                        setShowWinnerScreen(true);
+                    }, 500);
+                    // Reset bonus states
+                    setBonusScore1(0);
+                    setBonusScore2(0);
+                    setBottomsUpTurnNumber(1);
+                    setBottomsUpActiveTeam(1);
+                    setBottomsUpUsedAnswers([]);
+                    setBottomsUpPhase('question');
+                    setIsTieBreaker(false);
+                    setTieBreakerType(null);
+                    return;
+                }
+                
+                // Regular bonus - worth 2 match points
+                if (winner === 1) {
+                    setTeam1Score(team1Score + 2);
+                } else {
+                    setTeam2Score(team2Score + 2);
+                }
+                
+                // Move to next round
+                setCurrentRound(currentRound + 1);
+                setCurrentQuestion(1);
+                setActiveTeam(1);
+                setActiveTimer(1);
+                setTeam1Time(30);
+                setTeam2Time(15);
+                setShowCategory(false);
+                setShowQuestion(false);
+                setTimerRunning(false);
+                
+                // Reset all Bottoms Up states
+                setBonusScore1(0);
+                setBonusScore2(0);
+                setBottomsUpTurnNumber(1);
+                setBottomsUpActiveTeam(1);
+                setBottomsUpUsedAnswers([]);
+                setBottomsUpPhase('question');
+                setBottomsUpConfirmedAnswer(null);
+                setBottomsUpAnimating(false);
+                setBottomsUpAnimationValue(0);
+                setBottomsUpHostInput('');
+            };
+
+            const runBottomsUpAnimation = (pointValue, isCorrect, activeTeamSnapshot) => {
+                setBottomsUpAnimating(true);
+                setBottomsUpShowAnswer(true);
+                setBottomsUpFlyingScore(false);
+                setBottomsUpAnimationValue(0);
+
+                if (!isCorrect || pointValue === 0) {
+                    setTimeout(() => {
+                        setBottomsUpAnimationValue(-1);
+                        setTimeout(() => {
+                            setBottomsUpAnimating(false);
+                            setBottomsUpShowAnswer(false);
+                            setBottomsUpPhase('between');
+                        }, 2000);
+                    }, 800);
+                    return;
+                }
+
+                let current = 0;
+                const getDelay = (step, total) => {
+                    const progress = step / total;
+                    return Math.round(200 - (180 * progress));
+                };
+
+                const tick = (step) => {
+                    if (step > pointValue) {
+                        // Counter done - start glow phase
+                        setBottomsUpGlowing(true);
+                        
+                        // After 2 seconds of glowing, start the fly phase
+                        setTimeout(() => {
+                            setBottomsUpGlowing(false);
+                            setBottomsUpShowAnswer(false);
+                            setBottomsUpFlyingScore(true);
+                            
+                            setTimeout(() => {
+                                if (activeTeamSnapshot === 1) {
+                                    setBonusScore1(prev => prev + pointValue);
+                                } else {
+                                    setBonusScore2(prev => prev + pointValue);
+                                }
+                                setBottomsUpFlyingScore(false);
+                                setBottomsUpAnimating(false);
+                                setBottomsUpPhase('between');
+                            }, 1600);
+                        }, 2000);
+                        return;
+                    }
+                    setBottomsUpAnimationValue(step);
+                    setTimeout(() => tick(step + 1), getDelay(step, pointValue));
+                };
+
+                setTimeout(() => tick(1), 800);
+            };
             
             const handleRevealShootoutBoard = () => {
                 setShootoutBoardRevealed(true);
@@ -1820,15 +2177,17 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
-                        <div className="bg-gray-900 rounded-3xl p-8 border-8 w-full max-h-[90vh] overflow-y-auto" style={{
+                        <div className="bg-gray-900 rounded-3xl p-8 border-8 w-full flex flex-col" style={{
                             borderColor: '#7d3ad4',
                             maxWidth: '1200px',
-                            minHeight: '700px'
+                            minHeight: '700px',
+                            maxHeight: '90vh',
+                            overflow: 'hidden'
                         }}>
 
                             {/* ─── STEP 1: TEAM SELECTION ─── */}
                             {adminStep === 1 && (
-                                <div className="flex flex-col h-full">
+                                <div className="flex flex-col flex-1 min-h-0">
                                     <h1 className="text-5xl font-bold text-white mb-8 text-center">Team Selection</h1>
 
                                     {/* Selected Teams Display */}
@@ -1875,7 +2234,7 @@
                                     </div>
 
                                     {/* Team Grid */}
-                                    <div className="grid grid-cols-4 gap-3 flex-1">
+                                    <div className="grid grid-cols-4 gap-3 overflow-y-auto flex-1 p-2">
                                         {teamsData.map(team => {
                                             const isSelected = selectedTeam1?.id === team.id || selectedTeam2?.id === team.id;
                                             return (
@@ -1894,7 +2253,7 @@
                                     </div>
 
                                     {/* Confirm Button */}
-                                    <div className="mt-8 text-center">
+                                    <div className="mt-auto pt-6 text-center">
                                         <button
                                             onClick={handleConfirmTeams}
                                             disabled={!selectedTeam1 || !selectedTeam2}
@@ -1912,7 +2271,7 @@
 
                             {/* ─── STEP 2: MATCH SELECTION ─── */}
                             {adminStep === 2 && (
-                                <div className="flex flex-col h-full">
+                                <div className="flex flex-col flex-1 min-h-0">
                                     <h1 className="text-5xl font-bold text-white mb-8 text-center">Match Selection</h1>
 
                                     {/* Refresh Button */}
@@ -1926,7 +2285,7 @@
                                     </div>
 
                                     {/* Match Cards */}
-                                    <div className="flex flex-wrap gap-4 flex-1 content-start">
+                                    <div className="flex flex-wrap gap-4 overflow-y-auto flex-1 content-start p-2">
                                         {sheetsLoading ? (
                                             <p className="text-gray-400 text-xl">Loading matches...</p>
                                         ) : sheetsError ? (
@@ -1957,7 +2316,7 @@
                                     </div>
 
                                     {/* Navigation */}
-                                    <div className="mt-8 flex justify-between">
+                                    <div className="mt-auto pt-6 flex justify-between">
                                         <button
                                             onClick={() => setAdminStep(1)}
                                             className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
@@ -1981,10 +2340,26 @@
 
                             {/* ─── STEP 3: BONUS ROUND SELECTION ─── */}
                             {adminStep === 3 && (
-                                <div className="flex flex-col h-full">
+                                <div className="flex flex-col flex-1 min-h-0">
                                     <h1 className="text-5xl font-bold text-white mb-8 text-center">Bonus Round Selection</h1>
 
                                     <div className="flex gap-6 flex-1 justify-center items-center">
+                                        {/* Bottoms Up Card */}
+                                        <div
+                                            onClick={() => setSelectedBonusType('bottomsUp')}
+                                            className="bg-gray-800 rounded-lg p-8 border-4 cursor-pointer hover:scale-105 transition flex flex-col items-center"
+                                            style={{
+                                                borderColor: selectedBonusType === 'bottomsUp' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Bottoms Up</h3>
+                                            <p className="text-gray-400 text-center">{bottomsUpQuestions.length} questions available</p>
+                                            {selectedBonusType === 'bottomsUp' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+                                        
                                         {/* Closest To Card */}
                                         <div
                                             onClick={() => setSelectedBonusType('closestTo')}
@@ -2019,7 +2394,7 @@
                                     </div>
 
                                     {/* Navigation */}
-                                    <div className="mt-8 flex justify-between">
+                                    <div className="mt-auto pt-6 flex justify-between">
                                         <button
                                             onClick={() => setAdminStep(2)}
                                             className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
@@ -2027,7 +2402,13 @@
                                             ← Back
                                         </button>
                                         <button
-                                            onClick={() => setAdminStep(4)}
+                                            onClick={() => {
+                                                if (selectedBonusType === 'bottomsUp' && bottomsUpQuestions.length > 0) {
+                                                    const randomIndex = Math.floor(Math.random() * bottomsUpQuestions.length);
+                                                    setBottomsUpQuestion(bottomsUpQuestions[randomIndex]);
+                                                }
+                                                setAdminStep(4);
+                                            }}
                                             disabled={!selectedBonusType}
                                             className={`font-bold py-4 px-12 rounded-lg text-xl border-4 border-black ${
                                                 selectedBonusType
@@ -2043,10 +2424,31 @@
 
                             {/* ─── STEP 4: TIEBREAKER SELECTION ─── */}
                             {adminStep === 4 && (
-                                <div className="flex flex-col h-full">
+                                <div className="flex flex-col flex-1 min-h-0">
                                     <h1 className="text-5xl font-bold text-white mb-8 text-center">Tiebreaker Selection</h1>
 
                                     <div className="flex gap-6 flex-1 justify-center items-center">
+                                        {/* Bottoms Up Card */}
+                                        <div
+                                            onClick={() => selectedBonusType !== 'bottomsUp' && setSelectedTiebreakerType('bottomsUp')}
+                                            className={`bg-gray-800 rounded-lg p-8 border-4 flex flex-col items-center ${
+                                                selectedBonusType === 'bottomsUp' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 transition'
+                                            }`}
+                                            style={{
+                                                borderColor: selectedTiebreakerType === 'bottomsUp' ? '#FFD700' : '#7d3ad4',
+                                                minWidth: '280px'
+                                            }}
+                                        >
+                                            <h3 className="text-3xl font-bold text-white mb-4">Bottoms Up</h3>
+                                            <p className="text-gray-400 text-center">{bottomsUpQuestions.length} questions available</p>
+                                            {selectedBonusType === 'bottomsUp' && (
+                                                <p className="text-red-400 text-sm mt-2">Already used for Bonus Round</p>
+                                            )}
+                                            {selectedTiebreakerType === 'bottomsUp' && (
+                                                <div className="mt-4 text-yellow-400 font-bold">✓ SELECTED</div>
+                                            )}
+                                        </div>
+                                        
                                         {/* Closest To Card */}
                                         <div
                                             onClick={() => selectedBonusType !== 'closestTo' && setSelectedTiebreakerType('closestTo')}
@@ -2091,7 +2493,7 @@
                                     </div>
 
                                     {/* Navigation */}
-                                    <div className="mt-8 flex justify-between">
+                                    <div className="mt-auto pt-6 flex justify-between">
                                         <button
                                             onClick={() => setAdminStep(3)}
                                             className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
@@ -2115,8 +2517,11 @@
 
                             {/* ─── STEP 5: RECAP ─── */}
                             {adminStep === 5 && (
-                                <div className="flex flex-col h-full">
+                                <div className="flex flex-col flex-1 min-h-0">
                                     <h1 className="text-5xl font-bold text-white mb-8 text-center">Match Recap</h1>
+
+                                    {/* Scrollable content area */}
+                                    <div className="flex-1 overflow-y-auto pr-2">
 
                                     {/* Teams */}
                                     <div className="flex gap-4 mb-8">
@@ -2152,7 +2557,7 @@
                                     {/* Bonus Round */}
                                     <div className="bg-gray-800 rounded-lg p-6 border-4 mb-6" style={{borderColor: '#7d3ad4'}}>
                                         <h2 className="text-2xl font-bold text-purple-400 mb-4">
-                                            Bonus Round: {selectedBonusType === 'closestTo' ? 'Closest To' : 'Shootout'}
+                                            Bonus Round: {selectedBonusType === 'closestTo' ? 'Closest To' : selectedBonusType === 'bottomsUp' ? 'Bottoms Up' : 'Shootout'}
                                         </h2>
                                         {selectedBonusType === 'closestTo' ? (
                                             closestToQuestions.slice(0, 5).map((q, i) => (
@@ -2161,6 +2566,19 @@
                                                     <p className="text-yellow-400 text-sm">A: {q.answer}</p>
                                                 </div>
                                             ))
+                                        ) : selectedBonusType === 'bottomsUp' ? (
+                                            (() => {
+                                                const q = bottomsUpQuestion;
+                                                return q ? (
+                                                    <div>
+                                                        <p className="text-white text-sm mb-2">{q.questionText}</p>
+                                                        <p className="text-gray-400 text-sm mb-1">First 5 answers:</p>
+                                                        {q.answers.slice(0, 5).map((a, i) => (
+                                                            <p key={i} className="text-yellow-400 text-sm">• {a.text}</p>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-gray-400">No Bottoms Up question found.</p>;
+                                            })()
                                         ) : (
                                             (() => {
                                                 const q = shootoutQuestions[0];
@@ -2181,7 +2599,7 @@
                                     {/* Tiebreaker */}
                                     <div className="bg-gray-800 rounded-lg p-6 border-4 mb-8" style={{borderColor: '#7d3ad4'}}>
                                         <h2 className="text-2xl font-bold text-purple-400 mb-4">
-                                            Tiebreaker: {selectedTiebreakerType === 'closestTo' ? 'Closest To' : 'Shootout'}
+                                            Tiebreaker: {selectedTiebreakerType === 'closestTo' ? 'Closest To' : selectedTiebreakerType === 'bottomsUp' ? 'Bottoms Up' : 'Shootout'}
                                         </h2>
                                         {selectedTiebreakerType === 'closestTo' ? (
                                             closestToQuestions.slice(0, 5).map((q, i) => (
@@ -2190,6 +2608,19 @@
                                                     <p className="text-yellow-400 text-sm">A: {q.answer}</p>
                                                 </div>
                                             ))
+                                        ) : selectedTiebreakerType === 'bottomsUp' ? (
+                                            (() => {
+                                                const q = bottomsUpQuestion;
+                                                return q ? (
+                                                    <div>
+                                                        <p className="text-white text-sm mb-2">{q.questionText}</p>
+                                                        <p className="text-gray-400 text-sm mb-1">First 5 answers:</p>
+                                                        {q.answers.slice(0, 5).map((a, i) => (
+                                                            <p key={i} className="text-yellow-400 text-sm">• {a.text}</p>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-gray-400">No Bottoms Up question found.</p>;
+                                            })()
                                         ) : (
                                             (() => {
                                                 const q = shootoutQuestions[0];
@@ -2206,9 +2637,10 @@
                                             })()
                                         )}
                                     </div>
+                                    </div>
 
                                     {/* Navigation */}
-                                    <div className="flex justify-between">
+                                    <div className="mt-auto pt-6 flex justify-between">
                                         <button
                                             onClick={() => setAdminStep(4)}
                                             className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
@@ -2742,6 +3174,154 @@
                         </>
                     )}
             
+                    {/* Bottoms Up Animation Overlay - Host and Stream */}
+                    {bottomsUpAnimating && (
+                        <div className="absolute inset-0 z-50"
+                            style={{backgroundColor: 'rgba(0,0,0,0.88)'}}>
+
+                            {/* Answer Text */}
+                            {bottomsUpShowAnswer && bottomsUpConfirmedAnswer && (
+                                <div className="text-white font-black text-center fade-in"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '25%',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '345px',
+                                        WebkitTextStroke: '3px black',
+                                        textStroke: '3px black',
+                                        whiteSpace: 'nowrap',
+                                        transition: 'opacity 0.4s ease-out'
+                                    }}>
+                                    {bottomsUpConfirmedAnswer.text}
+                                </div>
+                            )}
+
+                            {/* Counter and Flying Score - same element, same position */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '62%',
+                                left: '50%',
+                                fontFamily: 'monospace',
+                                fontSize: '280px',
+                                fontWeight: '900',
+                                color: bottomsUpAnimationValue === -1 ? '#ef4444' : 'white',
+                                WebkitTextStroke: '2px black',
+                                letterSpacing: '8px',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                textShadow: bottomsUpGlowing 
+                                    ? `0 0 40px ${bottomsUpActiveTeam === 1 ? selectedTeam1?.color : selectedTeam2?.color}, 0 0 80px ${bottomsUpActiveTeam === 1 ? selectedTeam1?.color : selectedTeam2?.color}`
+                                    : 'none',
+                                transform: 'translateX(-50%)',
+                                animation: bottomsUpFlyingScore 
+                                    ? (bottomsUpActiveTeam === 1 ? 'flyToScoreLeft 1.5s ease-in forwards' : 'flyToScoreRight 1.5s ease-in forwards')
+                                    : bottomsUpGlowing 
+                                        ? 'bottomsUpPulse 0.5s ease-in-out'
+                                        : 'none',
+                            }}>
+                                {bottomsUpAnimationValue === -1 ? 'X' : 
+                                String(bottomsUpAnimationValue)}
+                            </div>
+
+                        </div>
+                    )}
+
+                    {/* Bottoms Up Answer Confirmation Modal - HOST ONLY */}
+                    {userMode === 'host' && bottomsUpShowModal && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center"
+                            style={{backgroundColor: 'rgba(0,0,0,0.85)'}}>
+                            <div className="bg-gray-900 rounded-3xl p-8 border-8"
+                                style={{
+                                    borderColor: '#7d3ad4',
+                                    maxWidth: '1100px',
+                                    width: '90%',
+                                    maxHeight: '80vh',
+                                    overflowY: 'auto'
+                                }}>
+
+                                {/* Title */}
+                                <h2 className="text-4xl font-bold text-white mb-2 text-center">
+                                    Select the Matching Answer
+                                </h2>
+
+                                {/* What the host typed */}
+                                <p className="text-gray-400 text-center mb-6 text-xl">
+                                    You typed: <span className="text-white font-bold">"{bottomsUpHostInput}"</span>
+                                </p>
+
+                                {/* Match Results */}
+                                {bottomsUpModalMatches.length === 0 ? (
+                                    <p className="text-gray-400 text-center text-xl mb-8">
+                                        No matches found in the answer list.
+                                    </p>
+                                ) : (
+                                    <div className="flex flex-wrap gap-3 justify-start mb-8">
+                                        {bottomsUpModalMatches.map((match, index) => {
+                                            const isUsed = bottomsUpUsedAnswers.includes(match.pointValue);
+                                            const isExact = match.isExact;
+                                            return (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => !isUsed && handleBottomsUpConfirm(match)}
+                                                    disabled={isUsed}
+                                                    style={{
+                                                        width: 'calc(20% - 10px)',
+                                                        minWidth: '150px',
+                                                        borderColor: isExact ? '#22c55e' : '#7d3ad4',
+                                                        borderWidth: '4px',
+                                                        borderStyle: 'solid',
+                                                        opacity: isUsed ? 0.4 : 1,
+                                                        cursor: isUsed ? 'not-allowed' : 'pointer',
+                                                        backgroundColor: isExact ? 'rgba(34,197,94,0.15)' : '#1f2937',
+                                                        padding: '16px 8px',
+                                                        borderRadius: '12px',
+                                                        position: 'relative'
+                                                    }}
+                                                    className="text-white font-bold text-lg text-center transition hover:scale-105"
+                                                >
+                                                    {match.text}
+                                                    {isExact && (
+                                                        <span className="block text-green-400 text-xs mt-1">
+                                                            ✓ Exact Match
+                                                        </span>
+                                                    )}
+                                                    {isUsed && (
+                                                        <span className="block text-gray-400 text-xs mt-1">
+                                                            Already used
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Bottom Buttons */}
+                                <div className="flex justify-between items-center">
+                                    <button
+                                        onClick={() => {
+                                            setBottomsUpShowModal(false);
+                                            setBottomsUpHostInput('');
+                                            setBottomsUpPhase('input');
+                                            setTimerRunning(true);
+                                        }}
+                                        className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                    >
+                                        ← Back
+                                    </button>
+                                    <button
+                                        onClick={handleBottomsUpNotOnList}
+                                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black text-xl"
+                                    >
+                                        Not on the list
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
+
                     {/* Main Content */}
                     {/* Winner Screen Overlay */}
                     {showWinnerScreen && (
@@ -3052,6 +3632,8 @@
                                             (currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion).shortQuestion
                                         ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                             `QUESTION ${bonusQuestionIndex + 1}`
+                                        ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
+                                            bottomsUpPhase === 'question' ? 'BOTTOMS UP' : `Turn ${bottomsUpTurnNumber} — ${bottomsUpActiveTeam === 1 ? selectedTeam1?.name : selectedTeam2?.name}`
                                         ) : (
                                             'SHOOTOUT'
                                         )
@@ -3061,7 +3643,7 @@
                                 </div>
                                 
                                 <div className="bg-gray-800 rounded-lg flex items-center justify-center p-8 mb-4" style={{
-                                    height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '100%' : '380px',
+                                    height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '100%' : (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? '380px' : '380px',
                                     overflow: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? 'auto' : 'hidden'
                                 }}>
                                     {powerupPhase ? (
@@ -3077,6 +3659,28 @@
                                                 }}>
                                                     {(currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].question}
                                                 </p>
+                                            ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
+                                                // Bottoms Up UI
+                                                <div className="w-full h-full flex flex-col items-center justify-center relative">
+                                                    <p className="text-white leading-relaxed text-center fade-in" style={{
+                                                        fontSize: '36px',
+                                                        margin: 0
+                                                    }}>
+                                                        {bottomsUpQuestion?.questionText || 'Loading...'}
+                                                    </p>
+                                                    {userMode === 'host' && bottomsUpPhase === 'input' && (
+                                                        <input
+                                                            type="text"
+                                                            value={bottomsUpHostInput}
+                                                            onChange={(e) => setBottomsUpHostInput(e.target.value)}
+                                                            onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
+                                                            className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
+                                                            style={{width: '400px', position: 'absolute', bottom: '0px'}}
+                                                            placeholder="Type team's answer..."
+                                                            autoFocus
+                                                        />
+                                                    )}
+                                                </div>
                                             ) : (
                                                 // Shootout UI
                                                 shootoutBoardRevealed ? (
@@ -3132,7 +3736,7 @@
                                     ) : null}
                                 </div>
 
-                                    {!((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout') && (
+                                    {!((currentRound === 7 || currentRound === 14) && ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' || (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp')) && (
                                         <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
                                             height: '120px',
                                             overflow: 'hidden'
@@ -3215,55 +3819,63 @@
                                             (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
                                                 // Closest To Buttons
                                                 !showQuestion ? (
-                                                    <button 
-                                                        onClick={handleRevealQuestion}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleRevealQuestion} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL QUESTION
                                                     </button>
                                                 ) : !showBonusAnswer && !timerRunning && team1Time === 30 && team2Time === 30 ? (
-                                                    <button 
-                                                        onClick={handleStartTimer}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleStartTimer} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         START TIMER
                                                     </button>
                                                 ) : !showBonusAnswer ? (
-                                                    <button 
-                                                        onClick={handleRevealBonusAnswer}
-                                                        className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleRevealBonusAnswer} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL ANSWER
                                                     </button>
                                                 ) : bonusWinnerAwarded ? (
-                                                    <button 
-                                                        onClick={handleBonusNext}
-                                                        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleBonusNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         NEXT
+                                                    </button>
+                                                ) : null
+                                            ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
+                                                // Bottoms Up Buttons
+                                                bottomsUpPhase === 'question' ? (
+                                                    <button onClick={handleBottomsUpReveal} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                        REVEAL QUESTION
+                                                    </button>
+                                                ) : bottomsUpPhase === 'ready' ? (
+                                                    <>
+                                                        <button onClick={handleBottomsUpStartTimer} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                            START TIMER
+                                                        </button>
+                                                        <button disabled className="bg-gray-600 text-gray-400 font-bold py-4 px-8 rounded-lg border-4 border-black text-xl cursor-not-allowed">
+                                                            NO GUESS
+                                                        </button>
+                                                    </>
+                                                ) : bottomsUpPhase === 'input' ? (
+                                                    <>
+                                                        <button onClick={handleResetTimer} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                            RESET TIMER
+                                                        </button>
+                                                        <button onClick={handleBottomsUpNoGuess} className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                            NO GUESS
+                                                        </button>
+                                                    </>
+                                                ) : bottomsUpPhase === 'between' ? (
+                                                    <button onClick={handleBottomsUpNextTurn} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                        NEXT TURN
                                                     </button>
                                                 ) : null
                                             ) : (
                                                 // Shootout Buttons
                                                 !showQuestion ? (
-                                                    <button 
-                                                        onClick={handleRevealQuestion}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleRevealQuestion} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL QUESTION
                                                     </button>
                                                 ) : !shootoutBoardRevealed ? (
-                                                    <button 
-                                                        onClick={handleRevealShootoutBoard}
-                                                        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleRevealShootoutBoard} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL THE BOARD
                                                     </button>
                                                 ) : (
-                                                    <button 
-                                                        onClick={handleShootoutIncorrect}
-                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleShootoutIncorrect} className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         INCORRECT
                                                     </button>
                                                 )
@@ -3271,61 +3883,34 @@
                                         ) : (
                                             // Regular Round Buttons
                                             !showCategory ? (
-                                                <button 
-                                                    onClick={handleRevealCategory}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
+                                                <button onClick={handleRevealCategory} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     REVEAL CATEGORY
                                                 </button>
                                             ) : powerupPhase ? (
-                                                <button 
-                                                    onClick={() => {
-                                                        setPowerupPhase(false);
-                                                        setPowerupTimer(30);
-                                                    }}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
+                                                <button onClick={() => { setPowerupPhase(false); setPowerupTimer(30); }} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     SKIP POWERUPS
                                                 </button>
                                             ) : !showQuestion ? (
-                                                <button 
-                                                    onClick={handleRevealQuestion}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
+                                                <button onClick={handleRevealQuestion} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     REVEAL QUESTION
                                                 </button>
                                             ) : showAnswer ? (
-                                                <button 
-                                                    onClick={handleNext}
-                                                    className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
+                                                <button onClick={handleNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     NEXT
                                                 </button>
                                             ) : !timerRunning && !showAnswer && ((activeTimer === 1 && team1Time > 0) || (activeTimer === 2 && team2Time > 0)) ? (
-                                                <button 
-                                                    onClick={handleStartTimer}
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                >
+                                                <button onClick={handleStartTimer} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     START TIMER
                                                 </button>
                                             ) : (
                                                 <>
-                                                    <button 
-                                                        onClick={handleCorrect}
-                                                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleCorrect} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         CORRECT
                                                     </button>
-                                                    <button 
-                                                        onClick={handleResetTimer}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleResetTimer} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         RESET TIMER
                                                     </button>
-                                                    <button 
-                                                        onClick={handleIncorrect}
-                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                                    >
+                                                    <button onClick={handleIncorrect} className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         INCORRECT
                                                     </button>
                                                 </>
