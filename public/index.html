@@ -227,6 +227,7 @@
             const [activeTimer, setActiveTimer] = useState(1);
             
             const questionTextRef = useRef(null);
+            const answerTextRef = useRef(null);
             
             // Powerups state
             const [team1Powerups, setTeam1Powerups] = useState({
@@ -324,6 +325,7 @@
             const [currentImageUrl, setCurrentImageUrl] = useState(null);
             const [timersExpanded, setTimersExpanded] = useState(false);
             const [imageLoadError, setImageLoadError] = useState(false);
+            const [answerTextPosition, setAnswerTextPosition] = useState(null);
 
             // Google Sheets data
             const [sheetsMatches, setSheetsMatches] = useState([]);
@@ -401,6 +403,20 @@
             
             const timer1Color = getTimerColor(timer1Value);
             const timer2Color = getTimerColor(timer2Value);
+
+            // Measure answer text position for image overlay portal
+            useEffect(() => {
+                if (showAnswer && showImageOverlay && answerTextRef.current) {
+                    const rect = answerTextRef.current.getBoundingClientRect();
+                    setAnswerTextPosition({
+                        top: rect.top,
+                        left: rect.left,
+                        width: rect.width
+                    });
+                } else {
+                    setAnswerTextPosition(null);
+                }
+            }, [showAnswer, showImageOverlay]);
 
             // Load Google Sheets data on page load
             useEffect(() => {
@@ -4056,29 +4072,37 @@
                                                     </div>
                                                 ) : null
                                             ) : showQuestion ? (
-                                                showAnswer && showImageOverlay ? (
-                                                    ReactDOM.createPortal(
+                                                <>
+                                                    {/* Original answer text - always rendered so ref can measure it */}
+                                                    <p 
+                                                        ref={answerTextRef}
+                                                        className="text-yellow-400 font-bold text-5xl" 
+                                                        style={{
+                                                            opacity: (showAnswer && showImageOverlay) ? 0 : 
+                                                                    (userMode === 'stream' && !showAnswer) ? 0 : 
+                                                                    (showAnswer ? 1 : 0.3)
+                                                        }}
+                                                    >
+                                                        {currentAnswerText}
+                                                    </p>
+                                                    {/* Portal copy appears on top of image overlay at exact same position */}
+                                                    {showAnswer && showImageOverlay && answerTextPosition && ReactDOM.createPortal(
                                                         <p className="text-yellow-400 font-bold text-5xl" style={{
                                                             position: 'fixed',
-                                                            bottom: '220px',
-                                                            left: '50%',
-                                                            transform: 'translateX(-50%)',
+                                                            top: `${answerTextPosition.top}px`,
+                                                            left: `${answerTextPosition.left}px`,
+                                                            width: `${answerTextPosition.width}px`,
                                                             zIndex: 46,
                                                             textAlign: 'center',
                                                             pointerEvents: 'none',
-                                                            textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
+                                                            textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
+                                                            margin: 0
                                                         }}>
                                                             {currentAnswerText}
                                                         </p>,
                                                         document.body
-                                                    )
-                                                ) : (
-                                                    <p className="text-yellow-400 font-bold text-5xl" style={{
-                                                        opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
-                                                    }}>
-                                                        {currentAnswerText}
-                                                    </p>
-                                                )
+                                                    )}
+                                                </>
                                             ) : null}
                                         </div>
                                     )}
