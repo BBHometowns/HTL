@@ -341,7 +341,7 @@
                 { id: 5, name: "Nerd World Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
                 { id: 6, name: "New Directions", logo: "PacificMidwest.png", color: "#FFD93D" },
                 { id: 7, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
-                { id: 8, name: "Placeholder", logo: "Texas Two Step.png", color: "#FFB6B9" },
+                { id: 8, name: "Placeholder", logo: "Placeholder.png", color: "#FFB6B9" },
                 { id: 9, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
                 { id: 10, name: "Sims Family Values", logo: "SimsFamilyValues.png", color: "#4D96FF" },
                 { id: 11, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" },
@@ -3306,7 +3306,8 @@
             
             // Main Game (your existing game code, but with dynamic teams)
             return (
-                <div className="relative w-screen h-screen overflow-hidden" style={{
+                <>
+                <div className="relative w-screen h-screen" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
                     backgroundSize: '115%',
                     backgroundPosition: '35% center',
@@ -3408,18 +3409,6 @@
                                 </div>
                             </div>
                         </>
-                    )}
-
-                    {/* Image Dark Overlay */}
-                    {showImageOverlay && (
-                        <div style={{
-                            position: 'fixed',
-                            inset: 0,
-                            backgroundColor: 'rgba(0,0,0,0.88)',
-                            zIndex: 44,
-                            pointerEvents: 'none',
-                            animation: 'imageFadeIn 0.5s ease-in forwards'
-                        }} />
                     )}
 
                     {/* Image Overlay */}
@@ -3724,7 +3713,7 @@
                         </>
                     )}
                     
-                    <div className="relative z-10 flex flex-col items-center justify-start h-full p-8" style={{transform: 'translateY(-100px)'}}>
+                    <div className="relative flex flex-col items-center justify-start h-full p-8" style={{top: '-100px'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
                         {(currentRound === 7 || currentRound === 14) && !showWinnerScreen && (
@@ -3813,7 +3802,7 @@
                                             right: '-80px',
                                             fontSize: '24px',
                                             pointerEvents: 'auto',
-                                            zIndex: 100
+                                            zIndex: showImageOverlay ? 1 : 100
                                         }}
                                     >
                                         ✎
@@ -3852,7 +3841,7 @@
                                             right: '-80px',
                                             fontSize: '24px',
                                             pointerEvents: 'auto',
-                                            zIndex: 100
+                                            zIndex: showImageOverlay ? 1 : 100
                                         }}
                                     >
                                         ✎
@@ -3862,7 +3851,7 @@
                         </div>
 
                         {/* Round Title with Timers */}
-                        <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{position: 'relative', zIndex: timersExpanded ? 60 : 'auto'}}>
+                        <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{position: 'relative', zIndex: (timersExpanded && !showImageOverlay) ? 60 : 'auto'}}>
                             <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
                                 borderColor: '#7d3ad4',
                                 backgroundColor: `${selectedTeam1.color}65`,
@@ -3883,6 +3872,8 @@
                             </div>
                         
                             <div className="bg-gray-900 rounded-2xl border-8" style={{
+                                position: 'relative',
+                                zIndex: showImageOverlay ? 1 : 'auto',
                                 borderColor: '#7d3ad4',
                                 padding: '16px 48px',
                                 minWidth: '800px',
@@ -4065,11 +4056,29 @@
                                                     </div>
                                                 ) : null
                                             ) : showQuestion ? (
-                                                <p className="text-yellow-400 font-bold text-5xl" style={{
-                                                    opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
-                                                }}>
-                                                    {currentAnswerText}
-                                                </p>
+                                                showAnswer && showImageOverlay ? (
+                                                    ReactDOM.createPortal(
+                                                        <p className="text-yellow-400 font-bold text-5xl" style={{
+                                                            position: 'fixed',
+                                                            bottom: '220px',
+                                                            left: '50%',
+                                                            transform: 'translateX(-50%)',
+                                                            zIndex: 46,
+                                                            textAlign: 'center',
+                                                            pointerEvents: 'none',
+                                                            textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
+                                                        }}>
+                                                            {currentAnswerText}
+                                                        </p>,
+                                                        document.body
+                                                    )
+                                                ) : (
+                                                    <p className="text-yellow-400 font-bold text-5xl" style={{
+                                                        opacity: (userMode === 'stream' && !showAnswer) ? 0 : (showAnswer ? 1 : 0.3)
+                                                    }}>
+                                                        {currentAnswerText}
+                                                    </p>
+                                                )
                                             ) : null}
                                         </div>
                                     )}
@@ -4077,9 +4086,9 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', zIndex: showImageOverlay ? 50 : 'auto'}}>
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative'}}>
                             <div className="flex justify-between items-center">
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
                                     <div className="flex gap-6">
                                         <img 
                                             src={`${imagePath}powerup-double.png`}
@@ -4108,7 +4117,7 @@
                                 {userMode === 'host' && (
                                     <div className="flex gap-4" style={{
                                         position: 'relative',
-                                        zIndex: 50
+                                        zIndex: 50,
                                     }}>
                                         {/* UNDO BUTTON - Only show if a powerup was just used */}
                                         {lastPowerupsUsed.length > 0 && !showQuestion && (
@@ -4234,7 +4243,7 @@
                                     </div>
                                 )}
 
-                                <div className="flex flex-col gap-2 items-end">
+                                <div className="flex flex-col gap-2 items-end" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
                                     <div className="flex gap-6">
                                         <img 
                                             src={`${imagePath}powerup-dip.png`}
@@ -4292,6 +4301,18 @@
                         </div>
                     </div>
                 </div>
+                {showImageOverlay && ReactDOM.createPortal(
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.88)',
+                        zIndex: 44,
+                        pointerEvents: 'none',
+                        animation: 'imageFadeIn 0.5s ease-in forwards'
+                    }} />,
+                    document.body
+                )}
+                </>
             );
         }
 
