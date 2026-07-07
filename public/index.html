@@ -201,6 +201,26 @@
                 opacity: 0; 
             }
         }
+        @keyframes timerFlashWhite {
+            0% { background-color: transparent; border-color: #7d3ad4; color: inherit; }
+            50% { background-color: white; border-color: white; color: white; }
+            100% { background-color: transparent; border-color: #7d3ad4; color: inherit; }
+        }
+        .timer-flash {
+            animation: timerFlashWhite 0.5s ease-in-out;
+        }
+        @keyframes spinVertical {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(360deg); }
+        }
+        .second-guess-spin {
+            animation: spinVertical 0.6s ease-in-out;
+            display: inline-block;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -325,6 +345,9 @@
             const [currentImageUrl, setCurrentImageUrl] = useState(null);
             const [timersExpanded, setTimersExpanded] = useState(false);
             const [imageLoadError, setImageLoadError] = useState(false);
+            const [doubleDipActive, setDoubleDipActive] = useState(false);
+            const [doubleDipTeam, setDoubleDipTeam] = useState(null);
+            const [doubleDipSecondGuess, setDoubleDipSecondGuess] = useState(false);
             const [answerTextPosition, setAnswerTextPosition] = useState(null);
 
             // Google Sheets data
@@ -1098,6 +1121,10 @@
             };
 
             const handleCorrect = () => {
+                // Clear Double Dip state when question is resolved correctly
+                setDoubleDipActive(false);
+                setDoubleDipTeam(null);
+                setDoubleDipSecondGuess(false);
                 setShowAnswer(true);
                 setTimerRunning(false);
                 if (activeTeam === 1) {
@@ -1108,6 +1135,32 @@
             };
 
             const handleIncorrect = () => {
+                // Double Dip - First Guess Incorrect
+                if (doubleDipActive && !doubleDipSecondGuess) {
+                    // Move to second guess phase
+                    setDoubleDipSecondGuess(true);
+                    // Reset active team's timer to 10 seconds
+                    if (doubleDipTeam === 1) {
+                        setTeam1Time(10);
+                        setActiveTimer(1);
+                    } else {
+                        setTeam2Time(10);
+                        setActiveTimer(2);
+                    }
+                    // Auto-start the timer
+                    setTimerRunning(true);
+                    broadcastGameState();
+                    return; // Stop here - don't proceed to normal incorrect logic
+                }
+                
+                // Double Dip - Second Guess Incorrect
+                if (doubleDipActive && doubleDipSecondGuess) {
+                    // Clear Double Dip state and proceed to normal steal
+                    setDoubleDipActive(false);
+                    setDoubleDipTeam(null);
+                    setDoubleDipSecondGuess(false);
+                    // Fall through to normal incorrect/steal logic below
+                }
                 if (!stealAttempted) {
                     setStealAttempted(true);
                     setActiveTeam(activeTeam === 1 ? 2 : 1);
@@ -1130,6 +1183,10 @@
             };
 
             const handleNext = () => {
+                // Clear Double Dip state when advancing to next question
+                setDoubleDipActive(false);
+                setDoubleDipTeam(null);
+                setDoubleDipSecondGuess(false);
                 // Reset image state for next question
                 setShowImageOverlay(false);
                 setCurrentImageUrl(null);
@@ -1233,7 +1290,13 @@
                         setTeam1Time(45);
                         setLastPowerupsUsed(prev => [...prev, { team: 1, powerup: 'extraTime' }]);
                     } else if (powerup === 'doubleDip' && team1Powerups.doubleDip && currentQuestion === 1 && !stealAttempted) {
+                        // Block Double Dip if Extra Time or Double Points already used this round
+                        if (!team1Powerups.extraTime || !team1Powerups.pointDoubler) return;
+                        // Block Double Dip if already in second guess phase
+                        if (doubleDipSecondGuess) return;
                         setTeam1Powerups({...team1Powerups, doubleDip: false});
+                        setDoubleDipActive(true);
+                        setDoubleDipTeam(1);
                         setLastPowerupsUsed(prev => [...prev, { team: 1, powerup: 'doubleDip' }]);
                     }
                 } else if (team === 2) {
@@ -1245,15 +1308,22 @@
                     } else if (powerup === 'extraTime' && team2Powerups.extraTime && powerupPhase) {
                         setTeam2Powerups({...team2Powerups, extraTime: false});
                         setLastPowerupsUsed(prev => [...prev, { team: 2, powerup: 'extraTime' }]);
-                        // Don't set the time here - it will be set when we move to Question 2
                     } else if (powerup === 'doubleDip' && team2Powerups.doubleDip && currentQuestion === 2 && !stealAttempted) {
+                        // Block Double Dip if Extra Time or Double Points already used this round
+                        if (!team2Powerups.extraTime || !team2Powerups.pointDoubler) return;
+                        // Block Double Dip if already in second guess phase
+                        if (doubleDipSecondGuess) return;
                         setTeam2Powerups({...team2Powerups, doubleDip: false});
+                        setDoubleDipActive(true);
+                        setDoubleDipTeam(2);
                         setLastPowerupsUsed(prev => [...prev, { team: 2, powerup: 'doubleDip' }]);
                     }
                 }
             };
 
             const handleUndoPowerup = () => {
+                // Cannot undo Double Dip once second guess has started
+                if (doubleDipSecondGuess) return;
                 if (lastPowerupsUsed.length === 0) return;
                 
                 // Get the last powerup used
@@ -1284,6 +1354,12 @@
                 
                 // Remove the last powerup from the array
                 setLastPowerupsUsed(prev => prev.slice(0, -1));
+
+                // If we're undoing a Double Dip, clear the active state
+                if (last.powerup === 'doubleDip') {
+                    setDoubleDipActive(false);
+                    setDoubleDipTeam(null);
+                }
             };
 
             const handleTeamSelection = (team) => {
@@ -3864,11 +3940,69 @@
                                     </button>
                                 )}
                             </div>
+
+                            {/* SECOND GUESS overlay - Team 1 */}
+                            {doubleDipSecondGuess && doubleDipTeam === 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '23%',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    zIndex: 200,
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <span 
+                                        key={`second-guess-1-${doubleDipSecondGuess}`}
+                                        style={{
+                                            fontSize: '80px',
+                                            fontWeight: '900',
+                                            color: 'white',
+                                            WebkitTextStroke: '3px black',
+                                            textShadow: '4px 4px 12px rgba(0,0,0,0.9)',
+                                            display: 'inline-block',
+                                            animation: 'spinVertical 0.6s ease-in-out'
+                                        }}
+                                    >
+                                        SECOND GUESS
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* SECOND GUESS overlay - Team 2 */}
+                            {doubleDipSecondGuess && doubleDipTeam === 2 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    right: '23%',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    zIndex: 200,
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <span 
+                                        key={`second-guess-2-${doubleDipSecondGuess}`}
+                                        style={{
+                                            fontSize: '80px',
+                                            fontWeight: '900',
+                                            color: 'white',
+                                            WebkitTextStroke: '3px black',
+                                            textShadow: '4px 4px 12px rgba(0,0,0,0.9)',
+                                            display: 'inline-block',
+                                            animation: 'spinVertical 0.6s ease-in-out'
+                                        }}
+                                    >
+                                        SECOND GUESS
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Round Title with Timers */}
                         <div className={`flex items-center justify-center mb-8 gap-4 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{position: 'relative', zIndex: (timersExpanded && !showImageOverlay) ? 60 : 'auto'}}>
-                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                            <div className={`rounded-2xl border-8 flex items-center justify-center team-logo-transition ${doubleDipSecondGuess && doubleDipTeam === 1 ? 'timer-flash' : ''}`} style={{
                                 borderColor: '#7d3ad4',
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
@@ -3907,7 +4041,7 @@
                                 </h2>
                             </div>
                         
-                            <div className="rounded-2xl border-8 flex items-center justify-center team-logo-transition" style={{
+                            <div className={`rounded-2xl border-8 flex items-center justify-center team-logo-transition ${doubleDipSecondGuess && doubleDipTeam === 2 ? 'timer-flash' : ''}`} style={{
                                 borderColor: '#7d3ad4',
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
@@ -4131,7 +4265,7 @@
                                         <img 
                                             src={`${imagePath}powerup-dip.png`}
                                             alt="Team 1 Double Dip"
-                                            className={team1Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                            className={team1Powerups.doubleDip && team1Powerups.extraTime && team1Powerups.pointDoubler && !doubleDipSecondGuess ? 'powerup-active' : 'powerup-inactive'}
                                             style={{width: '84px', height: '84px'}}
                                             onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
                                         />
@@ -4144,7 +4278,7 @@
                                         zIndex: 50,
                                     }}>
                                         {/* UNDO BUTTON - Only show if a powerup was just used */}
-                                        {lastPowerupsUsed.length > 0 && !showQuestion && (
+                                        {lastPowerupsUsed.length > 0 && (!showQuestion || (doubleDipActive && !doubleDipSecondGuess)) && (
                                             <button 
                                                 onClick={handleUndoPowerup}
                                                 className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
@@ -4272,7 +4406,7 @@
                                         <img 
                                             src={`${imagePath}powerup-dip.png`}
                                             alt="Team 2 Double Dip"
-                                            className={team2Powerups.doubleDip ? 'powerup-active' : 'powerup-inactive'}
+                                            className={team2Powerups.doubleDip && team2Powerups.extraTime && team2Powerups.pointDoubler && !doubleDipSecondGuess ? 'powerup-active' : 'powerup-inactive'}
                                             style={{width: '84px', height: '84px'}}
                                             onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
                                         />
