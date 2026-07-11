@@ -373,7 +373,7 @@
             const [doubleDipTeam, setDoubleDipTeam] = useState(null);
             const [doubleDipSecondGuess, setDoubleDipSecondGuess] = useState(false);
             const [showCountdown, setShowCountdown] = useState(false);
-            const [countdownNumber, setCountdownNumber] = useState(5);
+            const [countdownNumber, setCountdownNumber] = useState(10);
             const [countdownFlipping, setCountdownFlipping] = useState(false);
             const [countdownFading, setCountdownFading] = useState(false);
             const [answerTextPosition, setAnswerTextPosition] = useState(null);
@@ -406,6 +406,7 @@
             ];
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
+            const audioPath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/';
             const SHEETS_API_KEY = 'AIzaSyBLbJVMfP7vCU0ccKwVcwNBJPOlN8BAFvI';
             const SHEETS_ID = '1EN3FSORt1A0TKcHcnaz62CDF0rdGABVGG_2IuYEja7o';
             const firebaseConfig = {
@@ -1424,26 +1425,19 @@
             };
 
             const handleStartMatch = () => {
-                // Start the countdown instead of immediately showing intro
+                // Guard against double-invocation
+                if (window._countdownStarted) return;
+                window._countdownStarted = true;
+                setTimeout(() => { window._countdownStarted = false; }, 100);
+                
+                // Show countdown screen immediately
                 setShowCountdown(true);
-                setCountdownNumber(5);
                 setCountdownFlipping(false);
                 setTimeout(() => broadcastGameState(), 100);
                 
-                // Create beep using Web Audio API
-                const playBeep = () => {
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-                    oscillator.start(audioCtx.currentTime);
-                    oscillator.stop(audioCtx.currentTime + 0.3);
-                };
+                // Play the countdown audio file
+                const audio = new Audio(`${audioPath}countdown.mp3`);
+                audio.play().catch(err => console.log('Audio play failed:', err));
                 
                 // Run the countdown sequence
                 const runCountdown = (num) => {
@@ -1462,22 +1456,21 @@
                     
                     setCountdownFlipping(false);
                     setCountdownNumber(num);
-                    playBeep();
                     setTimeout(() => broadcastGameState(), 50);
                     
-                    // After 0.7 seconds, start the flip out animation
+                    // After 0.9 seconds, start the flip out animation
                     setTimeout(() => {
                         setCountdownFlipping(true);
                         // After flip completes, show next number
                         setTimeout(() => {
                             runCountdown(num - 1);
                         }, 300);
-                    }, 700);
+                    }, 900);
                 };
                 
-                // Wait 2 seconds for fade-out of current screens, then start countdown
+                // Wait 2 seconds for audio lead-in, then start visual countdown from 10
                 setTimeout(() => {
-                    runCountdown(5);
+                    runCountdown(10);
                 }, 2000);
             };
 
@@ -3096,7 +3089,7 @@
                                 className={countdownFlipping ? 'flip-out' : 'flip-in'}
                                 key={countdownNumber}
                                 style={{
-                                    fontSize: '600px',
+                                    fontSize: '800px',
                                     fontWeight: '900',
                                     color: 'white',
                                     WebkitTextStroke: '8px black',
@@ -3114,7 +3107,7 @@
             }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && userMode === 'stream') {
+            if (!gameStarted && !showIntro && !showCountdown && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
@@ -3240,7 +3233,8 @@
                                 top: '50%',
                                 transform: 'translateY(-50%)',
                                 transition: 'left 1s ease-out',
-                                zIndex: 10
+                                zIndex: 10,
+                                opacity: introStep >= 1 ? 1 : 0
                             }}
                         >
                             <img 
