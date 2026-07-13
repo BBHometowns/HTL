@@ -237,10 +237,10 @@
             100% { opacity: 0; }
         }
         .flip-out {
-            animation: flipOutY 0.3s ease-in forwards;
+            animation: flipOutY 0.15s ease-in forwards;
         }
         .flip-in {
-            animation: flipInY 0.3s ease-out forwards;
+            animation: flipInY 0.15s ease-out forwards;
         }
         .countdown-fade-out {
             animation: countdownFadeOut 2s ease-out forwards;
@@ -392,7 +392,7 @@
                 { id: 3, name: "F*ck It We Ball", logo: "BeefwithaQ.png", color: "#4ECDC4" },
                 { id: 4, name: "Identity Thieves", logo: "IdentityThieves.png", color: "#AA96DA" },
                 { id: 5, name: "Nerd World Order", logo: "NerdWorldOrder.png", color: "#FFFFD2" },
-                { id: 6, name: "New Directions", logo: "PacificMidwest.png", color: "#FFD93D" },
+                { id: 6, name: "New Directions", logo: "New Directions.png", color: "#EE2634" },
                 { id: 7, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" },
                 { id: 8, name: "Placeholder", logo: "Placeholder.png", color: "#FFB6B9" }, // New Logo
                 { id: 9, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" },
@@ -402,11 +402,11 @@
                 { id: 13, name: "Sunglass Squad", logo: "SunglassSquad.png", color: "#FCBAD3" },
                 { id: 14, name: "The Weathermen", logo: "Weathermen.png", color: "#FEC8D8" },
                 { id: 15, name: "Too Thawt To Handle", logo: "Glitterati.png", color: "#F38181"},
-                { id: 16, name: "Trivia Rodrigo", logo: "VaticanCityCardinals.png", color: "#8EC5FC"}
+                { id: 16, name: "Trivia Rodrigo", logo: "Trivia Rodrigo.png", color: "#BC8EEC"}
             ];
 
             const imagePath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/Graphics/';
-            const audioPath = 'https://raw.githubusercontent.com/BBHometowns/HTL/main/';
+            const audioPath = '/';
             const SHEETS_API_KEY = 'AIzaSyBLbJVMfP7vCU0ccKwVcwNBJPOlN8BAFvI';
             const SHEETS_ID = '1EN3FSORt1A0TKcHcnaz62CDF0rdGABVGG_2IuYEja7o';
             const firebaseConfig = {
@@ -1432,6 +1432,7 @@
                 
                 // Show countdown screen immediately
                 setShowCountdown(true);
+                setCountdownNumber(null);
                 setCountdownFlipping(false);
                 setTimeout(() => broadcastGameState(), 100);
                 
@@ -1440,9 +1441,26 @@
                 audio.play().catch(err => console.log('Audio play failed:', err));
                 
                 // Run the countdown sequence
-                const runCountdown = (num) => {
-                    if (num < 0) {
-                        // Countdown complete - trigger fade out
+                const runCountdown = (startNum) => {
+                    for (let i = 0; i < startNum; i++) {
+                        const num = startNum - i;
+                        const timeMs = i * 1000;
+                        
+                        // Show the number
+                        setTimeout(() => {
+                            setCountdownFlipping(false);
+                            setCountdownNumber(num);
+                            setTimeout(() => broadcastGameState(), 50);
+                        }, timeMs);
+                        
+                        // Start flip out 150ms before next number appears
+                        setTimeout(() => {
+                            setCountdownFlipping(true);
+                        }, timeMs + 850);
+                    }
+                    
+                    // After all numbers done, fade out
+                    setTimeout(() => {
                         setCountdownFading(true);
                         setTimeout(() => broadcastGameState(), 50);
                         setTimeout(() => {
@@ -1451,27 +1469,13 @@
                             setShowIntro(true);
                             setTimeout(() => broadcastGameState(), 100);
                         }, 2000);
-                        return;
-                    }
-                    
-                    setCountdownFlipping(false);
-                    setCountdownNumber(num);
-                    setTimeout(() => broadcastGameState(), 50);
-                    
-                    // After 0.9 seconds, start the flip out animation
-                    setTimeout(() => {
-                        setCountdownFlipping(true);
-                        // After flip completes, show next number
-                        setTimeout(() => {
-                            runCountdown(num - 1);
-                        }, 300);
-                    }, 900);
+                    }, startNum * 1000);
                 };
                 
-                // Wait 2 seconds for audio lead-in, then start visual countdown from 10
+                // Wait 2.5 seconds for audio lead-in, then start visual countdown from 10
                 setTimeout(() => {
                     runCountdown(10);
-                }, 2000);
+                }, 2500);
             };
 
             // Broadcast game state to all streams
@@ -3085,22 +3089,24 @@
                         
                         {/* Countdown Number */}
                         <div className="relative z-10 flex items-center justify-center flex-1">
-                            <div 
-                                className={countdownFlipping ? 'flip-out' : 'flip-in'}
-                                key={countdownNumber}
-                                style={{
-                                    fontSize: '800px',
-                                    fontWeight: '900',
-                                    color: 'white',
-                                    WebkitTextStroke: '8px black',
-                                    textShadow: '10px 10px 30px rgba(0,0,0,0.9)',
-                                    lineHeight: '1',
-                                    display: 'inline-block',
-                                    transformStyle: 'preserve-3d'
-                                }}
-                            >
-                                {countdownNumber}
-                            </div>
+                            {countdownNumber !== null && (
+                                <div 
+                                    className={countdownFlipping ? 'flip-out' : 'flip-in'}
+                                    key={countdownNumber}
+                                    style={{
+                                        fontSize: '800px',
+                                        fontWeight: '900',
+                                        color: 'white',
+                                        WebkitTextStroke: '8px black',
+                                        textShadow: '10px 10px 30px rgba(0,0,0,0.9)',
+                                        lineHeight: '1',
+                                        display: 'inline-block',
+                                        transformStyle: 'preserve-3d'
+                                    }}
+                                >
+                                    {countdownNumber}
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
