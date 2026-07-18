@@ -266,6 +266,29 @@
             0% { opacity: 0; }
             100% { opacity: 1; }
         }
+        .powerup-available {
+            filter: none;
+            cursor: pointer;
+            opacity: 1;
+            transition: opacity 0.5s ease-out, filter 0.3s ease;
+        }
+        .powerup-activated {
+            filter: hue-rotate(120deg);
+            cursor: pointer;
+            opacity: 1;
+            transition: opacity 0.5s ease-out, filter 0.3s ease;
+        }
+        .powerup-used {
+            filter: grayscale(100%);
+            opacity: 0.35;
+            cursor: not-allowed;
+            transition: opacity 0.5s ease-out, filter 0.3s ease;
+        }
+        .powerup-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -313,6 +336,8 @@
             const [powerupTimer, setPowerupTimer] = useState(30);
             const [team1DoublerActive, setTeam1DoublerActive] = useState(false);
             const [team2DoublerActive, setTeam2DoublerActive] = useState(false);
+            const [team1ExtraTimeActive, setTeam1ExtraTimeActive] = useState(false);
+            const [team2ExtraTimeActive, setTeam2ExtraTimeActive] = useState(false);
             
             // Team selection states
             const [gameStarted, setGameStarted] = useState(false);
@@ -360,7 +385,6 @@
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
             const [waitingDots, setWaitingDots] = useState('.');
-            const [lastPowerupsUsed, setLastPowerupsUsed] = useState([]); // Track multiple powerups
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -393,6 +417,10 @@
             const [doubleDipActive, setDoubleDipActive] = useState(false);
             const [doubleDipTeam, setDoubleDipTeam] = useState(null);
             const [doubleDipSecondGuess, setDoubleDipSecondGuess] = useState(false);
+            const [team1DoubleDipUsed, setTeam1DoubleDipUsed] = useState(false);
+            const [team2DoubleDipUsed, setTeam2DoubleDipUsed] = useState(false);
+            const [team1ExtraTimeUsed, setTeam1ExtraTimeUsed] = useState(false);
+            const [team2ExtraTimeUsed, setTeam2ExtraTimeUsed] = useState(false);
             const [showCountdown, setShowCountdown] = useState(false);
             const [countdownNumber, setCountdownNumber] = useState(10);
             const [countdownFlipping, setCountdownFlipping] = useState(false);
@@ -615,8 +643,7 @@
                     interval = setInterval(() => {
                         setPowerupTimer(prev => {
                             if (prev <= 1) {
-                                setPowerupPhase(false);
-                                return 30;
+                                return 0;
                             }
                             return prev - 1;
                         });
@@ -723,7 +750,7 @@
                 showCategory, showQuestion, showAnswer, activeTeam,
                 team1Time, team2Time, timerRunning, powerupPhase,
                 powerupTimer,
-                team1Powerups, team2Powerups, lastPowerupsUsed, bonusScore1, bonusScore2,
+                team1Powerups, team2Powerups, bonusScore1, bonusScore2,
                 bonusQuestionIndex, showBonusAnswer, team1Guess, team2Guess,
                 team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, shootoutTurnCount, shootoutActiveTeam, shootoutSuddenDeath,
@@ -1095,6 +1122,14 @@
             };
 
             const handleRevealCategory = () => {
+                // Only reset Extra Time tracking at the start of a new round (Q1)
+                if (currentQuestion === 1) {
+                    setTeam1ExtraTimeUsed(false);
+                    setTeam2ExtraTimeUsed(false);
+                    setTeam1ExtraTimeActive(false);
+                    setTeam2ExtraTimeActive(false);
+                }
+                setShowCategory(true);
                 setShowCategory(true);
                 setTimerRunning(false); // Stop timer when revealing category
                 // Reset timers to default at start of each question
@@ -1172,9 +1207,9 @@
                 } else {
                     // Normal turn - reset to original time for that team
                     if (activeTimer === 1) {
-                        setTeam1Time(!team1Powerups.extraTime ? 45 : 30);
+                        setTeam1Time(team1ExtraTimeUsed ? 45 : 30);
                     } else {
-                        setTeam2Time(!team2Powerups.extraTime ? 45 : 30);
+                        setTeam2Time(team2ExtraTimeUsed ? 45 : 30);
                     }
                 }
             };
@@ -1246,6 +1281,8 @@
                 setDoubleDipActive(false);
                 setDoubleDipTeam(null);
                 setDoubleDipSecondGuess(false);
+                setTeam1DoubleDipUsed(false);
+                setTeam2DoubleDipUsed(false);
                 // Reset image state for next question
                 setShowImageOverlay(false);
                 setCurrentImageUrl(null);
@@ -1257,11 +1294,7 @@
                     setActiveTimer(2);
                     setTeam1Time(15); // Reset Team 1 back to default steal time
                     // Check if Team 2 activated Extra Time during powerup phase
-                    if (!team2Powerups.extraTime) {
-                        setTeam2Time(45);
-                    } else {
-                        setTeam2Time(30);
-                    }
+                    setTeam2Time(team2ExtraTimeUsed ? 45 : 30);
                     setShowCategory(true);
                     setShowQuestion(false);
                     setShowAnswer(false);
@@ -1333,91 +1366,94 @@
             };
 
             const handlePowerup = (team, powerup) => {
-                // Only allow powerup usage during powerup phase for Point Doubler and Extra Time
-                if ((powerup === 'pointDoubler' || powerup === 'extraTime') && !powerupPhase) {
-                    return;
-                }
-                
-                if (team === 1) {
-                    if (powerup === 'pointDoubler' && team1Powerups.pointDoubler && powerupPhase) {
-                        setTeam1Powerups({...team1Powerups, pointDoubler: false});
-                        setTeam1DoublerActive(true);
-                        setLastPowerupsUsed(prev => [...prev, { team: 1, powerup: 'pointDoubler' }]);
-                        console.log('Team 1 Doubler Activated');
-                    } else if (powerup === 'extraTime' && team1Powerups.extraTime && powerupPhase) {
-                        setTeam1Powerups({...team1Powerups, extraTime: false});
-                        setTeam1Time(45);
-                        setLastPowerupsUsed(prev => [...prev, { team: 1, powerup: 'extraTime' }]);
-                    } else if (powerup === 'doubleDip' && team1Powerups.doubleDip && currentQuestion === 1 && !stealAttempted) {
-                        // Block Double Dip if Extra Time or Double Points already used this round
-                        if (!team1Powerups.extraTime || !team1Powerups.pointDoubler) return;
-                        // Block Double Dip if already in second guess phase
-                        if (doubleDipSecondGuess) return;
-                        setTeam1Powerups({...team1Powerups, doubleDip: false});
-                        setDoubleDipActive(true);
-                        setDoubleDipTeam(1);
-                        setLastPowerupsUsed(prev => [...prev, { team: 1, powerup: 'doubleDip' }]);
-                    }
-                } else if (team === 2) {
-                    if (powerup === 'pointDoubler' && team2Powerups.pointDoubler && powerupPhase) {
-                        setTeam2Powerups({...team2Powerups, pointDoubler: false});
-                        setTeam2DoublerActive(true);
-                        setLastPowerupsUsed(prev => [...prev, { team: 2, powerup: 'pointDoubler' }]);
-                        console.log('Team 2 Doubler Activated');
-                    } else if (powerup === 'extraTime' && team2Powerups.extraTime && powerupPhase) {
-                        setTeam2Powerups({...team2Powerups, extraTime: false});
-                        setLastPowerupsUsed(prev => [...prev, { team: 2, powerup: 'extraTime' }]);
-                    } else if (powerup === 'doubleDip' && team2Powerups.doubleDip && currentQuestion === 2 && !stealAttempted) {
-                        // Block Double Dip if Extra Time or Double Points already used this round
-                        if (!team2Powerups.extraTime || !team2Powerups.pointDoubler) return;
-                        // Block Double Dip if already in second guess phase
-                        if (doubleDipSecondGuess) return;
-                        setTeam2Powerups({...team2Powerups, doubleDip: false});
-                        setDoubleDipActive(true);
-                        setDoubleDipTeam(2);
-                        setLastPowerupsUsed(prev => [...prev, { team: 2, powerup: 'doubleDip' }]);
-                    }
-                }
-            };
-
-            const handleUndoPowerup = () => {
-                // Cannot undo Double Dip once second guess has started
-                if (doubleDipSecondGuess) return;
-                if (lastPowerupsUsed.length === 0) return;
-                
-                // Get the last powerup used
-                const lastPowerup = lastPowerupsUsed[lastPowerupsUsed.length - 1];
-                const { team, powerup } = lastPowerup;
+                // Only allow Point Doubler and Extra Time during powerup phase
+                if ((powerup === 'pointDoubler' || powerup === 'extraTime') && !powerupPhase) return;
                 
                 if (team === 1) {
                     if (powerup === 'pointDoubler') {
-                        setTeam1Powerups({...team1Powerups, pointDoubler: true});
-                        setTeam1DoublerActive(false);
+                        if (!team1Powerups.pointDoubler && !team1DoublerActive) return; // Already used
+                        if (team1DoublerActive) {
+                            // Deactivate - only allowed during powerup phase (already checked above)
+                            setTeam1DoublerActive(false);
+                            setTeam1Powerups({...team1Powerups, pointDoubler: true});
+                        } else if (team1Powerups.pointDoubler && powerupPhase) {
+                            // Activate
+                            setTeam1Powerups({...team1Powerups, pointDoubler: false});
+                            setTeam1DoublerActive(true);
+                            console.log('Team 1 Doubler Activated');
+                        }
                     } else if (powerup === 'extraTime') {
-                        setTeam1Powerups({...team1Powerups, extraTime: true});
-                        setTeam1Time(30); // Reset to default
+                        if (!team1Powerups.extraTime && !team1ExtraTimeActive) return; // Already used
+                        if (team1ExtraTimeActive) {
+                            // Deactivate - reset timer to 30
+                            setTeam1ExtraTimeActive(false);
+                            setTeam1Powerups({...team1Powerups, extraTime: true});
+                            setTeam1ExtraTimeUsed(false);
+                            setTeam1Time(30);
+                        } else if (team1Powerups.extraTime && powerupPhase) {
+                            // Activate
+                            setTeam1Powerups({...team1Powerups, extraTime: false});
+                            setTeam1ExtraTimeActive(true);
+                            setTeam1ExtraTimeUsed(true);
+                            setTeam1Time(45);
+                        }
                     } else if (powerup === 'doubleDip') {
-                        setTeam1Powerups({...team1Powerups, doubleDip: true});
+                        if (!team1Powerups.doubleDip && !doubleDipActive) return; // Already used
+                        if (doubleDipActive && doubleDipTeam === 1 && !doubleDipSecondGuess) {
+                            // Deactivate Double Dip (before first answer)
+                            setDoubleDipActive(false);
+                            setDoubleDipTeam(null);
+                            setTeam1Powerups({...team1Powerups, doubleDip: true});
+                        } else if (team1Powerups.doubleDip && currentQuestion === 1 && !stealAttempted && !doubleDipSecondGuess) {
+                            // Block if Extra Time or Double Points already used
+                            if (!team1Powerups.extraTime || !team1Powerups.pointDoubler) return;
+                            // Block if another team's Double Dip is active
+                            if (doubleDipActive) return;
+                            // Activate
+                            setTeam1Powerups({...team1Powerups, doubleDip: false});
+                            setDoubleDipActive(true);
+                            setDoubleDipTeam(1);
+                            setTeam1DoubleDipUsed(true);
+                        }
                     }
                 } else if (team === 2) {
                     if (powerup === 'pointDoubler') {
-                        setTeam2Powerups({...team2Powerups, pointDoubler: true});
-                        setTeam2DoublerActive(false);
+                        if (!team2Powerups.pointDoubler && !team2DoublerActive) return; // Already used
+                        if (team2DoublerActive) {
+                            setTeam2DoublerActive(false);
+                            setTeam2Powerups({...team2Powerups, pointDoubler: true});
+                        } else if (team2Powerups.pointDoubler && powerupPhase) {
+                            setTeam2Powerups({...team2Powerups, pointDoubler: false});
+                            setTeam2DoublerActive(true);
+                            console.log('Team 2 Doubler Activated');
+                        }
                     } else if (powerup === 'extraTime') {
-                        setTeam2Powerups({...team2Powerups, extraTime: true});
-                        setTeam2Time(15); // Reset to default
+                        if (!team2Powerups.extraTime && !team2ExtraTimeActive) return; // Already used
+                        if (team2ExtraTimeActive) {
+                            setTeam2ExtraTimeActive(false);
+                            setTeam2Powerups({...team2Powerups, extraTime: true});
+                            setTeam2ExtraTimeUsed(false);
+                            setTeam2Time(15);
+                        } else if (team2Powerups.extraTime && powerupPhase) {
+                            setTeam2Powerups({...team2Powerups, extraTime: false});
+                            setTeam2ExtraTimeActive(true);
+                            setTeam2ExtraTimeUsed(true);
+                        }
                     } else if (powerup === 'doubleDip') {
-                        setTeam2Powerups({...team2Powerups, doubleDip: true});
+                        if (!team2Powerups.doubleDip && !doubleDipActive) return; // Already used
+                        if (doubleDipActive && doubleDipTeam === 2 && !doubleDipSecondGuess) {
+                            setDoubleDipActive(false);
+                            setDoubleDipTeam(null);
+                            setTeam2Powerups({...team2Powerups, doubleDip: true});
+                        } else if (team2Powerups.doubleDip && currentQuestion === 2 && !stealAttempted && !doubleDipSecondGuess) {
+                            if (!team2Powerups.extraTime || !team2Powerups.pointDoubler) return;
+                            if (doubleDipActive) return;
+                            setTeam2Powerups({...team2Powerups, doubleDip: false});
+                            setDoubleDipActive(true);
+                            setDoubleDipTeam(2);
+                            setTeam2DoubleDipUsed(true);
+                        }
                     }
-                }
-                
-                // Remove the last powerup from the array
-                setLastPowerupsUsed(prev => prev.slice(0, -1));
-
-                // If we're undoing a Double Dip, clear the active state
-                if (last.powerup === 'doubleDip') {
-                    setDoubleDipActive(false);
-                    setDoubleDipTeam(null);
                 }
             };
 
@@ -1538,7 +1574,6 @@
                         powerupTimer,
                         team1Powerups,
                         team2Powerups,
-                        lastPowerupsUsed,
                         bonusScore1,
                         bonusScore2,
                         bonusQuestionIndex,
@@ -4475,27 +4510,48 @@
                             <div className="flex justify-between items-center">
                                 <div className="flex flex-col gap-2" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
                                     <div className="flex gap-6">
-                                        <img 
-                                            src={`${imagePath}powerup-double.png`}
-                                            alt="Team 1 Point Doubler"
-                                            className={team1Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'pointDoubler') : undefined}
-                                        />
-                                        <img 
-                                            src={`${imagePath}powerup-time.png`}
-                                            alt="Team 1 Extra Time"
-                                            className={team1Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'extraTime') : undefined}
-                                        />
-                                        <img 
-                                            src={`${imagePath}powerup-dip.png`}
-                                            alt="Team 1 Double Dip"
-                                            className={team1Powerups.doubleDip && team1Powerups.extraTime && team1Powerups.pointDoubler && !doubleDipSecondGuess ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
-                                        />
+                                        {/* Team 1 Point Doubler */}
+                                        {(team1Powerups.pointDoubler || team1DoublerActive) && (
+                                            <img
+                                                src={`${imagePath}powerup-double.png`}
+                                                alt="Team 1 Point Doubler"
+                                                className={
+                                                    team1DoublerActive ? 'powerup-activated' :
+                                                    (team1ExtraTimeActive || (doubleDipActive && doubleDipTeam === 1)) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(1, 'pointDoubler') : undefined}
+                                            />
+                                        )}
+                                        {/* Team 1 Extra Time */}
+                                        {(team1Powerups.extraTime || team1ExtraTimeActive) && (
+                                            <img
+                                                src={`${imagePath}powerup-time.png`}
+                                                alt="Team 1 Extra Time"
+                                                className={
+                                                    team1ExtraTimeActive ? 'powerup-activated' :
+                                                    (team1DoublerActive || (doubleDipActive && doubleDipTeam === 1)) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(1, 'extraTime') : undefined}
+                                            />
+                                        )}
+                                        {/* Team 1 Double Dip */}
+                                        {(team1Powerups.doubleDip || (doubleDipActive && doubleDipTeam === 1) || team1DoubleDipUsed) && (
+                                            <img
+                                                src={`${imagePath}powerup-dip.png`}
+                                                alt="Team 1 Double Dip"
+                                                className={
+                                                    doubleDipActive && doubleDipTeam === 1 ? 'powerup-activated' :
+                                                    (team1DoublerActive || team1ExtraTimeActive || doubleDipSecondGuess) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(1, 'doubleDip') : undefined}
+                                            />
+                                        )}
                                     </div>
                                 </div>
 
@@ -4504,15 +4560,6 @@
                                         position: 'relative',
                                         zIndex: 50,
                                     }}>
-                                        {/* UNDO BUTTON - Only show if a powerup was just used */}
-                                        {lastPowerupsUsed.length > 0 && (!showQuestion || (doubleDipActive && !doubleDipSecondGuess)) && (
-                                            <button 
-                                                onClick={handleUndoPowerup}
-                                                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl"
-                                            >
-                                                UNDO POWERUP
-                                            </button>
-                                        )}
                                         
                                         {(currentRound === 7 || currentRound === 14) ? (
                                             (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo' ? (
@@ -4587,7 +4634,7 @@
                                                 </button>
                                             ) : powerupPhase ? (
                                                 <button onClick={() => { setPowerupPhase(false); setPowerupTimer(30); }} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
-                                                    SKIP POWERUPS
+                                                    LOCK IN POWERUPS
                                                 </button>
                                             ) : !showQuestion ? (
                                                 <button 
@@ -4630,27 +4677,48 @@
 
                                 <div className="flex flex-col gap-2 items-end" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
                                     <div className="flex gap-6">
-                                        <img 
-                                            src={`${imagePath}powerup-dip.png`}
-                                            alt="Team 2 Double Dip"
-                                            className={team2Powerups.doubleDip && team2Powerups.extraTime && team2Powerups.pointDoubler && !doubleDipSecondGuess ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
-                                        />
-                                        <img 
-                                            src={`${imagePath}powerup-time.png`}
-                                            alt="Team 2 Extra Time"
-                                            className={team2Powerups.extraTime ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'extraTime') : undefined}
-                                        />
-                                        <img 
-                                            src={`${imagePath}powerup-double.png`}
-                                            alt="Team 2 Point Doubler"
-                                            className={team2Powerups.pointDoubler ? 'powerup-active' : 'powerup-inactive'}
-                                            style={{width: '84px', height: '84px'}}
-                                            onClick={userMode === 'host' ? () => handlePowerup(2, 'pointDoubler') : undefined}
-                                        />
+                                        {/* Team 2 Double Dip */}
+                                        {(team2Powerups.doubleDip || (doubleDipActive && doubleDipTeam === 2) || team2DoubleDipUsed) && (
+                                            <img
+                                                src={`${imagePath}powerup-dip.png`}
+                                                alt="Team 2 Double Dip"
+                                                className={
+                                                    doubleDipActive && doubleDipTeam === 2 ? 'powerup-activated' :
+                                                    (team2DoublerActive || team2ExtraTimeActive || doubleDipSecondGuess) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(2, 'doubleDip') : undefined}
+                                            />
+                                        )}
+                                        {/* Team 2 Extra Time */}
+                                        {(team2Powerups.extraTime || team2ExtraTimeActive) && (
+                                            <img
+                                                src={`${imagePath}powerup-time.png`}
+                                                alt="Team 2 Extra Time"
+                                                className={
+                                                    team2ExtraTimeActive ? 'powerup-activated' :
+                                                    (team2DoublerActive || (doubleDipActive && doubleDipTeam === 2)) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(2, 'extraTime') : undefined}
+                                            />
+                                        )}
+                                        {/* Team 2 Point Doubler */}
+                                        {(team2Powerups.pointDoubler || team2DoublerActive) && (
+                                            <img
+                                                src={`${imagePath}powerup-double.png`}
+                                                alt="Team 2 Point Doubler"
+                                                className={
+                                                    team2DoublerActive ? 'powerup-activated' :
+                                                    (team2ExtraTimeActive || (doubleDipActive && doubleDipTeam === 2)) ? 'powerup-used' :
+                                                    'powerup-available'
+                                                }
+                                                style={{width: '84px', height: '84px'}}
+                                                onClick={userMode === 'host' ? () => handlePowerup(2, 'pointDoubler') : undefined}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </div>
