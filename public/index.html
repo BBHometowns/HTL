@@ -236,6 +236,16 @@
             0% { opacity: 1; }
             100% { opacity: 0; }
         }
+        .countdown-fade-out {
+            animation: countdownFadeOut 2s ease-out forwards;
+        }
+        @keyframes whiteFlash {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .white-flash {
+            animation: whiteFlash 2s ease-out forwards;
+        }
         .flip-out {
             animation: flipOutY 0.15s ease-in forwards;
         }
@@ -244,6 +254,17 @@
         }
         .countdown-fade-out {
             animation: countdownFadeOut 2s ease-out forwards;
+        }
+        @keyframes backgroundFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .background-fade-in {
+            animation: backgroundFadeIn 2s ease-in forwards;
+        }
+        @keyframes backgroundFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
@@ -376,6 +397,9 @@
             const [countdownNumber, setCountdownNumber] = useState(10);
             const [countdownFlipping, setCountdownFlipping] = useState(false);
             const [countdownFading, setCountdownFading] = useState(false);
+            const [backgroundFading, setBackgroundFading] = useState(false);
+            const [showBlackScreen, setShowBlackScreen] = useState(false);
+            const [whiteFading, setWhiteFading] = useState(false);
             const [answerTextPosition, setAnswerTextPosition] = useState(null);
 
             // Google Sheets data
@@ -664,6 +688,8 @@
                                 setCountdownFading(gameState.countdownFading || false);
                                 setCurrentImageUrl(gameState.currentImageUrl || null);
                                 setTimersExpanded(gameState.timersExpanded || false);
+                                setBackgroundFading(gameState.backgroundFading || false);
+                                setWhiteFading(gameState.whiteFading || false);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
                                     setTeamsConfirmed(true);
@@ -709,15 +735,15 @@
             useEffect(() => {
                 if (showIntro) {
                     const timers = [
-                        setTimeout(() => setIntroStep(1), 500),      // Team 1 logo flies in
-                        setTimeout(() => setIntroStep(2), 2000),     // Team 2 logo flies in
-                        setTimeout(() => setIntroStep(3), 3500),     // Versus graphic appears
-                        setTimeout(() => setIntroStep(4), 4500),     // Shake animation
-                        setTimeout(() => setIntroStep(5), 5500),     // Fade out versus, fade in game
+                        setTimeout(() => setIntroStep(1), 6000),      // Team 1 logo flies in
+                        setTimeout(() => setIntroStep(2), 7500),     // Team 2 logo flies in
+                        setTimeout(() => setIntroStep(3), 9000),     // Versus graphic appears
+                        setTimeout(() => setIntroStep(4), 10000),     // Shake animation
+                        setTimeout(() => setIntroStep(5), 11000),     // Fade out versus, fade in game
                         setTimeout(() => {
                             setShowIntro(false);
                             setGameStarted(true);
-                        }, 7000)  // Start game
+                        }, 12000)  // Start game
                     ];
                     return () => timers.forEach(timer => clearTimeout(timer));
                 }
@@ -1436,46 +1462,57 @@
                 setCountdownFlipping(false);
                 setTimeout(() => broadcastGameState(), 100);
                 
-                // Play the countdown audio file
-                const audio = new Audio(`${audioPath}countdown.mp3`);
-                audio.play().catch(err => console.log('Audio play failed:', err));
-                
                 // Run the countdown sequence
                 const runCountdown = (startNum) => {
                     for (let i = 0; i < startNum; i++) {
                         const num = startNum - i;
                         const timeMs = i * 1000;
                         
-                        // Show the number
                         setTimeout(() => {
                             setCountdownFlipping(false);
                             setCountdownNumber(num);
                             setTimeout(() => broadcastGameState(), 50);
                         }, timeMs);
                         
-                        // Start flip out 150ms before next number appears
                         setTimeout(() => {
                             setCountdownFlipping(true);
                         }, timeMs + 850);
                     }
                     
-                    // After all numbers done, fade out
+                    // After last number, start white flash
                     setTimeout(() => {
                         setCountdownFading(true);
                         setTimeout(() => broadcastGameState(), 50);
+                        // After 2 seconds white is fully bright, transition to intro
                         setTimeout(() => {
+                            setWhiteFading(true);
                             setShowCountdown(false);
                             setCountdownFading(false);
+                            setBackgroundFading(true);
                             setShowIntro(true);
-                            setTimeout(() => broadcastGameState(), 100);
+                            setTimeout(() => broadcastGameState(), 50);
+                            // Fade white out over 1.5 seconds to reveal black
+                            setTimeout(() => {
+                                setWhiteFading(false);
+                                setTimeout(() => broadcastGameState(), 50);
+                            }, 1500);
+                            // After white fades, background fades in
+                            setTimeout(() => {
+                                setBackgroundFading(false);
+                                setTimeout(() => broadcastGameState(), 50);
+                            }, 3500);
                         }, 2000);
                     }, startNum * 1000);
                 };
                 
-                // Wait 2.5 seconds for audio lead-in, then start visual countdown from 10
-                setTimeout(() => {
-                    runCountdown(10);
-                }, 2500);
+                // Play the countdown audio file and start visual countdown when audio begins
+                const audio = new Audio(`${audioPath}countdown.mp3`);
+                audio.onplay = () => {
+                    setTimeout(() => {
+                        runCountdown(10);
+                    }, 2000);
+                };
+                audio.play().catch(err => console.log('Audio play failed:', err));
             };
 
             // Broadcast game state to all streams
@@ -1530,6 +1567,8 @@
                         countdownNumber,
                         countdownFlipping,
                         countdownFading,
+                        backgroundFading,
+                        whiteFading,
                     };
                     
                     database.ref(`rooms/${roomCode}/gameState`).set(gameState);
@@ -2419,7 +2458,7 @@
             }
             
             // Admin Setup Wizard (HOST ONLY) - Steps 1-5
-            if (userMode === 'host' && !gameStarted && !showIntro && !showCountdown && (!teamsConfirmed || adminStep === 5)) {
+            if (userMode === 'host' && !gameStarted && !showIntro && !showCountdown && !backgroundFading && (!teamsConfirmed || adminStep === 5)) {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
@@ -3069,46 +3108,85 @@
             // Countdown Screen - shown on both Host and Stream
             if (showCountdown) {
                 return (
-                    <div className={`relative w-screen h-screen flex flex-col items-center justify-start overflow-hidden ${countdownFading ? 'countdown-fade-out' : ''}`} style={{
-                        backgroundImage: `url(${imagePath}background.png)`,
-                        backgroundSize: '115%',
-                        backgroundPosition: '35% center',
-                        backgroundRepeat: 'no-repeat'
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'black',
+                        zIndex: 9990
                     }}>
-                        {/* Dark overlay to make text more visible */}
-                        <div className="absolute inset-0" style={{backgroundColor: 'rgba(0,0,0,0.4)'}} />
-                        
-                        {/* "Match Starting In..." text */}
-                        <div className="relative z-10 text-white font-bold text-center mt-16" style={{
-                            fontSize: '60px',
-                            textShadow: '3px 3px 12px rgba(0,0,0,0.9)',
-                            WebkitTextStroke: '2px black'
+                        {/* Background image with dark overlay */}
+                        <div className={countdownFading ? 'countdown-fade-out' : ''} style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${imagePath}background.png)`,
+                            backgroundSize: '115%',
+                            backgroundPosition: '35% center',
+                            backgroundRepeat: 'no-repeat'
                         }}>
-                            MATCH STARTING IN...
+                            {/* Dark overlay */}
+                            <div className="absolute inset-0" style={{backgroundColor: 'rgba(0,0,0,0.4)'}} />
+                            
+                            {/* Match Starting In text */}
+                            <div className="relative z-10 text-white font-bold text-center mt-16" style={{
+                                fontSize: '60px',
+                                textShadow: '3px 3px 12px rgba(0,0,0,0.9)',
+                                WebkitTextStroke: '2px black'
+                            }}>
+                                MATCH STARTING IN...
+                            </div>
+                            
+                            {/* Countdown Number */}
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                {countdownNumber !== null && (
+                                    <div 
+                                        className={countdownFlipping ? 'flip-out' : 'flip-in'}
+                                        key={countdownNumber}
+                                        style={{
+                                            fontSize: '800px',
+                                            fontWeight: '900',
+                                            color: 'white',
+                                            WebkitTextStroke: '8px black',
+                                            textShadow: '10px 10px 30px rgba(0,0,0,0.9)',
+                                            lineHeight: '1',
+                                            display: 'inline-block',
+                                            transformStyle: 'preserve-3d'
+                                        }}
+                                    >
+                                        {countdownNumber}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         
-                        {/* Countdown Number */}
-                        <div className="relative z-10 flex items-center justify-center flex-1">
-                            {countdownNumber !== null && (
-                                <div 
-                                    className={countdownFlipping ? 'flip-out' : 'flip-in'}
-                                    key={countdownNumber}
-                                    style={{
-                                        fontSize: '800px',
-                                        fontWeight: '900',
-                                        color: 'white',
-                                        WebkitTextStroke: '8px black',
-                                        textShadow: '10px 10px 30px rgba(0,0,0,0.9)',
-                                        lineHeight: '1',
-                                        display: 'inline-block',
-                                        transformStyle: 'preserve-3d'
-                                    }}
-                                >
-                                    {countdownNumber}
-                                </div>
-                            )}
-                        </div>
+                        {/* White flash overlay - fades IN on top to simulate bright lights */}
+                        {countdownFading && (
+                            <div className="white-flash" style={{
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundColor: 'white',
+                                zIndex: 9995,
+                                opacity: 0
+                            }} />
+                        )}
                     </div>
+                );
+            }
+
+            // Black screen between countdown and intro
+            if (showBlackScreen) {
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'black',
+                        zIndex: 9999
+                    }} />
                 );
             }
             
@@ -3225,12 +3303,29 @@
             // Intro Animation Screen
             if (showIntro) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
-                        backgroundImage: `url(${imagePath}background.png)`,
-                        backgroundSize: '115%',
-                        backgroundPosition: '35% center',
-                        backgroundRepeat: 'no-repeat'
-                    }}>
+                    <div className="relative w-screen h-screen overflow-hidden" style={{backgroundColor: 'black'}}>
+                        
+                        {/* Background image - fades in after black appears */}
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${imagePath}background.png)`,
+                            backgroundSize: '115%',
+                            backgroundPosition: '35% center',
+                            backgroundRepeat: 'no-repeat',
+                            opacity: backgroundFading ? 0 : 1,
+                            transition: 'opacity 2s ease-in'
+                        }} />
+                        {/* White overlay fading out - simulates lights dimming after flash */}
+                        {whiteFading && (
+                            <div style={{
+                                position: 'fixed',
+                                inset: 0,
+                                backgroundColor: 'white',
+                                zIndex: 9999,
+                                animation: 'countdownFadeOut 1.5s ease-out forwards'
+                            }} />
+                        )}
                         {/* Team 1 Logo */}
                         <div 
                             className={`absolute ${introStep >= 4 ? 'shake-1' : ''}`}
