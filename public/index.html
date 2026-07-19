@@ -710,12 +710,10 @@
                                 setShowWinnerScreen(gameState.showWinnerScreen);
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
-                                if (userMode === 'host') {
-                                    setShowCountdown(gameState.showCountdown || false);
-                                    setCountdownNumber(gameState.countdownNumber ?? 5);
-                                    setCountdownFlipping(gameState.countdownFlipping || false);
-                                    setCountdownFading(gameState.countdownFading || false);
-                                }
+                                setShowCountdown(gameState.showCountdown || false);
+                                setCountdownNumber(gameState.countdownNumber ?? 5);
+                                setCountdownFlipping(gameState.countdownFlipping || false);
+                                setCountdownFading(gameState.countdownFading || false);
                                 setCurrentImageUrl(gameState.currentImageUrl || null);
                                 setTimersExpanded(gameState.timersExpanded || false);
                                 setBackgroundFading(gameState.backgroundFading || false);
@@ -724,9 +722,12 @@
                                 if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
                                     setTeamsConfirmed(true);
                                 }
-                                if (gameState.showIntro && userMode === 'host') {
+                                if (gameState.showIntro) {
                                     setShowIntro(true);
                                     setTeamsConfirmed(true);
+                                }
+                                if (gameState.introStep !== undefined) {
+                                    setIntroStep(gameState.introStep);
                                 }
                                 if (gameState.teamsConfirmed) {
                                     setTeamsConfirmed(true);
@@ -738,134 +739,8 @@
                             }
                         });
 
-                        // Listen for match start timestamp (for Stream animation sync)
-                        const timestampRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
-                        timestampRef.on('value', (snapshot) => {
-                            const timestamp = snapshot.val();
-                            if (!timestamp || userMode !== 'stream') return;
-
-                            setMatchStartTimestamp(timestamp);
-
-                            // Clear any existing animation interval and reset state
-                            if (window._streamAnimInterval) {
-                                clearInterval(window._streamAnimInterval);
-                            }
-                            window._streamIntroStarted = false;
-
-                            // Animation timing constants (ms from timestamp = when "10" appeared)
-                            const AUDIO_DURATION = 16000;
-                            const WHITE_FLASH_START = 10000;
-                            const INTRO_START = 12000;
-                            const WHITE_FADE_END = 13500;
-                            const BG_FADE_END = 15500;
-                            const INTRO_STEP_1 = 18000;
-                            const INTRO_STEP_2 = 19500;
-                            const INTRO_STEP_3 = 21000;
-                            const INTRO_STEP_4 = 22000;
-                            const INTRO_STEP_5 = 23000;
-                            const GAME_START = 24000;
-
-                            // Play audio at correct position
-                            const startElapsed = Date.now() - timestamp;
-                            const audioElapsed = startElapsed + 2500;
-                            if (audioElapsed < AUDIO_DURATION) {
-                                const audio = new Audio(`${audioPath}countdown.mp3`);
-                                audio.currentTime = Math.max(0, audioElapsed / 1000);
-                                audio.play().catch(err => console.log('Stream audio failed:', err));
-                            }
-
-                            // Track what we've already set
-                            let lastNum = null;
-                            let lastStep = -1;
-
-                            window._streamAnimInterval = setInterval(() => {
-                                const elapsed = Date.now() - timestamp;
-
-                                // ── PHASE 5: Game started ──
-                                if (elapsed >= GAME_START) {
-                                    clearInterval(window._streamAnimInterval);
-                                    setShowCountdown(false);
-                                    setShowIntro(false);
-                                    setGameStarted(true);
-                                    return;
-                                }
-
-                                // ── PHASE 4: Intro animations ──
-                                if (elapsed >= INTRO_START) {
-                                    // Start intro if not already started
-                                    if (!window._streamIntroStarted) {
-                                        window._streamIntroStarted = true;
-                                        setShowCountdown(false);
-                                        setCountdownFading(false);
-                                        setWhiteFading(true);
-                                        setBackgroundFading(true);
-                                        setShowIntro(true);
-                                    }
-
-                                    // White overlay fades out
-                                    if (elapsed >= WHITE_FADE_END) {
-                                        setWhiteFading(false);
-                                    }
-
-                                    // Background fully visible
-                                    if (elapsed >= BG_FADE_END) {
-                                        setBackgroundFading(false);
-                                    }
-
-                                    // Intro steps
-                                    const step = elapsed >= INTRO_STEP_5 ? 5 :
-                                                 elapsed >= INTRO_STEP_4 ? 4 :
-                                                 elapsed >= INTRO_STEP_3 ? 3 :
-                                                 elapsed >= INTRO_STEP_2 ? 2 :
-                                                 elapsed >= INTRO_STEP_1 ? 1 : 0;
-
-                                    if (step !== lastStep) {
-                                        lastStep = step;
-                                        setIntroStep(step);
-                                    }
-                                    return;
-                                }
-
-                                // ── PHASE 3: White flash ──
-                                if (elapsed >= WHITE_FLASH_START) {
-                                    setShowCountdown(true);
-                                    setCountdownFading(true);
-                                    return;
-                                }
-
-                                // ── PHASE 2: Countdown numbers ──
-                                if (elapsed >= 0) {
-                                    setShowCountdown(true);
-                                    setCountdownFading(false);
-
-                                    const numIndex = Math.floor(elapsed / 1000);
-                                    const currentNum = 10 - numIndex;
-
-                                    if (currentNum >= 1) {
-                                        if (currentNum !== lastNum) {
-                                            lastNum = currentNum;
-                                            setCountdownFlipping(false);
-                                            setCountdownNumber(currentNum);
-                                        }
-                                        const withinCycle = elapsed % 1000;
-                                        setCountdownFlipping(withinCycle >= 850);
-                                    } else {
-                                        setCountdownNumber(null);
-                                        setCountdownFlipping(false);
-                                    }
-                                }
-
-                            }, 50);
-                        });
-
-                        // Clean up both listeners
                         return () => {
                             gameStateRef.off();
-                            timestampRef.off();
-                            window._streamIntroStarted = false;
-                            if (window._streamAnimInterval) {
-                                clearInterval(window._streamAnimInterval);
-                            }
                         };
                     }
                 }
@@ -889,9 +764,17 @@
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, roomCode,
                 showCountdown, countdownNumber, countdownFlipping, countdownFading,
-                showIntro, backgroundFading, whiteFading
+                backgroundFading, whiteFading, introStep
             ]);
             
+            // Stream audio - plays when countdown starts
+            useEffect(() => {
+                if (showCountdown && userMode === 'stream') {
+                    const audio = new Audio(`${audioPath}countdown.mp3`);
+                    audio.play().catch(err => console.log('Stream audio failed:', err));
+                }
+            }, [showCountdown, userMode]);
+
             // Intro animation sequence
             useEffect(() => {
                 if (showIntro && userMode === 'host') {
@@ -1756,6 +1639,7 @@
                         teamsConfirmed,
                         gameStarted,
                         showIntro,
+                        introStep,
                         showWinnerScreen,
                         winnerTeam: winnerTeam ?? null,
                         showImageOverlay,
