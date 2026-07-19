@@ -754,23 +754,24 @@
                             // Play audio at correct position
                             const AUDIO_DURATION = 16000;
                             const startElapsed = Date.now() - timestamp;
-                            if (startElapsed < AUDIO_DURATION) {
+                            const audioElapsed = startElapsed + 2500; // Audio started 2500ms before "10"
+                            if (audioElapsed < AUDIO_DURATION) {
                                 const audio = new Audio(`${audioPath}countdown.mp3`);
-                                audio.currentTime = Math.max(0, startElapsed / 1000);
-                                audio.play().catch(err => console.log('Stream audio failed:', err));
+                                audio.currentTime = Math.max(0, audioElapsed / 1000);
                             }
 
                             // Animation timing constants (ms from timestamp)
-                            const NUMBERS_START = 2000;
-                            const WHITE_FLASH_START = 13500;
-                            const INTRO_START = 15500;
-                            const BG_FADE_END = 17500;
-                            const INTRO_STEP_1 = 23500;
-                            const INTRO_STEP_2 = 25000;
-                            const INTRO_STEP_3 = 26500;
-                            const INTRO_STEP_4 = 27500;
-                            const INTRO_STEP_5 = 28500;
-                            const GAME_START = 29500;
+                            const NUMBERS_START = 0;         // "10" appears at t=0 (timestamp IS this moment)
+                            const WHITE_FLASH_START = 10000; // 10 numbers × 1000ms
+                            const INTRO_START = 12000;       // +2000ms white flash
+                            const WHITE_FADE_END = 13500;    // +1500ms white fades out
+                            const BG_FADE_END = 15500;       // +3500ms background visible
+                            const INTRO_STEP_1 = 21500;      // BG_FADE_END + 6000ms
+                            const INTRO_STEP_2 = 23000;      // BG_FADE_END + 7500ms
+                            const INTRO_STEP_3 = 24500;      // BG_FADE_END + 9000ms
+                            const INTRO_STEP_4 = 25500;      // BG_FADE_END + 10000ms
+                            const INTRO_STEP_5 = 26500;      // BG_FADE_END + 11000ms
+                            const GAME_START = 27500;        // BG_FADE_END + 12000ms
 
                             // Track what we've already set
                             let lastNum = null;
@@ -794,19 +795,19 @@
                                     setShowCountdown(false);
                                     setCountdownFading(false);
 
-                                    if (elapsed >= INTRO_START && elapsed < INTRO_START + 2000) {
-                                        // Background fading in
-                                        if (!window._streamIntroStarted) {
-                                            window._streamIntroStarted = true;
-                                            setWhiteFading(true);
-                                            setBackgroundFading(true);
-                                            setShowIntro(true);
-                                        }
+                                    if (elapsed >= INTRO_START && !window._streamIntroStarted) {
+                                        window._streamIntroStarted = true;
+                                        setWhiteFading(true);
+                                        setBackgroundFading(true);
+                                        setShowIntro(true);
+                                    }
+
+                                    if (elapsed >= WHITE_FADE_END) {
+                                        setWhiteFading(false);
                                     }
 
                                     if (elapsed >= BG_FADE_END) {
                                         setBackgroundFading(false);
-                                        setWhiteFading(false);
                                     }
 
                                     const step = elapsed >= INTRO_STEP_5 ? 5 :
@@ -833,7 +834,7 @@
                                     setShowCountdown(true);
 
                                     // Calculate which number should be showing
-                                    const numElapsed = elapsed - NUMBERS_START;
+                                    const numElapsed = elapsed; // NUMBERS_START is 0, timestamp IS when "10" appeared
                                     const numIndex = Math.floor(numElapsed / 1000);
                                     const currentNum = 10 - numIndex;
 
@@ -1671,11 +1672,6 @@
                 window._countdownStarted = true;
                 setTimeout(() => { window._countdownStarted = false; }, 100);
                 
-                // Record and broadcast the start timestamp
-                const startTime = Date.now();
-                setMatchStartTimestamp(startTime);
-                database.ref(`rooms/${roomCode}/matchStartTimestamp`).set(startTime);
-                
                 // Show countdown screen immediately
                 setShowCountdown(true);
                 setCountdownNumber(null);
@@ -1720,6 +1716,10 @@
                 
                 // Wait 2.5 seconds for audio lead-in, then start visual countdown from 10
                 setTimeout(() => {
+                    // Write timestamp exactly when "10" appears
+                    const startTime = Date.now();
+                    setMatchStartTimestamp(startTime);
+                    database.ref(`rooms/${roomCode}/matchStartTimestamp`).set(startTime);
                     runCountdown(10);
                 }, 2500);
             };
