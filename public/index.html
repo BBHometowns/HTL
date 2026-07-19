@@ -746,33 +746,33 @@
 
                             setMatchStartTimestamp(timestamp);
 
-                            // Clear any existing animation interval
+                            // Clear any existing animation interval and reset state
                             if (window._streamAnimInterval) {
                                 clearInterval(window._streamAnimInterval);
                             }
+                            window._streamIntroStarted = false;
+
+                            // Animation timing constants (ms from timestamp = when "10" appeared)
+                            const AUDIO_DURATION = 16000;
+                            const WHITE_FLASH_START = 10000;
+                            const INTRO_START = 12000;
+                            const WHITE_FADE_END = 13500;
+                            const BG_FADE_END = 15500;
+                            const INTRO_STEP_1 = 18000;
+                            const INTRO_STEP_2 = 19500;
+                            const INTRO_STEP_3 = 21000;
+                            const INTRO_STEP_4 = 22000;
+                            const INTRO_STEP_5 = 23000;
+                            const GAME_START = 24000;
 
                             // Play audio at correct position
-                            const AUDIO_DURATION = 16000;
                             const startElapsed = Date.now() - timestamp;
-                            const audioElapsed = startElapsed + 2500; // Audio started 2500ms before "10"
+                            const audioElapsed = startElapsed + 2500;
                             if (audioElapsed < AUDIO_DURATION) {
                                 const audio = new Audio(`${audioPath}countdown.mp3`);
                                 audio.currentTime = Math.max(0, audioElapsed / 1000);
                                 audio.play().catch(err => console.log('Stream audio failed:', err));
                             }
-
-                            // Animation timing constants (ms from timestamp)
-                            const NUMBERS_START = 0;         // "10" appears at t=0 (timestamp IS this moment)
-                            const WHITE_FLASH_START = 10000; // 10 numbers × 1000ms
-                            const INTRO_START = 12000;       // +2000ms white flash
-                            const WHITE_FADE_END = 13500;    // +1500ms white fades out
-                            const BG_FADE_END = 16000;       // +3500ms background visible
-                            const INTRO_STEP_1 = 18000;      // INTRO_START(12000) + 6000ms
-                            const INTRO_STEP_2 = 19500;      // INTRO_START(12000) + 7500ms
-                            const INTRO_STEP_3 = 21000;      // INTRO_START(12000) + 9000ms
-                            const INTRO_STEP_4 = 22000;      // INTRO_START(12000) + 10000ms
-                            const INTRO_STEP_5 = 23000;      // INTRO_START(12000) + 11000ms
-                            const GAME_START = 24000;        // INTRO_START(12000) + 12000ms
 
                             // Track what we've already set
                             let lastNum = null;
@@ -781,34 +781,43 @@
                             window._streamAnimInterval = setInterval(() => {
                                 const elapsed = Date.now() - timestamp;
 
-                                // Game has started - stop the interval
+                                // ── PHASE 5: Game started ──
                                 if (elapsed >= GAME_START) {
                                     clearInterval(window._streamAnimInterval);
                                     setShowCountdown(false);
                                     setShowIntro(false);
                                     setGameStarted(true);
-                                    setIntroStep(5);
                                     return;
                                 }
 
-                                // Intro animation phase
+                                // ── PHASE 4: Intro animations ──
                                 if (elapsed >= INTRO_START) {
-                                    setShowCountdown(false);
-                                    setCountdownFading(false);
+                                    // Start intro if not already started
+                                    if (!window._streamIntroStarted) {
+                                        window._streamIntroStarted = true;
+                                        setShowCountdown(false);
+                                        setCountdownFading(false);
+                                        setWhiteFading(true);
+                                        setBackgroundFading(true);
+                                        setShowIntro(true);
+                                    }
 
+                                    // White overlay fades out
                                     if (elapsed >= WHITE_FADE_END) {
                                         setWhiteFading(false);
                                     }
 
+                                    // Background fully visible
                                     if (elapsed >= BG_FADE_END) {
                                         setBackgroundFading(false);
                                     }
 
+                                    // Intro steps
                                     const step = elapsed >= INTRO_STEP_5 ? 5 :
-                                                elapsed >= INTRO_STEP_4 ? 4 :
-                                                elapsed >= INTRO_STEP_3 ? 3 :
-                                                elapsed >= INTRO_STEP_2 ? 2 :
-                                                elapsed >= INTRO_STEP_1 ? 1 : 0;
+                                                 elapsed >= INTRO_STEP_4 ? 4 :
+                                                 elapsed >= INTRO_STEP_3 ? 3 :
+                                                 elapsed >= INTRO_STEP_2 ? 2 :
+                                                 elapsed >= INTRO_STEP_1 ? 1 : 0;
 
                                     if (step !== lastStep) {
                                         lastStep = step;
@@ -817,27 +826,19 @@
                                     return;
                                 }
 
-                                // White flash phase
+                                // ── PHASE 3: White flash ──
                                 if (elapsed >= WHITE_FLASH_START) {
+                                    setShowCountdown(true);
                                     setCountdownFading(true);
-                                    setWhiteFading(elapsed >= INTRO_START);
-                                    if (elapsed >= INTRO_START && !window._streamIntroStarted) {
-                                        window._streamIntroStarted = true;
-                                        setShowCountdown(false);
-                                        setCountdownFading(false);
-                                        setBackgroundFading(true);
-                                        setShowIntro(true);
-                                    }
                                     return;
                                 }
 
-                                // Countdown number phase
-                                if (elapsed >= NUMBERS_START) {
+                                // ── PHASE 2: Countdown numbers ──
+                                if (elapsed >= 0) {
                                     setShowCountdown(true);
+                                    setCountdownFading(false);
 
-                                    // Calculate which number should be showing
-                                    const numElapsed = elapsed; // NUMBERS_START is 0, timestamp IS when "10" appeared
-                                    const numIndex = Math.floor(numElapsed / 1000);
+                                    const numIndex = Math.floor(elapsed / 1000);
                                     const currentNum = 10 - numIndex;
 
                                     if (currentNum >= 1) {
@@ -846,24 +847,15 @@
                                             setCountdownFlipping(false);
                                             setCountdownNumber(currentNum);
                                         }
-                                        // Flip animation at 850ms into each number's cycle
-                                        const withinCycle = numElapsed % 1000;
+                                        const withinCycle = elapsed % 1000;
                                         setCountdownFlipping(withinCycle >= 850);
                                     } else {
-                                        // Past "1" but before white flash - hide the number
                                         setCountdownNumber(null);
                                         setCountdownFlipping(false);
                                     }
-                                    return;
                                 }
 
-                                // Before numbers start - show countdown screen
-                                if (elapsed >= 0) {
-                                    setShowCountdown(true);
-                                    setCountdownNumber(null);
-                                }
-
-                            }, 50); // Check every 50ms for smooth animation
+                            }, 50);
                         });
 
                         // Clean up both listeners
