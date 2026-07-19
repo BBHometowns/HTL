@@ -741,7 +741,7 @@
 
             // Auto-broadcast game state when it changes (HOST only)
             useEffect(() => {
-                if (userMode === 'host' && isConnected && roomCode && gameStarted) {
+                if (userMode === 'host' && isConnected && roomCode && (gameStarted || showCountdown || showIntro || backgroundFading || whiteFading)) {
                     broadcastGameState();
                 }
             }, [
@@ -755,7 +755,9 @@
                 team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, shootoutTurnCount, shootoutActiveTeam, shootoutSuddenDeath,
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
-                showWinnerScreen, winnerTeam, userMode, roomCode
+                showWinnerScreen, winnerTeam, userMode, roomCode,
+                showCountdown, countdownNumber, countdownFlipping, countdownFading,
+                showIntro, backgroundFading, whiteFading
             ]);
             
             // Intro animation sequence
