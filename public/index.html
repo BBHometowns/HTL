@@ -761,7 +761,7 @@
                             }
 
                             // Animation timing constants (ms from timestamp)
-                            const NUMBERS_START = 2500;
+                            const NUMBERS_START = 2000;
                             const WHITE_FLASH_START = 13500;
                             const INTRO_START = 15500;
                             const BG_FADE_END = 17500;
@@ -837,15 +837,20 @@
                                     const numIndex = Math.floor(numElapsed / 1000);
                                     const currentNum = 10 - numIndex;
 
-                                    if (currentNum !== lastNum && currentNum >= 1) {
-                                        lastNum = currentNum;
+                                    if (currentNum >= 1) {
+                                        if (currentNum !== lastNum) {
+                                            lastNum = currentNum;
+                                            setCountdownFlipping(false);
+                                            setCountdownNumber(currentNum);
+                                        }
+                                        // Flip animation at 850ms into each number's cycle
+                                        const withinCycle = numElapsed % 1000;
+                                        setCountdownFlipping(withinCycle >= 850);
+                                    } else {
+                                        // Past "1" but before white flash - hide the number
+                                        setCountdownNumber(null);
                                         setCountdownFlipping(false);
-                                        setCountdownNumber(currentNum);
                                     }
-
-                                    // Flip animation at 850ms into each number's cycle
-                                    const withinCycle = numElapsed % 1000;
-                                    setCountdownFlipping(withinCycle >= 850);
                                     return;
                                 }
 
