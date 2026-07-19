@@ -510,7 +510,7 @@
 
             // Measure answer text position for image overlay portal
             useEffect(() => {
-                if (showAnswer && showImageOverlay && answerTextRef.current) {
+                if (showImageOverlay && answerTextRef.current) {
                     const rect = answerTextRef.current.getBoundingClientRect();
                     setAnswerTextPosition({
                         top: rect.top,
@@ -1034,6 +1034,42 @@
                 setShowRoomCheckModal(false);
             };
 
+            // Renders question text with [bracketed] host-only content
+            // Host sees bracketed content in cyan italic, Stream sees it removed
+            const renderQuestionText = (text, isHost) => {
+                if (!text) return '';
+                if (!text.includes('[')) return text;
+                
+                // Split on bracket patterns
+                const parts = text.split(/(\[[^\]]*\])/g);
+                
+                if (!isHost) {
+                    // Stream: remove bracketed sections entirely
+                    return parts
+                        .filter(part => !part.startsWith('['))
+                        .join('')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                }
+                
+                // Host: render bracketed sections in cyan italic
+                return parts.map((part, index) => {
+                    if (part.startsWith('[') && part.endsWith(']')) {
+                        return (
+                            <span key={index} style={{
+                                display: 'block',
+                                color: '#22d3ee',
+                                fontStyle: 'italic',
+                                marginTop: '2em'
+                            }}>
+                                {part.slice(1, -1)}
+                            </span>
+                        );
+                    }
+                    return part;
+                });
+            };
+
             // Converts a Google Drive sharing URL to a direct image URL
             const convertDriveUrl = (url) => {
                 if (!url) return null;
@@ -1126,8 +1162,6 @@
                 if (currentQuestion === 1) {
                     setTeam1ExtraTimeUsed(false);
                     setTeam2ExtraTimeUsed(false);
-                    setTeam1ExtraTimeActive(false);
-                    setTeam2ExtraTimeActive(false);
                 }
                 setShowCategory(true);
                 setShowCategory(true);
@@ -1277,12 +1311,17 @@
             };
 
             const handleNext = () => {
-                // Clear Double Dip state when advancing to next question
-                setDoubleDipActive(false);
-                setDoubleDipTeam(null);
-                setDoubleDipSecondGuess(false);
-                setTeam1DoubleDipUsed(false);
-                setTeam2DoubleDipUsed(false);
+                // Only clear active Double Dip state when moving to next ROUND
+                if (currentQuestion === 2) {
+                    setDoubleDipActive(false);
+                    setDoubleDipTeam(null);
+                    setDoubleDipSecondGuess(false);
+                }
+                // Only clear DoubleDipUsed when moving to next ROUND (not Q1→Q2)
+                if (currentQuestion === 2) {
+                    setTeam1DoubleDipUsed(false);
+                    setTeam2DoubleDipUsed(false);
+                }
                 // Reset image state for next question
                 setShowImageOverlay(false);
                 setCurrentImageUrl(null);
@@ -1358,10 +1397,11 @@
                     setCurrentPointValue(1);
                     setTeam1DoublerActive(false);
                     setTeam2DoublerActive(false);
+                    setTeam1ExtraTimeActive(false);
+                    setTeam2ExtraTimeActive(false);
                     setTimerRunning(false);
                     setPowerupPhase(false);
                     setPowerupTimer(30);
-                    setLastPowerupsUsed([]); // Clear undo state
                 }
             };
 
@@ -1376,7 +1416,7 @@
                             // Deactivate - only allowed during powerup phase (already checked above)
                             setTeam1DoublerActive(false);
                             setTeam1Powerups({...team1Powerups, pointDoubler: true});
-                        } else if (team1Powerups.pointDoubler && powerupPhase) {
+                        } else if (team1Powerups.pointDoubler && powerupPhase && !team1ExtraTimeActive) {
                             // Activate
                             setTeam1Powerups({...team1Powerups, pointDoubler: false});
                             setTeam1DoublerActive(true);
@@ -1390,7 +1430,7 @@
                             setTeam1Powerups({...team1Powerups, extraTime: true});
                             setTeam1ExtraTimeUsed(false);
                             setTeam1Time(30);
-                        } else if (team1Powerups.extraTime && powerupPhase) {
+                        } else if (team1Powerups.extraTime && powerupPhase && !team1DoublerActive) {
                             // Activate
                             setTeam1Powerups({...team1Powerups, extraTime: false});
                             setTeam1ExtraTimeActive(true);
@@ -1404,12 +1444,9 @@
                             setDoubleDipActive(false);
                             setDoubleDipTeam(null);
                             setTeam1Powerups({...team1Powerups, doubleDip: true});
-                        } else if (team1Powerups.doubleDip && currentQuestion === 1 && !stealAttempted && !doubleDipSecondGuess) {
-                            // Block if Extra Time or Double Points already used
-                            if (!team1Powerups.extraTime || !team1Powerups.pointDoubler) return;
-                            // Block if another team's Double Dip is active
+                        } else if (team1Powerups.doubleDip && activeTeam === 1 && showQuestion && !stealAttempted && !doubleDipSecondGuess) {
+                            if (team1DoublerActive || team1ExtraTimeActive) return;
                             if (doubleDipActive) return;
-                            // Activate
                             setTeam1Powerups({...team1Powerups, doubleDip: false});
                             setDoubleDipActive(true);
                             setDoubleDipTeam(1);
@@ -1422,7 +1459,7 @@
                         if (team2DoublerActive) {
                             setTeam2DoublerActive(false);
                             setTeam2Powerups({...team2Powerups, pointDoubler: true});
-                        } else if (team2Powerups.pointDoubler && powerupPhase) {
+                        } else if (team2Powerups.pointDoubler && powerupPhase && !team2ExtraTimeActive) {
                             setTeam2Powerups({...team2Powerups, pointDoubler: false});
                             setTeam2DoublerActive(true);
                             console.log('Team 2 Doubler Activated');
@@ -1434,7 +1471,7 @@
                             setTeam2Powerups({...team2Powerups, extraTime: true});
                             setTeam2ExtraTimeUsed(false);
                             setTeam2Time(15);
-                        } else if (team2Powerups.extraTime && powerupPhase) {
+                        } else if (team2Powerups.extraTime && powerupPhase && !team2DoublerActive) {
                             setTeam2Powerups({...team2Powerups, extraTime: false});
                             setTeam2ExtraTimeActive(true);
                             setTeam2ExtraTimeUsed(true);
@@ -1445,8 +1482,8 @@
                             setDoubleDipActive(false);
                             setDoubleDipTeam(null);
                             setTeam2Powerups({...team2Powerups, doubleDip: true});
-                        } else if (team2Powerups.doubleDip && currentQuestion === 2 && !stealAttempted && !doubleDipSecondGuess) {
-                            if (!team2Powerups.extraTime || !team2Powerups.pointDoubler) return;
+                        } else if (team2Powerups.doubleDip && activeTeam === 2 && showQuestion && !stealAttempted && !doubleDipSecondGuess) {
+                            if (team2DoublerActive || team2ExtraTimeActive) return;
                             if (doubleDipActive) return;
                             setTeam2Powerups({...team2Powerups, doubleDip: false});
                             setDoubleDipActive(true);
@@ -2071,8 +2108,8 @@
                 setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
                 
                 // Reset timers and restart for next turn
-                setTeam1Time(15);
-                setTeam2Time(15);
+                setTeam1Time(20);
+                setTeam2Time(20);
                 setTimerRunning(true);
             };
             
@@ -2106,8 +2143,8 @@
                 setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
                 
                 // Reset timers and restart for next turn
-                setTeam1Time(15);
-                setTeam2Time(15);
+                setTeam1Time(20);
+                setTeam2Time(20);
                 setTimerRunning(true);
             };
             
@@ -2216,6 +2253,7 @@
             const roundIndex = getRoundIndex();
             const currentRoundData = roundIndex !== null ? rounds[roundIndex] : null;
             const currentQuestionText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.question1 : currentRoundData.question2) : '';
+            const currentQuestionDisplay = renderQuestionText(currentQuestionText, userMode === 'host');
             const currentAnswerText = currentRoundData ? (currentQuestion === 1 ? currentRoundData.answer1 : currentRoundData.answer2) : '';
 
             // Password Login Screen
@@ -2943,7 +2981,7 @@
                                                 {/* Q1 row - flex so image sits on the right */}
                                                 <div className="flex items-start gap-3">
                                                     <div className="flex-1">
-                                                        <p className="text-white text-sm mb-1">Q1: {round.question1}</p>
+                                                        <p className="text-white text-sm mb-1">Q1: {renderQuestionText(round.question1, true)}</p>
                                                         <p className="text-yellow-400 text-sm mb-2">A1: {round.answer1}</p>
                                                     </div>
                                                     {round.imageUrl1 && (
@@ -2986,7 +3024,7 @@
                                                 {/* Q2 row - flex so image sits on the right */}
                                                 <div className="flex items-start gap-3">
                                                     <div className="flex-1">
-                                                        <p className="text-white text-sm mb-1">Q2: {round.question2}</p>
+                                                        <p className="text-white text-sm mb-1">Q2: {renderQuestionText(round.question2, true)}</p>
                                                         <p className="text-yellow-400 text-sm">A2: {round.answer2}</p>
                                                     </div>
                                                     {round.imageUrl2 && (
@@ -3037,7 +3075,7 @@
                                         {selectedBonusType === 'closestTo' ? (
                                             closestToQuestions.slice(0, 5).map((q, i) => (
                                                 <div key={i} className="mb-3 pb-3 border-b border-gray-700">
-                                                    <p className="text-white text-sm">Q{i + 1}: {q.question}</p>
+                                                    <p className="text-white text-sm">Q{i + 1}: {renderQuestionText(q.question, true)}</p>
                                                     <p className="text-yellow-400 text-sm">A: {q.answer}</p>
                                                 </div>
                                             ))
@@ -3079,7 +3117,7 @@
                                         {selectedTiebreakerType === 'closestTo' ? (
                                             closestToQuestions.slice(0, 5).map((q, i) => (
                                                 <div key={i} className="mb-3 pb-3 border-b border-gray-700">
-                                                    <p className="text-white text-sm">Q{i + 1}: {q.question}</p>
+                                                    <p className="text-white text-sm">Q{i + 1}: {renderQuestionText(q.question, true)}</p>
                                                     <p className="text-yellow-400 text-sm">A: {q.answer}</p>
                                                 </div>
                                             ))
@@ -4362,7 +4400,7 @@
                                                     fontSize: '40px',
                                                     margin: 0
                                                 }}>
-                                                    {(currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].question}
+                                                    {renderQuestionText((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].question, userMode === 'host')}
                                                 </p>
                                             ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
                                                 // Bottoms Up UI
@@ -4371,7 +4409,7 @@
                                                         fontSize: '36px',
                                                         margin: 0
                                                     }}>
-                                                        {bottomsUpQuestion?.questionText || 'Loading...'}
+                                                        {renderQuestionText(bottomsUpQuestion?.questionText || 'Loading...', userMode === 'host')}
                                                     </p>
                                                     {userMode === 'host' && bottomsUpPhase === 'input' && (
                                                         <input
@@ -4426,7 +4464,7 @@
                                                         fontSize: '40px',
                                                         margin: 0
                                                     }}>
-                                                        {((currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion) || {}).longQuestion || 'Loading...'}
+                                                        {renderQuestionText(((currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion) || {}).longQuestion || 'Loading...', userMode === 'host')}
                                                     </p>
                                                 )
                                             )
@@ -4435,7 +4473,7 @@
                                                 fontSize: '40px',
                                                 margin: 0
                                             }}>
-                                                {currentQuestionText}
+                                                {currentQuestionDisplay}
                                             </p>
                                         )
                                     ) : null}
@@ -4469,30 +4507,31 @@
                                                 ) : null
                                             ) : showQuestion ? (
                                                 <>
-                                                    {/* Original answer text - always rendered so ref can measure it */}
+                                                    {/* Original answer text - invisible when image overlay showing */}
                                                     <p 
                                                         ref={answerTextRef}
                                                         className="text-yellow-400 font-bold text-5xl" 
                                                         style={{
-                                                            opacity: (showAnswer && showImageOverlay) ? 0 : 
+                                                            opacity: showImageOverlay ? 0 : 
                                                                     (userMode === 'stream' && !showAnswer) ? 0 : 
                                                                     (showAnswer ? 1 : 0.3)
                                                         }}
                                                     >
                                                         {currentAnswerText}
                                                     </p>
-                                                    {/* Portal copy appears on top of image overlay at exact same position */}
-                                                    {showAnswer && showImageOverlay && answerTextPosition && ReactDOM.createPortal(
+                                                    {/* Portal copy - visible above image overlay, host only */}
+                                                    {showImageOverlay && userMode === 'host' && answerTextPosition && ReactDOM.createPortal(
                                                         <p className="text-yellow-400 font-bold text-5xl" style={{
                                                             position: 'fixed',
                                                             top: `${answerTextPosition.top}px`,
                                                             left: `${answerTextPosition.left}px`,
                                                             width: `${answerTextPosition.width}px`,
-                                                            zIndex: 46,
+                                                            zIndex: 48,
                                                             textAlign: 'center',
                                                             pointerEvents: 'none',
                                                             textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
-                                                            margin: 0
+                                                            margin: 0,
+                                                            opacity: showAnswer ? 1 : 0.3
                                                         }}>
                                                             {currentAnswerText}
                                                         </p>,
@@ -4507,8 +4546,8 @@
 
                         {/* Powerups and Control Buttons */}
                         <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative'}}>
-                            <div className="flex justify-between items-center">
-                                <div className="flex flex-col gap-2" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
+                            <div className="relative flex items-center justify-center">
+                                <div className="flex flex-col gap-2" style={{position: 'absolute', left: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
                                         {/* Team 1 Point Doubler */}
                                         {(team1Powerups.pointDoubler || team1DoublerActive) && (
@@ -4517,7 +4556,7 @@
                                                 alt="Team 1 Point Doubler"
                                                 className={
                                                     team1DoublerActive ? 'powerup-activated' :
-                                                    (team1ExtraTimeActive || (doubleDipActive && doubleDipTeam === 1)) ? 'powerup-used' :
+                                                    (team1ExtraTimeActive || (doubleDipActive && doubleDipTeam === 1) || (!powerupPhase && showQuestion)) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
                                                 style={{width: '84px', height: '84px'}}
@@ -4531,7 +4570,7 @@
                                                 alt="Team 1 Extra Time"
                                                 className={
                                                     team1ExtraTimeActive ? 'powerup-activated' :
-                                                    (team1DoublerActive || (doubleDipActive && doubleDipTeam === 1)) ? 'powerup-used' :
+                                                    (team1DoublerActive || (doubleDipActive && doubleDipTeam === 1) || (!powerupPhase && showQuestion)) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
                                                 style={{width: '84px', height: '84px'}}
@@ -4544,7 +4583,7 @@
                                                 src={`${imagePath}powerup-dip.png`}
                                                 alt="Team 1 Double Dip"
                                                 className={
-                                                    doubleDipActive && doubleDipTeam === 1 ? 'powerup-activated' :
+                                                    (doubleDipActive && doubleDipTeam === 1) || team1DoubleDipUsed ? 'powerup-activated' :
                                                     (team1DoublerActive || team1ExtraTimeActive || doubleDipSecondGuess) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
@@ -4675,7 +4714,7 @@
                                     </div>
                                 )}
 
-                                <div className="flex flex-col gap-2 items-end" style={{position: 'relative', zIndex: showImageOverlay ? 1 : 'auto'}}>
+                                <div className="flex flex-col gap-2 items-end" style={{position: 'absolute', right: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
                                         {/* Team 2 Double Dip */}
                                         {(team2Powerups.doubleDip || (doubleDipActive && doubleDipTeam === 2) || team2DoubleDipUsed) && (
@@ -4683,7 +4722,7 @@
                                                 src={`${imagePath}powerup-dip.png`}
                                                 alt="Team 2 Double Dip"
                                                 className={
-                                                    doubleDipActive && doubleDipTeam === 2 ? 'powerup-activated' :
+                                                    (doubleDipActive && doubleDipTeam === 2) || team2DoubleDipUsed ? 'powerup-activated' :
                                                     (team2DoublerActive || team2ExtraTimeActive || doubleDipSecondGuess) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
@@ -4698,7 +4737,7 @@
                                                 alt="Team 2 Extra Time"
                                                 className={
                                                     team2ExtraTimeActive ? 'powerup-activated' :
-                                                    (team2DoublerActive || (doubleDipActive && doubleDipTeam === 2)) ? 'powerup-used' :
+                                                    (team2DoublerActive || (doubleDipActive && doubleDipTeam === 2) || (!powerupPhase && showQuestion)) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
                                                 style={{width: '84px', height: '84px'}}
@@ -4712,7 +4751,7 @@
                                                 alt="Team 2 Point Doubler"
                                                 className={
                                                     team2DoublerActive ? 'powerup-activated' :
-                                                    (team2ExtraTimeActive || (doubleDipActive && doubleDipTeam === 2)) ? 'powerup-used' :
+                                                    (team2ExtraTimeActive || (doubleDipActive && doubleDipTeam === 2) || (!powerupPhase && showQuestion)) ? 'powerup-used' :
                                                     'powerup-available'
                                                 }
                                                 style={{width: '84px', height: '84px'}}
