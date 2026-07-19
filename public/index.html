@@ -758,6 +758,7 @@
                             if (audioElapsed < AUDIO_DURATION) {
                                 const audio = new Audio(`${audioPath}countdown.mp3`);
                                 audio.currentTime = Math.max(0, audioElapsed / 1000);
+                                audio.play().catch(err => console.log('Stream audio failed:', err));
                             }
 
                             // Animation timing constants (ms from timestamp)
@@ -795,13 +796,6 @@
                                     setShowCountdown(false);
                                     setCountdownFading(false);
 
-                                    if (elapsed >= INTRO_START && !window._streamIntroStarted) {
-                                        window._streamIntroStarted = true;
-                                        setWhiteFading(true);
-                                        setBackgroundFading(true);
-                                        setShowIntro(true);
-                                    }
-
                                     if (elapsed >= WHITE_FADE_END) {
                                         setWhiteFading(false);
                                     }
@@ -826,6 +820,14 @@
                                 // White flash phase
                                 if (elapsed >= WHITE_FLASH_START) {
                                     setCountdownFading(true);
+                                    setWhiteFading(elapsed >= INTRO_START);
+                                    if (elapsed >= INTRO_START && !window._streamIntroStarted) {
+                                        window._streamIntroStarted = true;
+                                        setShowCountdown(false);
+                                        setCountdownFading(false);
+                                        setBackgroundFading(true);
+                                        setShowIntro(true);
+                                    }
                                     return;
                                 }
 
@@ -864,19 +866,15 @@
                             }, 50); // Check every 50ms for smooth animation
                         });
 
-                        // Clean up timestamp listener
+                        // Clean up both listeners
                         return () => {
                             gameStateRef.off();
                             timestampRef.off();
+                            window._streamIntroStarted = false;
+                            if (window._streamAnimInterval) {
+                                clearInterval(window._streamAnimInterval);
+                            }
                         };
-                        
-                        return () => {
-                            gameStateRef.off();
-                        };
-                        window._streamIntroStarted = false;
-                        if (window._streamAnimInterval) {
-                            clearInterval(window._streamAnimInterval);
-                        }
                     }
                 }
             }, [userMode, roomCode, shouldConnect]);
