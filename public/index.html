@@ -422,6 +422,7 @@
             const [team1ExtraTimeUsed, setTeam1ExtraTimeUsed] = useState(false);
             const [team2ExtraTimeUsed, setTeam2ExtraTimeUsed] = useState(false);
             const [showCountdown, setShowCountdown] = useState(false);
+            const [matchStartTimestamp, setMatchStartTimestamp] = useState(null);
             const [countdownNumber, setCountdownNumber] = useState(10);
             const [countdownFlipping, setCountdownFlipping] = useState(false);
             const [countdownFading, setCountdownFading] = useState(false);
@@ -709,10 +710,12 @@
                                 setShowWinnerScreen(gameState.showWinnerScreen);
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
-                                setShowCountdown(gameState.showCountdown || false);
-                                setCountdownNumber(gameState.countdownNumber ?? 5);
-                                setCountdownFlipping(gameState.countdownFlipping || false);
-                                setCountdownFading(gameState.countdownFading || false);
+                                if (userMode === 'host') {
+                                    setShowCountdown(gameState.showCountdown || false);
+                                    setCountdownNumber(gameState.countdownNumber ?? 5);
+                                    setCountdownFlipping(gameState.countdownFlipping || false);
+                                    setCountdownFading(gameState.countdownFading || false);
+                                }
                                 setCurrentImageUrl(gameState.currentImageUrl || null);
                                 setTimersExpanded(gameState.timersExpanded || false);
                                 setBackgroundFading(gameState.backgroundFading || false);
@@ -721,8 +724,11 @@
                                 if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
                                     setTeamsConfirmed(true);
                                 }
-                                if (gameState.showIntro) {
+                                if (gameState.showIntro && userMode === 'host') {
                                     setShowIntro(true);
+                                    setTeamsConfirmed(true);
+                                }
+                                if (gameState.teamsConfirmed) {
                                     setTeamsConfirmed(true);
                                 }
                                 if (gameState.gameStarted) {
@@ -731,6 +737,132 @@
                                 }
                             }
                         });
+
+                        // Listen for match start timestamp (for Stream animation sync)
+                        const timestampRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
+                        timestampRef.on('value', (snapshot) => {
+                            const timestamp = snapshot.val();
+                            if (!timestamp || userMode !== 'stream') return;
+                            
+                            setMatchStartTimestamp(timestamp);
+                            
+                            const now = Date.now();
+                            const elapsed = now - timestamp;
+                            
+                            // Total sequence timing:
+                            // 0ms: countdown screen appears
+                            // 2500ms: number "10" appears
+                            // 12500ms: number "1" appears  
+                            // 13500ms: white flash begins (2000ms)
+                            // 15500ms: intro begins, background fades (2000ms)
+                            // 17500ms: background fully visible
+                            // 23500ms: introStep 1 (Team 1 logo)
+                            // 25000ms: introStep 2 (Team 2 logo)
+                            // 26500ms: introStep 3 (VS graphic)
+                            // 27500ms: introStep 4 (shake)
+                            // 28500ms: introStep 5 (fade out)
+                            // 29500ms: game starts
+                            
+                            const COUNTDOWN_START = 0;
+                            const NUMBERS_START = 2500;
+                            const WHITE_FLASH_START = 13500;
+                            const INTRO_START = 15500;
+                            const BG_FADE_END = 17500;
+                            const INTRO_STEP_1 = 23500;
+                            const INTRO_STEP_2 = 25000;
+                            const INTRO_STEP_3 = 26500;
+                            const INTRO_STEP_4 = 27500;
+                            const INTRO_STEP_5 = 28500;
+                            const GAME_START = 29500;
+                            
+                            // Play audio at correct position if still within audio duration (16 seconds)
+                            const AUDIO_DURATION = 16000;
+                            if (elapsed < AUDIO_DURATION) {
+                                const audio = new Audio(`${audioPath}countdown.mp3`);
+                                audio.currentTime = elapsed / 1000;
+                                audio.play().catch(err => console.log('Audio play failed:', err));
+                            }
+                            
+                            // If match already started, skip everything
+                            if (elapsed >= GAME_START) {
+                                return; // gameState listener handles the game screen
+                            }
+                            
+                            // Schedule remaining animation steps based on elapsed time
+                            const scheduleIfFuture = (targetTime, callback) => {
+                                const delay = targetTime - elapsed;
+                                if (delay > 0) {
+                                    setTimeout(callback, delay);
+                                } else {
+                                    callback(); // Already past this point, run immediately
+                                }
+                            };
+                            
+                            // Show countdown screen if we're before game start
+                            if (elapsed < INTRO_START) {
+                                scheduleIfFuture(COUNTDOWN_START, () => {
+                                    setShowCountdown(true);
+                                    setCountdownFading(false);
+                                    setWhiteFading(false);
+                                });
+                            }
+                            
+                            // Show the correct countdown number
+                            if (elapsed < WHITE_FLASH_START) {
+                                for (let i = 0; i < 10; i++) {
+                                    const num = 10 - i;
+                                    const numTime = NUMBERS_START + (i * 1000);
+                                    const flipTime = numTime + 850;
+                                    
+                                    scheduleIfFuture(numTime, () => {
+                                        setCountdownFlipping(false);
+                                        setCountdownNumber(num);
+                                    });
+                                    scheduleIfFuture(flipTime, () => {
+                                        setCountdownFlipping(true);
+                                    });
+                                }
+                            }
+                            
+                            // White flash
+                            scheduleIfFuture(WHITE_FLASH_START, () => {
+                                setCountdownFading(true);
+                            });
+                            
+                            // Transition to intro
+                            scheduleIfFuture(INTRO_START, () => {
+                                setShowCountdown(false);
+                                setCountdownFading(false);
+                                setWhiteFading(true);
+                                setBackgroundFading(true);
+                                setShowIntro(true);
+                            });
+                            
+                            // Background fully visible
+                            scheduleIfFuture(BG_FADE_END, () => {
+                                setBackgroundFading(false);
+                                setWhiteFading(false);
+                            });
+                            
+                            // Intro animation steps
+                            scheduleIfFuture(INTRO_STEP_1, () => setIntroStep(1));
+                            scheduleIfFuture(INTRO_STEP_2, () => setIntroStep(2));
+                            scheduleIfFuture(INTRO_STEP_3, () => setIntroStep(3));
+                            scheduleIfFuture(INTRO_STEP_4, () => setIntroStep(4));
+                            scheduleIfFuture(INTRO_STEP_5, () => setIntroStep(5));
+                            
+                            // Game start
+                            scheduleIfFuture(GAME_START, () => {
+                                setShowIntro(false);
+                                setGameStarted(true);
+                            });
+                        });
+
+                        // Clean up timestamp listener
+                        return () => {
+                            gameStateRef.off();
+                            timestampRef.off();
+                        };
                         
                         return () => {
                             gameStateRef.off();
@@ -762,21 +894,21 @@
             
             // Intro animation sequence
             useEffect(() => {
-                if (showIntro) {
+                if (showIntro && userMode === 'host') {
                     const timers = [
-                        setTimeout(() => setIntroStep(1), 6000),      // Team 1 logo flies in
-                        setTimeout(() => setIntroStep(2), 7500),     // Team 2 logo flies in
-                        setTimeout(() => setIntroStep(3), 9000),     // Versus graphic appears
-                        setTimeout(() => setIntroStep(4), 10000),     // Shake animation
-                        setTimeout(() => setIntroStep(5), 11000),     // Fade out versus, fade in game
+                        setTimeout(() => setIntroStep(1), 6000),
+                        setTimeout(() => setIntroStep(2), 7500),
+                        setTimeout(() => setIntroStep(3), 9000),
+                        setTimeout(() => setIntroStep(4), 10000),
+                        setTimeout(() => setIntroStep(5), 11000),
                         setTimeout(() => {
                             setShowIntro(false);
                             setGameStarted(true);
-                        }, 12000)  // Start game
+                        }, 12000)
                     ];
                     return () => timers.forEach(timer => clearTimeout(timer));
                 }
-            }, [showIntro]);
+            }, [showIntro, userMode]);
 
             // Animate waiting dots for stream waiting screen
             useEffect(() => {
@@ -1526,10 +1658,14 @@
             };
 
             const handleStartMatch = () => {
-                // Guard against double-invocation
                 if (window._countdownStarted) return;
                 window._countdownStarted = true;
                 setTimeout(() => { window._countdownStarted = false; }, 100);
+                
+                // Record and broadcast the start timestamp
+                const startTime = Date.now();
+                setMatchStartTimestamp(startTime);
+                database.ref(`rooms/${roomCode}/matchStartTimestamp`).set(startTime);
                 
                 // Show countdown screen immediately
                 setShowCountdown(true);
@@ -1537,7 +1673,7 @@
                 setCountdownFlipping(false);
                 setTimeout(() => broadcastGameState(), 100);
                 
-                // Run the countdown sequence
+                // Run the countdown sequence (visual only - no audio on Host)
                 const runCountdown = (startNum) => {
                     for (let i = 0; i < startNum; i++) {
                         const num = startNum - i;
@@ -1558,7 +1694,6 @@
                     setTimeout(() => {
                         setCountdownFading(true);
                         setTimeout(() => broadcastGameState(), 50);
-                        // After 2 seconds white is fully bright, transition to intro
                         setTimeout(() => {
                             setWhiteFading(true);
                             setShowCountdown(false);
@@ -1566,28 +1701,18 @@
                             setBackgroundFading(true);
                             setShowIntro(true);
                             setTimeout(() => broadcastGameState(), 50);
-                            // Fade white out over 1.5 seconds to reveal black
-                            setTimeout(() => {
-                                setWhiteFading(false);
-                                setTimeout(() => broadcastGameState(), 50);
-                            }, 1500);
-                            // After white fades, background fades in
                             setTimeout(() => {
                                 setBackgroundFading(false);
                                 setTimeout(() => broadcastGameState(), 50);
-                            }, 3500);
+                            }, 2000);
                         }, 2000);
                     }, startNum * 1000);
                 };
                 
-                // Play the countdown audio file and start visual countdown when audio begins
-                const audio = new Audio(`${audioPath}countdown.mp3`);
-                audio.onplay = () => {
-                    setTimeout(() => {
-                        runCountdown(10);
-                    }, 2000);
-                };
-                audio.play().catch(err => console.log('Audio play failed:', err));
+                // Wait 2.5 seconds for audio lead-in, then start visual countdown from 10
+                setTimeout(() => {
+                    runCountdown(10);
+                }, 2500);
             };
 
             // Broadcast game state to all streams
