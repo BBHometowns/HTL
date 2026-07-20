@@ -397,6 +397,7 @@
             // Bottoms Up bonus round states
             const [bottomsUpQuestions, setBottomsUpQuestions] = useState([]);
             const [bottomsUpQuestion, setBottomsUpQuestion] = useState(null);
+            const [tieBreakerBottomsUpQuestion, setTieBreakerBottomsUpQuestion] = useState(null);
             const [bottomsUpTurnNumber, setBottomsUpTurnNumber] = useState(1);
             const [bottomsUpActiveTeam, setBottomsUpActiveTeam] = useState(1);
             const [bottomsUpUsedAnswers, setBottomsUpUsedAnswers] = useState([]);
@@ -1815,7 +1816,7 @@
                 setShowQuestion(true);
                 setBottomsUpPhase('ready');
                 // Mark this question as used in Google Sheets
-                const activeQ = bottomsUpQuestion;
+                const activeQ = activeBottomsUpQuestion;
                 if (activeQ && selectedMatch) {
                     markQuestionUsed('BOTTOMS UP', selectedMatch.name, null, activeQ.colIndex);
                 }
@@ -1836,13 +1837,13 @@
             };
 
             const handleBottomsUpSearch = () => {
-                console.log('handleBottomsUpSearch called, input:', bottomsUpHostInput, 'question:', bottomsUpQuestion?.answers?.length, 'answers');
-                if (!bottomsUpHostInput.trim() || !bottomsUpQuestion) return;
+                console.log('handleBottomsUpSearch called, input:', bottomsUpHostInput, 'question:', activeBottomsUpQuestion?.answers?.length, 'answers');
+                if (!bottomsUpHostInput.trim() || !activeBottomsUpQuestion) return;
                 
                 const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
                 const typedNormalized = normalize(bottomsUpHostInput);
                 
-                const matches = bottomsUpQuestion.answers
+                const matches = activeBottomsUpQuestion.answers
                     .filter(answer => {
                         const answerNormalized = normalize(answer.text);
                         return answerNormalized.includes(typedNormalized) || 
@@ -2236,6 +2237,8 @@
             const shootoutQuestion = selectedShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null);
             const tieBreakerClosestToQuestions = closestToQuestions;
             const tieBreakerShootoutQuestion = selectedTieBreakerShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null);
+            // Active Bottoms Up question - uses tiebreaker version for round 14
+            const activeBottomsUpQuestion = (currentRound === 14 ? tieBreakerBottomsUpQuestion : bottomsUpQuestion) || bottomsUpQuestion;
 
             // Shuffle shootout answers when match is selected
             useEffect(() => {
@@ -2946,6 +2949,10 @@
                                                     const randomIndex = Math.floor(Math.random() * shootoutQuestions.length);
                                                     setSelectedTieBreakerShootoutQuestion(shootoutQuestions[randomIndex]);
                                                 }
+                                                if (selectedTiebreakerType === 'bottomsUp' && bottomsUpQuestions.length > 0) {
+                                                    const randomIndex = Math.floor(Math.random() * bottomsUpQuestions.length);
+                                                    setTieBreakerBottomsUpQuestion(bottomsUpQuestions[randomIndex]);
+                                                }
                                                 setAdminStep(5);
                                             }}
                                             disabled={!selectedTiebreakerType}
@@ -3138,7 +3145,7 @@
                                             ))
                                         ) : selectedTiebreakerType === 'bottomsUp' ? (
                                             (() => {
-                                                const q = bottomsUpQuestion;
+                                                const q = tieBreakerBottomsUpQuestion || bottomsUpQuestion;
                                                 return q ? (
                                                     <div>
                                                         <p className="text-white text-sm mb-2">{q.questionText}</p>
@@ -4424,7 +4431,7 @@
                                                         fontSize: '36px',
                                                         margin: 0
                                                     }}>
-                                                        {renderQuestionText(bottomsUpQuestion?.questionText || 'Loading...', userMode === 'host')}
+                                                        {renderQuestionText(activeBottomsUpQuestion?.questionText || 'Loading...', userMode === 'host')}
                                                     </p>
                                                     {userMode === 'host' && bottomsUpPhase === 'input' && (
                                                         <input
@@ -4560,8 +4567,8 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative'}}>
-                            <div className="relative flex items-center justify-center">
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px'}}>
+                            <div className="relative flex items-center justify-center" style={{minHeight: '80px'}}>
                                 <div className="flex flex-col gap-2" style={{position: 'absolute', left: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
                                         {/* Team 1 Point Doubler */}
