@@ -442,18 +442,18 @@
             // All 16 teams data
             const teamsData = [
                 { id: 1, name: "Bear Essentials", logo: "Bear Essentials.png", color: "#FA8F18" },
-                { id: 2, name: "Edgewood High School", logo: "Edgewood High School.png", color: "#FCA8CC" },
-                { id: 3, name: "F*ck It We Ball", logo: "BeefwithaQ.png", color: "#4ECDC4" }, // New Name (Need Logo and Color)
+                { id: 2, name: "Bucket We Ball", logo: "Bucket We Ball.png", color: "#FD7713" },
+                { id: 3, name: "Edgewood High School", logo: "Edgewood High School.png", color: "#FCA8CC" },
                 { id: 4, name: "Gecko Chamber", logo: "Gecko Chamber.png", color: "#CFEC2D" },
                 { id: 5, name: "Identity Thieves", logo: "Identity Thieves.png", color: "#504C5D" },
                 { id: 6, name: "Nerd World Order", logo: "NerdWorldOrder.png", color: "#953B0E" },
                 { id: 7, name: "New Directions", logo: "New Directions.png", color: "#EE2634" },
-                { id: 8, name: "Old Ladies", logo: "OldLadies.png", color: "#A8D8EA" }, // Same Name (Need Logo & Color)
+                { id: 8, name: "Old Ladies", logo: "Old Ladies.png", color: "#92AEAC" },
                 { id: 9, name: "Placeholder", logo: "Placeholder.png", color: "#0046AC" },
-                { id: 10, name: "Purple Penguins", logo: "PurplePenguins.png", color: "#6BCB77" }, // Same Name (Need Logo & Color)
+                { id: 10, name: "Purple Porpoises", logo: "Purple Porpoises.png", color: "#E5D6F4" },
                 { id: 11, name: "Rubber Rims", logo: "Rubber Rims.png", color: "#D82214"},
                 { id: 12, name: "Sims Family Values", logo: "Sims Family Values.png", color: "#8145D3" },
-                { id: 13, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#C9EEFF" }, // Same Name (Need Logo & Color)
+                { id: 13, name: "Southwest Hairlines", logo: "SouthwestHairlines.png", color: "#F9B621" },
                 { id: 14, name: "The Weathermen", logo: "Weathermen.png", color: "#00BCEE" },
                 { id: 15, name: "Too Thawt To Handle", logo: "Too Thawt To Handle.png", color: "#AAE5FD"},
                 { id: 16, name: "Trivia Rodrigo", logo: "Trivia Rodrigo.png", color: "#BC8EEC"} 
@@ -1539,6 +1539,8 @@
                 window._countdownStarted = true;
                 setTimeout(() => { window._countdownStarted = false; }, 100);
                 
+                // Reset gameStarted so Stream doesn't jump to game screen
+                setGameStarted(false);
                 // Show countdown screen immediately
                 setShowCountdown(true);
                 setCountdownNumber(null);
@@ -1576,7 +1578,7 @@
                             // White fades out after 1.5 seconds
                             setTimeout(() => {
                                 setWhiteFading(false);
-                                setTimeout(() => broadcastGameState(), 50);
+                                setTimeout(() => broadcastGameState(), 200);
                             }, 1500);
                             // Background fully visible after 3.5 seconds
                             setTimeout(() => {
