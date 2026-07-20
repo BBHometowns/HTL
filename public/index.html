@@ -712,10 +712,7 @@
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
                                 setShowCountdown(gameState.showCountdown || false);
-                                if (gameState.showCountdown) {
-                                    streamCountdownStartedRef.current = true;
-                                    setGameStarted(false);
-                                }
+                                if (gameState.showCountdown) streamCountdownStartedRef.current = true;
                                 setCountdownNumber(gameState.countdownNumber ?? 5);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
                                 setCountdownFading(gameState.countdownFading || false);
@@ -1545,8 +1542,6 @@
                 window._countdownStarted = true;
                 setTimeout(() => { window._countdownStarted = false; }, 100);
                 
-                // Reset gameStarted so Stream doesn't jump to game screen
-                setGameStarted(false);
                 // Show countdown screen immediately
                 setShowCountdown(true);
                 setCountdownNumber(null);
