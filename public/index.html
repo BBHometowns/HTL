@@ -1099,7 +1099,7 @@
             // Mark a bonus/tiebreaker question as used in Google Sheets
             const markQuestionUsed = async (tabName, matchName, row = null, col = null) => {
                 try {
-                    const body = { tabName, matchName };
+                    const body = { tabName, matchName, team1Name: selectedTeam1?.name || '', team2Name: selectedTeam2?.name || '' };
                     if (row) body.row = row;
                     if (col !== null) body.col = col;
                     console.log('markQuestionUsed called:', JSON.stringify(body));
