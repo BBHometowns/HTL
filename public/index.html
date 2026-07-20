@@ -385,7 +385,6 @@
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
             const [waitingDots, setWaitingDots] = useState('.');
-            const streamCountdownStartedRef = React.useRef(false);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -711,11 +710,6 @@
                                 setShowWinnerScreen(gameState.showWinnerScreen);
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
-                                setShowCountdown(gameState.showCountdown || false);
-                                if (gameState.showCountdown) streamCountdownStartedRef.current = true;
-                                setCountdownNumber(gameState.countdownNumber ?? 5);
-                                setCountdownFlipping(gameState.countdownFlipping || false);
-                                setCountdownFading(gameState.countdownFading || false);
                                 setCurrentImageUrl(gameState.currentImageUrl || null);
                                 setTimersExpanded(gameState.timersExpanded || false);
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
@@ -727,23 +721,14 @@
                                 setTeam2ExtraTimeActive(gameState.team2ExtraTimeActive || false);
                                 setTeam1DoubleDipUsed(gameState.team1DoubleDipUsed || false);
                                 setTeam2DoubleDipUsed(gameState.team2DoubleDipUsed || false);
-                                setBackgroundFading(gameState.backgroundFading || false);
-                                setWhiteFading(gameState.whiteFading || false);
                                 
-                                if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
+                                if (gameState.teamsConfirmed && !gameState.gameStarted) {
                                     setTeamsConfirmed(true);
-                                }
-                                if (gameState.showIntro) {
-                                    setShowIntro(true);
-                                    setTeamsConfirmed(true);
-                                }
-                                if (gameState.introStep !== undefined) {
-                                    setIntroStep(gameState.introStep);
                                 }
                                 if (gameState.teamsConfirmed) {
                                     setTeamsConfirmed(true);
                                 }
-                                if (gameState.gameStarted && streamCountdownStartedRef.current) {
+                                if (gameState.gameStarted) {
                                     setGameStarted(true);
                                     setTeamsConfirmed(true);
                                 }
@@ -3293,19 +3278,8 @@
                 );
             }
             
-            // Stream holding screen - black screen between countdown and intro
-            if (streamCountdownStartedRef.current && !showCountdown && !showIntro && !gameStarted && userMode === 'stream') {
-                return (
-                    <div style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'black'
-                    }} />
-                );
-            }
-
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && !streamCountdownStartedRef.current && userMode === 'stream') {
+            if (!gameStarted && !showIntro && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
