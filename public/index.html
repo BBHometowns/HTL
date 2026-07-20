@@ -739,8 +739,27 @@
                             }
                         });
 
+                        // Stream audio - triggered by timestamp, plays once
+                        const timestampRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
+                        let streamAudioPlayed = false;
+                        timestampRef.on('value', (snapshot) => {
+                            const timestamp = snapshot.val();
+                            if (!timestamp || userMode !== 'stream' || streamAudioPlayed) return;
+                            streamAudioPlayed = true;
+                            const AUDIO_DURATION = 16000;
+                            const elapsed = Date.now() - timestamp;
+                            // Audio started 2500ms before timestamp (audio lead-in)
+                            const audioOffset = elapsed + 2500;
+                            if (audioOffset < AUDIO_DURATION) {
+                                const audio = new Audio(`${audioPath}countdown.mp3`);
+                                audio.currentTime = Math.max(0, audioOffset / 1000);
+                                audio.play().catch(err => console.log('Stream audio failed:', err));
+                            }
+                        });
+
                         return () => {
                             gameStateRef.off();
+                            timestampRef.off();
                         };
                     }
                 }
@@ -767,20 +786,7 @@
                 backgroundFading, whiteFading, introStep
             ]);
             
-            // Stream audio - plays once when countdown first starts
-            const streamAudioPlayedRef = React.useRef(false);
-            useEffect(() => {
-                if (showCountdown && userMode === 'stream' && !streamAudioPlayedRef.current) {
-                    streamAudioPlayedRef.current = true;
-                    const audio = new Audio(`${audioPath}countdown.mp3`);
-                    audio.play().catch(err => console.log('Stream audio failed:', err));
-                }
-                if (!showCountdown) {
-                    streamAudioPlayedRef.current = false;
-                }
-            }, [showCountdown, userMode]);
-
-            // Intro animation sequence - only Host runs timers, Stream mirrors via Firebase
+            // Intro animation sequence
             useEffect(() => {
                 if (showIntro && userMode === 'host') {
                     const timers = [
@@ -797,13 +803,6 @@
                     return () => timers.forEach(timer => clearTimeout(timer));
                 }
             }, [showIntro, userMode]);
-
-            // Stream: end intro when Host broadcasts gameStarted
-            useEffect(() => {
-                if (userMode === 'stream' && gameStarted && showIntro) {
-                    setShowIntro(false);
-                }
-            }, [gameStarted, userMode, showIntro]);
 
             // Animate waiting dots for stream waiting screen
             useEffect(() => {
