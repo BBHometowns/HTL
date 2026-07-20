@@ -4108,7 +4108,7 @@
                         </>
                     )}
                     
-                    <div className="relative flex flex-col items-center justify-start p-8" style={{top: '-100px', height: 'calc(100% + 100px)'}}>
+                    <div className="relative flex flex-col items-center justify-start h-full p-8" style={{top: '-100px'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
                         {(currentRound === 7 || currentRound === 14) && !showWinnerScreen && (
@@ -4548,7 +4548,7 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative'}}>
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px'}}>
                             <div className="relative flex items-center justify-center">
                                 <div className="flex flex-col gap-2" style={{position: 'absolute', left: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
