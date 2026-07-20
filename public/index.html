@@ -2635,7 +2635,7 @@
 
                                     {/* Selected Teams Display */}
                                     <div className="flex gap-4 mb-6">
-                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
+                                        <div className="rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4', backgroundColor: selectedTeam1 ? `${selectedTeam1.color}99` : '#1f2937'}}>
                                             <h3 className="text-xl font-bold text-cyan-400 mb-2">TEAM 1</h3>
                                             {selectedTeam1 ? (
                                                 <div className="text-center">
@@ -2655,7 +2655,7 @@
                                             )}
                                         </div>
 
-                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
+                                        <div className="rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4', backgroundColor: selectedTeam2 ? `${selectedTeam2.color}99` : '#1f2937'}}>
                                             <h3 className="text-xl font-bold text-orange-400 mb-2">TEAM 2</h3>
                                             {selectedTeam2 ? (
                                                 <div className="text-center">
