@@ -718,11 +718,11 @@
                                 setCountdownFading(gameState.countdownFading || false);
                                 setCurrentImageUrl(gameState.currentImageUrl || null);
                                 setTimersExpanded(gameState.timersExpanded || false);
+                                setBackgroundFading(gameState.backgroundFading || false);
+                                setWhiteFading(gameState.whiteFading || false);
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
-                                setBackgroundFading(gameState.backgroundFading || false);
-                                setWhiteFading(gameState.whiteFading || false);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted && !gameState.showIntro) {
                                     setTeamsConfirmed(true);
@@ -2641,7 +2641,7 @@
 
                                     {/* Selected Teams Display */}
                                     <div className="flex gap-4 mb-6">
-                                        <div className="rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4', backgroundColor: selectedTeam1 ? `${selectedTeam1.color}99` : '#1f2937'}}>
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
                                             <h3 className="text-xl font-bold text-cyan-400 mb-2">TEAM 1</h3>
                                             {selectedTeam1 ? (
                                                 <div className="text-center">
@@ -2661,7 +2661,7 @@
                                             )}
                                         </div>
 
-                                        <div className="rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4', backgroundColor: selectedTeam2 ? `${selectedTeam2.color}99` : '#1f2937'}}>
+                                        <div className="bg-gray-800 rounded-lg p-4 border-4 flex-1" style={{borderColor: '#7d3ad4'}}>
                                             <h3 className="text-xl font-bold text-orange-400 mb-2">TEAM 2</h3>
                                             {selectedTeam2 ? (
                                                 <div className="text-center">
@@ -2691,7 +2691,7 @@
                                                     key={team.id}
                                                     onClick={() => !isSelected && handleTeamSelection(team)}
                                                     className={`team-card bg-gray-800 rounded-lg p-3 border-4 ${isSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    style={{ borderColor: isSelected ? '#FFD700' : '#7d3ad4', backgroundColor: team.color ? `${team.color}99` : '#1f2937' }}
+                                                    style={{ borderColor: isSelected ? '#FFD700' : '#7d3ad4' }}
                                                 >
                                                     <img src={`${imagePath}${team.logo}`} alt={team.name}
                                                         className="w-full h-20 object-contain mb-2" />
@@ -3281,14 +3281,10 @@
                 );
             }
             
-            // Stream holding screen - black screen between countdown and intro
+            // Stream black holding screen - prevents game screen showing during transitions
             if (streamCountdownStartedRef.current && !showCountdown && !showIntro && !gameStarted && userMode === 'stream') {
                 return (
-                    <div style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'black'
-                    }} />
+                    <div style={{position: 'fixed', inset: 0, backgroundColor: 'black'}} />
                 );
             }
 
