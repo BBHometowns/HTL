@@ -1102,7 +1102,7 @@
                     const body = { tabName, matchName };
                     if (row) body.row = row;
                     if (col !== null) body.col = col;
-                    
+                    console.log('markQuestionUsed called:', JSON.stringify(body));
                     const response = await fetch(
                         'https://us-central1-hometowns-trivia-league.cloudfunctions.net/markQuestionUsed',
                         {
