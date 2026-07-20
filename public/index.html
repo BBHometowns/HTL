@@ -385,6 +385,7 @@
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
             const [waitingDots, setWaitingDots] = useState('.');
+            const streamCountdownStartedRef = React.useRef(false);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -711,6 +712,7 @@
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
                                 setShowCountdown(gameState.showCountdown || false);
+                                if (gameState.showCountdown) streamCountdownStartedRef.current = true;
                                 setCountdownNumber(gameState.countdownNumber ?? 5);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
                                 setCountdownFading(gameState.countdownFading || false);
@@ -1571,10 +1573,16 @@
                             setBackgroundFading(true);
                             setShowIntro(true);
                             setTimeout(() => broadcastGameState(), 50);
+                            // White fades out after 1.5 seconds
+                            setTimeout(() => {
+                                setWhiteFading(false);
+                                setTimeout(() => broadcastGameState(), 50);
+                            }, 1500);
+                            // Background fully visible after 3.5 seconds
                             setTimeout(() => {
                                 setBackgroundFading(false);
                                 setTimeout(() => broadcastGameState(), 50);
-                            }, 2000);
+                            }, 3500);
                         }, 2000);
                     }, startNum * 1000);
                 };
@@ -3266,7 +3274,7 @@
             }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && userMode === 'stream') {
+            if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && !streamCountdownStartedRef.current && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
