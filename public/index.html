@@ -712,7 +712,10 @@
                                 setWinnerTeam(gameState.winnerTeam);
                                 setShowImageOverlay(gameState.showImageOverlay || false);
                                 setShowCountdown(gameState.showCountdown || false);
-                                if (gameState.showCountdown) streamCountdownStartedRef.current = true;
+                                if (gameState.showCountdown) {
+                                    streamCountdownStartedRef.current = true;
+                                    setGameStarted(false); // Reset stale gameStarted during countdown
+                                }
                                 setCountdownNumber(gameState.countdownNumber ?? 5);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
                                 setCountdownFading(gameState.countdownFading || false);
@@ -737,9 +740,10 @@
                                 if (gameState.teamsConfirmed) {
                                     setTeamsConfirmed(true);
                                 }
-                                if (gameState.gameStarted && streamCountdownStartedRef.current) {
+                                if (gameState.gameStarted) {
                                     setGameStarted(true);
                                     setTeamsConfirmed(true);
+                                    streamCountdownStartedRef.current = true; // Mark as started so holding screen doesn't show
                                 }
                             }
                         });
