@@ -17,6 +17,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            background-color: black;
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         html, body, #root {
@@ -891,9 +892,8 @@
                         if (soRows.length > 0) {
                             const questions = [];
                             
-                            // Column A has row labels, data starts at column B (index 1)
-                            // Each column from B onward is one question
-                            const numCols = soRows[0]?.length || 0;
+                            // Calculate max columns across ALL rows so we don't miss columns where Row 1 is empty
+                            const numCols = Math.max(...soRows.map(row => row?.length || 0));
 
                             for (let col = 1; col < numCols; col++) {
                                 const longQuestion = soRows[0]?.[col] || '';   // Row 1, this column
@@ -933,7 +933,7 @@
                         
                         if (buRows.length > 0) {
                             const buQuestions = [];
-                            const numCols = buRows[0]?.length || 0;
+                            const numCols = Math.max(...buRows.map(row => row?.length || 0));
                             
                             // Each column is one question
                             // Row 1 (index 0) = question text
