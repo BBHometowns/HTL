@@ -714,7 +714,7 @@
                                 setShowCountdown(gameState.showCountdown || false);
                                 if (gameState.showCountdown) {
                                     streamCountdownStartedRef.current = true;
-                                    setGameStarted(false); // Reset stale gameStarted during countdown
+                                    setGameStarted(false);
                                 }
                                 setCountdownNumber(gameState.countdownNumber ?? 5);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
@@ -743,7 +743,6 @@
                                 if (gameState.gameStarted) {
                                     setGameStarted(true);
                                     setTeamsConfirmed(true);
-                                    streamCountdownStartedRef.current = true; // Mark as started so holding screen doesn't show
                                 }
                             }
                         });
@@ -3285,19 +3284,8 @@
                 );
             }
             
-            // Stream holding screen - black screen between countdown and intro
-            if (streamCountdownStartedRef.current && !showCountdown && !showIntro && !gameStarted && userMode === 'stream') {
-                return (
-                    <div style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'black'
-                    }} />
-                );
-            }
-
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && !streamCountdownStartedRef.current && userMode === 'stream') {
+            if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
