@@ -709,6 +709,12 @@
                                 setShootoutTurnCount(gameState.shootoutTurnCount);
                                 setShootoutActiveTeam(gameState.shootoutActiveTeam);
                                 setShootoutSuddenDeath(gameState.shootoutSuddenDeath);
+                                // Sync selected questions from Host so Stream shows same question
+                                if (gameState.selectedShootoutQuestion) setSelectedShootoutQuestion(gameState.selectedShootoutQuestion);
+                                if (gameState.selectedTieBreakerShootoutQuestion) setSelectedTieBreakerShootoutQuestion(gameState.selectedTieBreakerShootoutQuestion);
+                                if (gameState.bottomsUpQuestion) setBottomsUpQuestion(gameState.bottomsUpQuestion);
+                                if (gameState.tieBreakerBottomsUpQuestion) setTieBreakerBottomsUpQuestion(gameState.tieBreakerBottomsUpQuestion);
+                                if (gameState.closestToQuestions && gameState.closestToQuestions.length > 0) setClosestToQuestions(gameState.closestToQuestions);
                                 setIsTieBreaker(gameState.isTieBreaker);
                                 setTieBreakerType(gameState.tieBreakerType);
                                 setShowWinnerScreen(gameState.showWinnerScreen);
@@ -1627,6 +1633,12 @@
                         shootoutTurnCount,
                         shootoutActiveTeam,
                         shootoutSuddenDeath,
+                        // Broadcast selected questions so Stream shows same question as Host
+                        selectedShootoutQuestion: selectedShootoutQuestion ?? null,
+                        selectedTieBreakerShootoutQuestion: selectedTieBreakerShootoutQuestion ?? null,
+                        bottomsUpQuestion: bottomsUpQuestion ?? null,
+                        tieBreakerBottomsUpQuestion: tieBreakerBottomsUpQuestion ?? null,
+                        closestToQuestions: closestToQuestions ?? [],
                         isTieBreaker,
                         tieBreakerType,
                         teamsConfirmed,
