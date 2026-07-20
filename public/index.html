@@ -744,7 +744,10 @@
                         let streamAudioPlayed = false;
                         timestampRef.on('value', (snapshot) => {
                             const timestamp = snapshot.val();
-                            if (!timestamp || userMode !== 'stream' || streamAudioPlayed) return;
+                            if (!timestamp || userMode !== 'stream') return;
+                            // Always update the timestamp state so waiting screen hides
+                            setMatchStartTimestamp(timestamp);
+                            if (streamAudioPlayed) return;
                             streamAudioPlayed = true;
                             const AUDIO_DURATION = 16000;
                             const elapsed = Date.now() - timestamp;
@@ -3285,7 +3288,7 @@
             }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && !showCountdown && userMode === 'stream') {
+            if (!gameStarted && !showIntro && !showCountdown && !matchStartTimestamp && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
