@@ -435,6 +435,8 @@
             const [sheetsMatches, setSheetsMatches] = useState([]);
             const [closestToQuestions, setClosestToQuestions] = useState([]);
             const [shootoutQuestions, setShootoutQuestions] = useState([]);
+            const [selectedShootoutQuestion, setSelectedShootoutQuestion] = useState(null);
+            const [selectedTieBreakerShootoutQuestion, setSelectedTieBreakerShootoutQuestion] = useState(null);
             const [sheetsLoading, setSheetsLoading] = useState(true);
             const [sheetsError, setSheetsError] = useState(null);
             
@@ -2059,7 +2061,7 @@
                 setTimerRunning(true); // Auto-start timer for Team 1
                 
                 // Mark this Shootout question as used
-                const activeShootoutQ = shootoutQuestions[0];
+                const activeShootoutQ = currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion;
                 if (activeShootoutQ && selectedMatch) {
                     markQuestionUsed('SHOOTOUT', selectedMatch.name, null, activeShootoutQ.colIndex);
                 }
@@ -2231,9 +2233,9 @@
             // closestToQuestions is already loaded as state from the Sheets fetch
             // shootoutQuestions is already loaded as state from the Sheets fetch
             const legacyClosestToQuestions = closestToQuestions;
-            const shootoutQuestion = shootoutQuestions.length > 0 ? shootoutQuestions[0] : null;
+            const shootoutQuestion = selectedShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null);
             const tieBreakerClosestToQuestions = closestToQuestions;
-            const tieBreakerShootoutQuestion = shootoutQuestions.length > 0 ? shootoutQuestions[0] : null;
+            const tieBreakerShootoutQuestion = selectedTieBreakerShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null);
 
             // Shuffle shootout answers when match is selected
             useEffect(() => {
@@ -2841,6 +2843,10 @@
                                                     const randomIndex = Math.floor(Math.random() * bottomsUpQuestions.length);
                                                     setBottomsUpQuestion(bottomsUpQuestions[randomIndex]);
                                                 }
+                                                if (selectedBonusType === 'shootout' && shootoutQuestions.length > 0) {
+                                                    const randomIndex = Math.floor(Math.random() * shootoutQuestions.length);
+                                                    setSelectedShootoutQuestion(shootoutQuestions[randomIndex]);
+                                                }
                                                 setAdminStep(4);
                                             }}
                                             disabled={!selectedBonusType}
@@ -2935,7 +2941,13 @@
                                             ← Back
                                         </button>
                                         <button
-                                            onClick={() => setAdminStep(5)}
+                                            onClick={() => {
+                                                if (selectedTiebreakerType === 'shootout' && shootoutQuestions.length > 0) {
+                                                    const randomIndex = Math.floor(Math.random() * shootoutQuestions.length);
+                                                    setSelectedTieBreakerShootoutQuestion(shootoutQuestions[randomIndex]);
+                                                }
+                                                setAdminStep(5);
+                                            }}
                                             disabled={!selectedTiebreakerType}
                                             className={`font-bold py-4 px-12 rounded-lg text-xl border-4 border-black ${
                                                 selectedTiebreakerType
@@ -4549,7 +4561,7 @@
 
                         {/* Powerups and Control Buttons */}
                         <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative'}}>
-                            <div className="relative flex items-center justify-center" style={{minHeight: '80px'}}>
+                            <div className="relative flex items-center justify-center">
                                 <div className="flex flex-col gap-2" style={{position: 'absolute', left: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
                                         {/* Team 1 Point Doubler */}
