@@ -894,6 +894,8 @@
                             
                             // Calculate max columns across ALL rows so we don't miss columns where Row 1 is empty
                             const numCols = Math.max(...soRows.map(row => row?.length || 0));
+                            console.log('Shootout numCols:', numCols, 'numRows:', soRows.length);
+                            console.log('Shootout Row 1:', soRows[0]);
 
                             for (let col = 1; col < numCols; col++) {
                                 const longQuestion = soRows[0]?.[col] || '';   // Row 1, this column
@@ -917,10 +919,13 @@
                                         lastUsed,
                                         answers
                                     });
+                                } else {
+                                    console.log(`Shootout col ${col} skipped - longQuestion: "${longQuestion}", answers: ${answers.length}`);
                                 }
                             }
                             
                             setShootoutQuestions(questions);
+                            console.log(`✅ Loaded ${questions.length} Shootout questions`);
                         }
                     }
 
