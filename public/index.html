@@ -734,7 +734,7 @@
                                 if (gameState.teamsConfirmed) {
                                     setTeamsConfirmed(true);
                                 }
-                                if (gameState.gameStarted) {
+                                if (gameState.gameStarted && streamCountdownStartedRef.current) {
                                     setGameStarted(true);
                                     setTeamsConfirmed(true);
                                 }
@@ -3275,6 +3275,17 @@
                 );
             }
             
+            // Stream holding screen - black screen between countdown and intro
+            if (streamCountdownStartedRef.current && !showCountdown && !showIntro && !gameStarted && userMode === 'stream') {
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'black'
+                    }} />
+                );
+            }
+
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !showCountdown && !backgroundFading && !whiteFading && !streamCountdownStartedRef.current && userMode === 'stream') {
                 return (
