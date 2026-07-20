@@ -715,12 +715,6 @@
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
-                                setTeam1DoublerActive(gameState.team1DoublerActive || false);
-                                setTeam2DoublerActive(gameState.team2DoublerActive || false);
-                                setTeam1ExtraTimeActive(gameState.team1ExtraTimeActive || false);
-                                setTeam2ExtraTimeActive(gameState.team2ExtraTimeActive || false);
-                                setTeam1DoubleDipUsed(gameState.team1DoubleDipUsed || false);
-                                setTeam2DoubleDipUsed(gameState.team2DoubleDipUsed || false);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted) {
                                     setTeamsConfirmed(true);
@@ -1650,12 +1644,6 @@
                         doubleDipSecondGuess,
                         doubleDipTeam,
                         doubleDipActive,
-                        team1DoublerActive,
-                        team2DoublerActive,
-                        team1ExtraTimeActive,
-                        team2ExtraTimeActive,
-                        team1DoubleDipUsed,
-                        team2DoubleDipUsed,
                     };
                     
                     database.ref(`rooms/${roomCode}/gameState`).set(gameState);
@@ -4120,7 +4108,7 @@
                         </>
                     )}
                     
-                    <div className="relative flex flex-col items-center justify-start h-full p-8" style={{top: '-100px'}}>
+                    <div className="relative flex flex-col items-center justify-start p-8" style={{top: '-100px', height: 'calc(100% + 100px)'}}>
 
                         {/* Bonus Score Display - Absolutely positioned so it doesn't push content down */}
                         {(currentRound === 7 || currentRound === 14) && !showWinnerScreen && (
