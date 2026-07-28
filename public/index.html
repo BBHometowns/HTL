@@ -369,6 +369,7 @@
             // Shootout bonus states
             const [shootoutBoardRevealed, setShootoutBoardRevealed] = useState(false);
             const [shootoutBoxExpanded, setShootoutBoxExpanded] = useState(false);
+            const [shootoutComplete, setShootoutComplete] = useState(false);
             const [shootoutRevealedAnswers, setShootoutRevealedAnswers] = useState([]);
             const [shootoutTurnCount, setShootoutTurnCount] = useState(0); // How many turns each team has taken
             const [shootoutActiveTeam, setShootoutActiveTeam] = useState(1); // Which team is currently guessing
@@ -706,6 +707,7 @@
                                 setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
                                 setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
                                 setShootoutBoxExpanded(gameState.shootoutBoxExpanded || false);
+                                setShootoutComplete(gameState.shootoutComplete || false);
                                 setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
                                 setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
                                 setShootoutTurnCount(gameState.shootoutTurnCount);
@@ -1196,13 +1198,8 @@
 
             const handleRevealQuestion = () => {
                 setPowerupPhase(false);
+                if (currentRound !== 7) setTimerRunning(false);
                 
-                // Make absolutely sure timer is stopped when revealing question
-                if (currentRound !== 7) {
-                    setTimerRunning(false);
-                }
-                
-                // For bonus round setup
                 if (currentRound === 7 || currentRound === 14) {
                     const activeBonusType = currentRound === 7 ? bonusType : tieBreakerType;
                     if (activeBonusType === 'closestTo') {
@@ -1216,7 +1213,7 @@
                     } else if (activeBonusType === 'shootout') {
                         setTeam1Time(15);
                         setTeam2Time(15);
-                        // Expand box first, show question after 1 second
+                        // Expand box first, show question after animation completes
                         setShootoutBoxExpanded(true);
                         setTimeout(() => setShowQuestion(true), 1000);
                     } else {
@@ -1327,8 +1324,34 @@
             };
 
             const handleNext = () => {
-                // Shrink Shootout box back to normal
+                // Shrink Shootout box and clean up if coming from Shootout
                 setShootoutBoxExpanded(false);
+                if (shootoutComplete) {
+                    setShootoutComplete(false);
+                    setShootoutBoardRevealed(false);
+                    setShootoutRevealedAnswers([]);
+                    setShootoutShuffledAnswers([]);
+                    setShootoutTurnCount(0);
+                    setShootoutActiveTeam(1);
+                    setShootoutSuddenDeath(false);
+                    setBonusScore1(0);
+                    setBonusScore2(0);
+                    // Advance to next round
+                    setCurrentRound(currentRound + 1);
+                    setCurrentQuestion(1);
+                    setActiveTeam(1);
+                    setActiveTimer(1);
+                    setTeam1Time(30);
+                    setTeam2Time(15);
+                    setShowCategory(false);
+                    setShowQuestion(false);
+                    setShowAnswer(false);
+                    if (currentRound === 14) {
+                        setIsTieBreaker(false);
+                        setTieBreakerType(null);
+                    }
+                    return;
+                }
                 // Only clear active Double Dip state when moving to next ROUND
                 if (currentQuestion === 2) {
                     setDoubleDipActive(false);
@@ -1639,6 +1662,7 @@
                         team2GuessSubmitted,
                         shootoutBoardRevealed,
                         shootoutBoxExpanded,
+                        shootoutComplete,
                         shootoutRevealedAnswers,
                         shootoutShuffledAnswers,
                         shootoutTurnCount,
@@ -2178,19 +2202,17 @@
             };
             
             const handleShootoutComplete = () => {
-                // Stop any running timers immediately
                 setTimerRunning(false);
+                setShootoutComplete(true);
                 
                 // Award match points to winner
                 if (currentRound === 14) {
-                    // Tie-breaker is only worth 1 point
                     if (bonusScore1 > bonusScore2) {
                         setTeam1Score(team1Score + 1);
                     } else {
                         setTeam2Score(team2Score + 1);
                     }
                 } else {
-                    // Regular bonus is worth 2 points
                     if (bonusScore1 > bonusScore2) {
                         setTeam1Score(team1Score + 2);
                     } else {
@@ -2198,56 +2220,17 @@
                     }
                 }
                 
-                // Check if this was the tie-breaker
+                // For tiebreaker, declare winner after a short delay
                 if (currentRound === 14) {
-                    // Tie-breaker complete - declare winner
                     const finalScore1 = team1Score + (bonusScore1 > bonusScore2 ? 1 : 0);
                     const finalScore2 = team2Score + (bonusScore2 > bonusScore1 ? 1 : 0);
                     const winner = finalScore1 > finalScore2 ? selectedTeam1 : selectedTeam2;
-                    
                     setTimeout(() => {
                         setWinnerTeam(winner);
                         setShowWinnerScreen(true);
                     }, 500);
-                    // Reset shootout states but don't advance round
-                    setShootoutBoardRevealed(false);
-                    setShootoutRevealedAnswers([]);
-                    setShootoutShuffledAnswers([]);
-                    setShootoutTurnCount(0);
-                    setShootoutActiveTeam(1);
-                    setShootoutSuddenDeath(false);
-                    setBonusScore1(0);
-                    setBonusScore2(0);
-                    setIsTieBreaker(false);
-                    setTieBreakerType(null);
-                    return; // Stop - game is over
                 }
-                
-                // Move to next round (regular bonus)
-                setCurrentRound(currentRound + 1);
-                setCurrentQuestion(1);
-                setActiveTeam(1);
-                setActiveTimer(1);
-                setTeam1Time(30);
-                setTeam2Time(15);
-                setShowCategory(false);
-                setShowQuestion(false);
-                setShowAnswer(false);
-                
-                // Reset shootout states
-                setShootoutBoardRevealed(false);
-                setShootoutRevealedAnswers([]);
-                setShootoutShuffledAnswers([]);
-                setShootoutTurnCount(0);
-                setShootoutActiveTeam(1);
-                setShootoutSuddenDeath(false);
-                setBonusScore1(0);
-                setBonusScore2(0);
-                // Reset tie-breaker flag if it was a tie-breaker
-                if (currentRound === 14) {
-                    setIsTieBreaker(false);
-                    setTieBreakerType(null);
-                }
+                // Board stays visible - host clicks Next to move on
             };
 
             // Use selected match data
@@ -4487,11 +4470,10 @@
                                                                             <button
                                                                                 key={gridIndex}
                                                                                 onClick={() => handleShootoutAnswer(item.originalIndex)}
-                                                                                disabled={isRevealed}
                                                                                 className="font-bold rounded border-4 border-black transition relative flex-1 flex items-center justify-center"
                                                                                 style={{
                                                                                     backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
-                                                                                    cursor: isRevealed ? 'default' : 'pointer',
+                                                                                    cursor: 'pointer',
                                                                                     fontSize: numRows <= 4 ? '22px' : numRows <= 5 ? '18px' : '14px'
                                                                                 }}
                                                                             >
@@ -4714,7 +4696,11 @@
                                             )
                                         ) : (
                                             // Regular Round Buttons
-                                            !showCategory ? (
+                                            shootoutComplete ? (
+                                                <button onClick={handleNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                    NEXT
+                                                </button>
+                                            ) : !showCategory ? (
                                                 <button onClick={handleRevealCategory} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     REVEAL CATEGORY
                                                 </button>
