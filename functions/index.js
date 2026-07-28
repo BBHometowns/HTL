@@ -19,7 +19,7 @@ exports.markQuestionUsed = onRequest(
             }
 
             // Get the data sent from the game
-            const { tabName, row, col, matchName } = req.body;
+            const { tabName, row, col, matchName, team1Name, team2Name } = req.body;
 
             if (!tabName || (!row && !col) || !matchName) {
                 return res.status(400).json({ error: "Missing required fields" });
@@ -34,7 +34,7 @@ exports.markQuestionUsed = onRequest(
             }).formatToParts(now);
             const month = easternDate.find(p => p.type === 'month').value;
             const day = easternDate.find(p => p.type === 'day').value;
-            const dateStamp = `${month}.${day}`;
+            const dateStamp = `${month}.${day} | ${matchName} | ${team1Name} vs ${team2Name}`;
 
             // Authenticate using the Service Account
             const keyFile = JSON.parse(SERVICE_ACCOUNT_KEY.value());
@@ -64,13 +64,13 @@ exports.markQuestionUsed = onRequest(
                 range: range,
                 valueInputOption: "RAW",
                 requestBody: {
-                    values: [[usedStamp]],
+                    values: [[dateStamp]],
                 },
             });
 
             return res.status(200).json({ 
                 success: true, 
-                message: `Marked ${range} as used: ${usedStamp}` 
+                message: `Marked ${range} as used: ${dateStamp}` 
             });
 
         } catch (error) {
