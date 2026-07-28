@@ -1373,7 +1373,9 @@
                         if (team1Score === team2Score) {
                             // Tie-breaker needed!
                             setIsTieBreaker(true);
-                            // Use the tieBreakerType selected in the admin wizard (don't override it)
+                            // Set opposite bonus type
+                            const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
+                            setTieBreakerType(oppositeBonusType);
                             setCurrentRound(14); // Tie-breaker round
                             setCurrentQuestion(1);
                             setActiveTeam(1);
@@ -4396,8 +4398,8 @@
                         {/* Question Display Area */}
                         <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
-                            width: '1400px',
-                            height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '750px' : '650px',
+                            width: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '1750px' : '1400px',
+                            height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '950px' : '650px',
                             padding: '48px'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -4460,35 +4462,45 @@
                                                 // Shootout UI
                                                 shootoutBoardRevealed ? (
                                                     // Show the answer grid
-                                                    <div className="w-full h-full flex flex-col gap-2 overflow-y-auto">
-                                                        {Array.from({ length: Math.ceil(shootoutShuffledAnswers.length / 5) }).map((_, rowIndex) => (
-                                                            <div key={rowIndex} className="flex gap-2 justify-center">
-                                                                {shootoutShuffledAnswers.slice(rowIndex * 5, (rowIndex + 1) * 5).map((item, colIndex) => {
-                                                                    const gridIndex = rowIndex * 5 + colIndex;
-                                                                    const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
-                                                                    
-                                                                    return (
-                                                                        <button
-                                                                            key={gridIndex}
-                                                                            onClick={() => handleShootoutAnswer(item.originalIndex)}
-                                                                            disabled={isRevealed}
-                                                                            className="font-bold rounded border-4 border-black transition text-lg relative"
-                                                                            style={{
-                                                                                width: '250px',
-                                                                                height: '60px',
-                                                                                backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
-                                                                                color: isRevealed ? 'white' : '#ffffff20',
-                                                                                cursor: isRevealed ? 'default' : 'pointer'
-                                                                            }}
-                                                                        >
-                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
-                                                                                {item.answer}
-                                                                            </span>
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        ))}
+                                                    <div className="w-full h-full flex flex-col" style={{gap: '0px'}}>
+                                                        {(() => {
+                                                            const totalAnswers = shootoutShuffledAnswers.length;
+                                                            const cols = 5;
+                                                            const numRows = Math.ceil(totalAnswers / cols);
+                                                            // Available height: 950px box - 48px top padding - 48px bottom padding - ~80px for header = ~774px
+                                                            const availableHeight = 774;
+                                                            const buttonHeight = Math.floor(availableHeight / numRows) - 8; // 8px for gap
+                                                            const fontSize = buttonHeight > 100 ? '22px' : buttonHeight > 80 ? '18px' : '14px';
+                                                            
+                                                            return Array.from({ length: numRows }).map((_, rowIndex) => (
+                                                                <div key={rowIndex} className="flex flex-1" style={{gap: '8px', marginBottom: rowIndex < numRows - 1 ? '8px' : '0'}}>
+                                                                    {shootoutShuffledAnswers.slice(rowIndex * cols, (rowIndex + 1) * cols).map((item, colIndex) => {
+                                                                        const gridIndex = rowIndex * cols + colIndex;
+                                                                        const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
+                                                                        
+                                                                        return (
+                                                                            <button
+                                                                                key={gridIndex}
+                                                                                onClick={() => handleShootoutAnswer(item.originalIndex)}
+                                                                                disabled={isRevealed}
+                                                                                className="font-bold rounded border-4 border-black transition relative flex-1 flex items-center justify-center"
+                                                                                style={{
+                                                                                    backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
+                                                                                    color: 'white',
+                                                                                    cursor: isRevealed ? 'default' : 'pointer',
+                                                                                    fontSize: fontSize,
+                                                                                    padding: '8px'
+                                                                                }}
+                                                                            >
+                                                                                <span style={{ opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
+                                                                                    {item.answer}
+                                                                                </span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            ));
+                                                        })()}
                                                     </div>
                                                 ) : (
                                                     // Show the long question before board is revealed
