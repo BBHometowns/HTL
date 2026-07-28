@@ -1325,7 +1325,7 @@
             const handleNext = () => {
                 // Always shrink Shootout box
                 setShootoutBoxExpanded(false);
-                // If coming from completed Shootout, do full cleanup and advance round
+                // If coming from completed Shootout, clean up and advance round
                 if (shootoutComplete) {
                     setShootoutComplete(false);
                     setShootoutBoardRevealed(false);
@@ -2117,7 +2117,7 @@
             const handleShootoutAnswer = (answerIndex) => {
                 if (shootoutRevealedAnswers.includes(answerIndex)) return;
                 
-                // If game is complete, just reveal the answer - no scoring or team switching
+                // If game is complete, just reveal the answer - no scoring
                 if (shootoutComplete) {
                     setShootoutRevealedAnswers([...shootoutRevealedAnswers, answerIndex]);
                     return;
@@ -2140,22 +2140,19 @@
                 // Calculate new turn count
                 const newTurnCount = shootoutActiveTeam === 2 ? shootoutTurnCount + 1 : shootoutTurnCount;
                 
-                // If switching back to Team 1, increment turn count
                 if (shootoutActiveTeam === 2) {
                     setShootoutTurnCount(newTurnCount);
                 }
                 
-                // Check if game should end BEFORE switching teams
+                // Check if game should end - pass fresh scores to avoid stale closure
                 if (newTurnCount >= 5 && shootoutSuddenDeath && shootoutActiveTeam === 2 && newScore1 !== newScore2) {
-                    // Sudden death ending: Team 2 just scored/missed, there's a winner
-                    setTimeout(() => handleShootoutComplete(), 100);
+                    setTimeout(() => handleShootoutComplete(newScore1, newScore2), 100);
                     return;
                 }
                 
-                // Check for regular end after 5 turns
                 if (newTurnCount >= 5 && !shootoutSuddenDeath) {
                     if (newScore1 !== newScore2) {
-                        setTimeout(() => handleShootoutComplete(), 100);
+                        setTimeout(() => handleShootoutComplete(newScore1, newScore2), 100);
                         return;
                     } else {
                         setShootoutSuddenDeath(true);
@@ -2164,8 +2161,6 @@
                 
                 // Switch to next team
                 setShootoutActiveTeam(shootoutActiveTeam === 1 ? 2 : 1);
-                
-                // Reset timers and restart for next turn
                 setTeam1Time(20);
                 setTeam2Time(20);
                 setTimerRunning(true);
@@ -2182,15 +2177,14 @@
                 
                 // Check if game should end BEFORE switching teams
                 if (newTurnCount >= 5 && shootoutSuddenDeath && shootoutActiveTeam === 2 && bonusScore1 !== bonusScore2) {
-                    // Sudden death ending: Team 2 just answered, there's a winner
-                    setTimeout(() => handleShootoutComplete(), 100);
+                    setTimeout(() => handleShootoutComplete(bonusScore1, bonusScore2), 100);
                     return;
                 }
                 
                 // Check for regular end after 5 turns
                 if (newTurnCount >= 5 && !shootoutSuddenDeath) {
                     if (bonusScore1 !== bonusScore2) {
-                        setTimeout(() => handleShootoutComplete(), 100);
+                        setTimeout(() => handleShootoutComplete(bonusScore1, bonusScore2), 100);
                         return;
                     } else {
                         setShootoutSuddenDeath(true);
@@ -2206,26 +2200,26 @@
                 setTimerRunning(true);
             };
             
-            const handleShootoutComplete = () => {
+            const handleShootoutComplete = (finalScore1 = bonusScore1, finalScore2 = bonusScore2) => {
                 setTimerRunning(false);
                 setShootoutComplete(true);
                 
-                // Award match points
+                // Award match points using passed-in scores to avoid stale closure
                 if (currentRound === 14) {
-                    if (bonusScore1 > bonusScore2) {
+                    if (finalScore1 > finalScore2) {
                         setTeam1Score(team1Score + 1);
                     } else {
                         setTeam2Score(team2Score + 1);
                     }
-                    const finalScore1 = team1Score + (bonusScore1 > bonusScore2 ? 1 : 0);
-                    const finalScore2 = team2Score + (bonusScore2 > bonusScore1 ? 1 : 0);
-                    const winner = finalScore1 > finalScore2 ? selectedTeam1 : selectedTeam2;
+                    const matchScore1 = team1Score + (finalScore1 > finalScore2 ? 1 : 0);
+                    const matchScore2 = team2Score + (finalScore2 > finalScore1 ? 1 : 0);
+                    const winner = matchScore1 > matchScore2 ? selectedTeam1 : selectedTeam2;
                     setTimeout(() => {
                         setWinnerTeam(winner);
                         setShowWinnerScreen(true);
                     }, 500);
                 } else {
-                    if (bonusScore1 > bonusScore2) {
+                    if (finalScore1 > finalScore2) {
                         setTeam1Score(team1Score + 2);
                     } else {
                         setTeam2Score(team2Score + 2);
@@ -4689,6 +4683,10 @@
                                                     <button onClick={handleRevealShootoutBoard} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL THE BOARD
                                                     </button>
+                                                ) : shootoutComplete ? (
+                                                    <button onClick={handleNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                        NEXT
+                                                    </button>
                                                 ) : (
                                                     <button onClick={handleShootoutIncorrect} className="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         INCORRECT
@@ -4697,11 +4695,7 @@
                                             )
                                         ) : (
                                             // Regular Round Buttons
-                                            shootoutComplete ? (
-                                                <button onClick={handleNext} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
-                                                    NEXT
-                                                </button>
-                                            ) : !showCategory ? (
+                                            !showCategory ? (
                                                 <button onClick={handleRevealCategory} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                     REVEAL CATEGORY
                                                 </button>
