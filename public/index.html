@@ -368,6 +368,7 @@
 
             // Shootout bonus states
             const [shootoutBoardRevealed, setShootoutBoardRevealed] = useState(false);
+            const [shootoutBoxExpanded, setShootoutBoxExpanded] = useState(false);
             const [shootoutRevealedAnswers, setShootoutRevealedAnswers] = useState([]);
             const [shootoutTurnCount, setShootoutTurnCount] = useState(0); // How many turns each team has taken
             const [shootoutActiveTeam, setShootoutActiveTeam] = useState(1); // Which team is currently guessing
@@ -704,6 +705,7 @@
                                 setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
                                 setTeam2GuessSubmitted(gameState.team2GuessSubmitted);
                                 setShootoutBoardRevealed(gameState.shootoutBoardRevealed);
+                                setShootoutBoxExpanded(gameState.shootoutBoxExpanded || false);
                                 setShootoutRevealedAnswers(gameState.shootoutRevealedAnswers || []);
                                 setShootoutShuffledAnswers(gameState.shootoutShuffledAnswers || []);
                                 setShootoutTurnCount(gameState.shootoutTurnCount);
@@ -1193,7 +1195,6 @@
             };
 
             const handleRevealQuestion = () => {
-                setShowQuestion(true);
                 setPowerupPhase(false);
                 
                 // Make absolutely sure timer is stopped when revealing question
@@ -1212,10 +1213,20 @@
                         if (currentQ && selectedMatch) {
                             markQuestionUsed('CLOSEST TO', selectedMatch.name, currentQ.rowIndex);
                         }
+                        setShowQuestion(true);
                     } else if (activeBonusType === 'shootout') {
                         setTeam1Time(15);
                         setTeam2Time(15);
+                        // Expand box first, then show question after animation completes
+                        setShootoutBoxExpanded(true);
+                        setTimeout(() => {
+                            setShowQuestion(true);
+                        }, 1000);
+                    } else {
+                        setShowQuestion(true);
                     }
+                } else {
+                    setShowQuestion(true);
                 }
                 
                 console.log('Revealing Q' + currentQuestion + ', Team1Active:', team1DoublerActive, ', Team2Active:', team2DoublerActive);
@@ -1319,6 +1330,8 @@
             };
 
             const handleNext = () => {
+                // Shrink Shootout box back when moving on
+                setShootoutBoxExpanded(false);
                 // Only clear active Double Dip state when moving to next ROUND
                 if (currentQuestion === 2) {
                     setDoubleDipActive(false);
@@ -1628,6 +1641,7 @@
                         team1GuessSubmitted,
                         team2GuessSubmitted,
                         shootoutBoardRevealed,
+                        shootoutBoxExpanded,
                         shootoutRevealedAnswers,
                         shootoutShuffledAnswers,
                         shootoutTurnCount,
@@ -4398,9 +4412,10 @@
                         {/* Question Display Area */}
                         <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
-                            width: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '1750px' : '1400px',
-                            height: (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' ? '950px' : '650px',
-                            padding: '48px'
+                            width: shootoutBoxExpanded ? '1750px' : '1400px',
+                            height: shootoutBoxExpanded ? '950px' : '650px',
+                            padding: '48px',
+                            transition: 'width 1s ease-in-out, height 1s ease-in-out'
                         }}>
                             <div className="text-center h-full flex flex-col">
                                 <div className="text-cyan-400 font-bold text-4xl" style={{marginBottom: '32px'}}>
@@ -4462,45 +4477,35 @@
                                                 // Shootout UI
                                                 shootoutBoardRevealed ? (
                                                     // Show the answer grid
-                                                    <div className="w-full h-full flex flex-col" style={{gap: '0px'}}>
-                                                        {(() => {
-                                                            const totalAnswers = shootoutShuffledAnswers.length;
-                                                            const cols = 5;
-                                                            const numRows = Math.ceil(totalAnswers / cols);
-                                                            // Available height: 950px box - 48px top padding - 48px bottom padding - ~80px for header = ~774px
-                                                            const availableHeight = 774;
-                                                            const buttonHeight = Math.floor(availableHeight / numRows) - 8; // 8px for gap
-                                                            const fontSize = buttonHeight > 100 ? '22px' : buttonHeight > 80 ? '18px' : '14px';
-                                                            
-                                                            return Array.from({ length: numRows }).map((_, rowIndex) => (
-                                                                <div key={rowIndex} className="flex flex-1" style={{gap: '8px', marginBottom: rowIndex < numRows - 1 ? '8px' : '0'}}>
-                                                                    {shootoutShuffledAnswers.slice(rowIndex * cols, (rowIndex + 1) * cols).map((item, colIndex) => {
-                                                                        const gridIndex = rowIndex * cols + colIndex;
-                                                                        const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
-                                                                        
-                                                                        return (
-                                                                            <button
-                                                                                key={gridIndex}
-                                                                                onClick={() => handleShootoutAnswer(item.originalIndex)}
-                                                                                disabled={isRevealed}
-                                                                                className="font-bold rounded border-4 border-black transition relative flex-1 flex items-center justify-center"
-                                                                                style={{
-                                                                                    backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
-                                                                                    color: 'white',
-                                                                                    cursor: isRevealed ? 'default' : 'pointer',
-                                                                                    fontSize: fontSize,
-                                                                                    padding: '8px'
-                                                                                }}
-                                                                            >
-                                                                                <span style={{ opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
-                                                                                    {item.answer}
-                                                                                </span>
-                                                                            </button>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            ));
-                                                        })()}
+                                                    <div className="w-full h-full flex flex-col gap-2 overflow-y-auto">
+                                                        {Array.from({ length: Math.ceil(shootoutShuffledAnswers.length / 5) }).map((_, rowIndex) => (
+                                                            <div key={rowIndex} className="flex gap-2 justify-center">
+                                                                {shootoutShuffledAnswers.slice(rowIndex * 5, (rowIndex + 1) * 5).map((item, colIndex) => {
+                                                                    const gridIndex = rowIndex * 5 + colIndex;
+                                                                    const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
+                                                                    
+                                                                    return (
+                                                                        <button
+                                                                            key={gridIndex}
+                                                                            onClick={() => handleShootoutAnswer(item.originalIndex)}
+                                                                            disabled={isRevealed}
+                                                                            className="font-bold rounded border-4 border-black transition text-lg relative"
+                                                                            style={{
+                                                                                width: '250px',
+                                                                                height: '60px',
+                                                                                backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
+                                                                                color: isRevealed ? 'white' : '#ffffff20',
+                                                                                cursor: isRevealed ? 'default' : 'pointer'
+                                                                            }}
+                                                                        >
+                                                                            <span style={{ color: 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
+                                                                                {item.answer}
+                                                                            </span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 ) : (
                                                     // Show the long question before board is revealed
