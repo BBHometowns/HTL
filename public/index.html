@@ -394,6 +394,7 @@
             const [waitingDots, setWaitingDots] = useState('.');
             const skipIntroRef = React.useRef(false);
             const streamIntroStartedRef = React.useRef(false);
+            const streamSkipRef = React.useRef(false);
             const streamAudioRef = React.useRef(null);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
@@ -757,6 +758,22 @@
                                     setTeamsConfirmed(true);
                                 }
                                 if (gameState.gameStarted) {
+                                    // If gameStarted before our local sequence finishes, host clicked Skip
+                                    if (streamIntroStartedRef.current) {
+                                        streamSkipRef.current = true;
+                                        // Stop audio
+                                        if (streamAudioRef.current) {
+                                            streamAudioRef.current.pause();
+                                            streamAudioRef.current = null;
+                                        }
+                                        // Clear all intro states
+                                        setShowCountdown(false);
+                                        setShowIntro(false);
+                                        setCountdownFading(false);
+                                        setCountdownFlipping(false);
+                                        setBackgroundFading(false);
+                                        setWhiteFading(false);
+                                    }
                                     setGameStarted(true);
                                     setTeamsConfirmed(true);
                                 }
@@ -790,30 +807,34 @@
                             for (let i = 0; i < 10; i++) {
                                 const num = 10 - i;
                                 setTimeout(() => {
+                                    if (streamSkipRef.current) return;
                                     setCountdownFlipping(false);
                                     setCountdownNumber(num);
                                 }, Math.max(0, visualStart + i * 1000 - elapsed));
                                 setTimeout(() => {
+                                    if (streamSkipRef.current) return;
                                     setCountdownFlipping(true);
                                 }, Math.max(0, visualStart + i * 1000 + 850 - elapsed));
                             }
                             
                             setTimeout(() => {
+                                if (streamSkipRef.current) return;
                                 setCountdownFading(true);
                                 setTimeout(() => {
+                                    if (streamSkipRef.current) return;
                                     setCountdownFading(false);
                                     setShowCountdown(false);
                                     setWhiteFading(true);
                                     setBackgroundFading(true);
                                     setShowIntro(true);
-                                    setTimeout(() => setWhiteFading(false), 1500);
-                                    setTimeout(() => setBackgroundFading(false), 3500);
-                                    setTimeout(() => setIntroStep(1), 6000);
-                                    setTimeout(() => setIntroStep(2), 7500);
-                                    setTimeout(() => setIntroStep(3), 9000);
-                                    setTimeout(() => setIntroStep(4), 10000);
-                                    setTimeout(() => setIntroStep(5), 11000);
-                                    setTimeout(() => setShowIntro(false), 12000);
+                                    setTimeout(() => { if (!streamSkipRef.current) setWhiteFading(false); }, 1500);
+                                    setTimeout(() => { if (!streamSkipRef.current) setBackgroundFading(false); }, 3500);
+                                    setTimeout(() => { if (!streamSkipRef.current) setIntroStep(1); }, 6000);
+                                    setTimeout(() => { if (!streamSkipRef.current) setIntroStep(2); }, 7500);
+                                    setTimeout(() => { if (!streamSkipRef.current) setIntroStep(3); }, 9000);
+                                    setTimeout(() => { if (!streamSkipRef.current) setIntroStep(4); }, 10000);
+                                    setTimeout(() => { if (!streamSkipRef.current) setIntroStep(5); }, 11000);
+                                    setTimeout(() => { if (!streamSkipRef.current) setShowIntro(false); }, 12000);
                                 }, 2000);
                             }, Math.max(0, visualStart + 10000 - elapsed));
                         });
