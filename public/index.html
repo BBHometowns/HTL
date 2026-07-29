@@ -782,6 +782,8 @@
                             setShowCountdown(true);
                             // Show countdown screen immediately (black during 2.5s audio lead-in)
                             setShowCountdown(true);
+                            setCountdownNumber(null);
+                            setCountdownFlipping(false);
                             
                             // Timestamp written 2500ms before "10" appears, so offset countdown by 2500ms
                             const visualStart = 2500;
