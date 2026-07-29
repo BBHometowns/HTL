@@ -3531,6 +3531,39 @@
                     }} />
                 );
             }
+
+            // Stream holding screen - black during transitions between countdown/intro/game
+            if (userMode === 'stream' && streamIntroStartedRef.current && !showCountdown && !showIntro && !gameStarted) {
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'black',
+                        zIndex: 9990
+                    }}>
+                        {/* Background image fading in if backgroundFading is set */}
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${imagePath}background.png)`,
+                            backgroundSize: '115%',
+                            backgroundPosition: '35% center',
+                            backgroundRepeat: 'no-repeat',
+                            opacity: backgroundFading ? 0 : 1,
+                            transition: 'opacity 2s ease-in'
+                        }} />
+                        {whiteFading && (
+                            <div style={{
+                                position: 'fixed',
+                                inset: 0,
+                                backgroundColor: 'white',
+                                zIndex: 9999,
+                                animation: 'countdownFadeOut 1.5s ease-out forwards'
+                            }} />
+                        )}
+                    </div>
+                );
+            }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !streamIntroStartedRef.current && userMode === 'stream') {
