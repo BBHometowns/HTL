@@ -393,6 +393,8 @@
             const [testModeBonusType, setTestModeBonusType] = useState('closestTo');
             const [waitingDots, setWaitingDots] = useState('.');
             const skipIntroRef = React.useRef(false);
+            const streamIntroStartedRef = React.useRef(false);
+            const streamAudioRef = React.useRef(null);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -745,27 +747,19 @@
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
-                                // Countdown and intro states - use latching so states don't flicker
-                                const newShowCountdown = gameState.showCountdown || false;
-                                const newShowIntro = gameState.showIntro || false;
-                                const newGameStarted = gameState.gameStarted || false;
-                                console.log('🎬 Stream countdown state:', {
-                                    showCountdown: newShowCountdown,
-                                    showIntro: newShowIntro,
-                                    gameStarted: newGameStarted,
-                                    countdownNumber: gameState.countdownNumber,
-                                    backgroundFading: gameState.backgroundFading,
-                                    whiteFading: gameState.whiteFading,
-                                    introStep: gameState.introStep
-                                });
-                                setShowCountdown(newShowCountdown);
+                                // Countdown and intro - latch ref prevents waiting screen from showing between number flips
+                                if (gameState.showCountdown) streamIntroStartedRef.current = true;
+                                // Only update showCountdown from Firebase once latch is set
+                                if (streamIntroStartedRef.current) {
+                                    setShowCountdown(gameState.showCountdown || false);
+                                }
                                 setCountdownNumber(gameState.countdownNumber ?? null);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
                                 setCountdownFading(gameState.countdownFading || false);
                                 setBackgroundFading(gameState.backgroundFading || false);
                                 setWhiteFading(gameState.whiteFading || false);
-                                // Only set showIntro to true - never back to false until gameStarted
-                                if (newShowIntro) setShowIntro(true);
+                                // Only ever set showIntro to true - never back to false
+                                if (gameState.showIntro) setShowIntro(true);
                                 setIntroStep(gameState.introStep ?? 0);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted) {
@@ -832,15 +826,14 @@
                 }
             }, [showIntro, userMode]);
 
-            // Play countdown audio on Stream when countdown starts
+            // Play countdown audio on Stream when countdown starts - uses ref so flicker doesn't kill it
             useEffect(() => {
-                if (userMode === 'stream' && showCountdown) {
-                    console.log('🔊 Stream attempting to play countdown audio');
-                    const audio = new Audio(`${audioPath}countdown.mp3`);
-                    audio.play()
+                if (userMode === 'stream' && streamIntroStartedRef.current && !streamAudioRef.current) {
+                    streamAudioRef.current = new Audio(`${audioPath}countdown.mp3`);
+                    streamAudioRef.current.volume = 1.0;
+                    streamAudioRef.current.play()
                         .then(() => console.log('✅ Stream audio playing'))
                         .catch((e) => console.log('❌ Stream audio failed:', e.message));
-                    return () => { audio.pause(); audio.currentTime = 0; };
                 }
             }, [userMode, showCountdown]);
 
@@ -3540,8 +3533,7 @@
             }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && !showCountdown && userMode === 'stream') {
-                console.log('📺 Stream showing WAITING SCREEN - gameStarted:', gameStarted, 'showIntro:', showIntro, 'showCountdown:', showCountdown);
+            if (!gameStarted && !showIntro && !streamIntroStartedRef.current && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
