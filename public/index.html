@@ -747,20 +747,8 @@
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
-                                // Countdown and intro - latch ref prevents waiting screen from showing between number flips
-                                if (gameState.showCountdown) streamIntroStartedRef.current = true;
-                                // Only update showCountdown from Firebase once latch is set
-                                if (streamIntroStartedRef.current) {
-                                    setShowCountdown(gameState.showCountdown || false);
-                                }
-                                setCountdownNumber(gameState.countdownNumber ?? null);
-                                setCountdownFlipping(gameState.countdownFlipping || false);
-                                setCountdownFading(gameState.countdownFading || false);
-                                setBackgroundFading(gameState.backgroundFading || false);
-                                setWhiteFading(gameState.whiteFading || false);
-                                // Only ever set showIntro to true - never back to false
-                                if (gameState.showIntro) setShowIntro(true);
-                                setIntroStep(gameState.introStep ?? 0);
+                                // Countdown and intro states no longer synced via gameState
+                                // Stream runs its own local sequence triggered by matchStartTimestamp
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted) {
                                     setTeamsConfirmed(true);
@@ -777,6 +765,74 @@
 
                         return () => {
                             gameStateRef.off();
+                        };
+                    }
+                    
+                    // Stream watches matchStartTimestamp to run its own local countdown+intro
+                    if (userMode === 'stream') {
+                        const tsRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
+                        tsRef.on('value', (snapshot) => {
+                            const ts = snapshot.val();
+                            if (!ts || streamIntroStartedRef.current) return;
+                            streamIntroStartedRef.current = true;
+                            
+                            // Play audio immediately
+                            if (!streamAudioRef.current) {
+                                streamAudioRef.current = new Audio(`${audioPath}countdown.mp3`);
+                                streamAudioRef.current.volume = 1.0;
+                                streamAudioRef.current.play().catch(e => console.log('Audio failed:', e.message));
+                            }
+                            
+                            // Calculate how much time has elapsed since timestamp was set
+                            const elapsed = Date.now() - ts;
+                            const offset = Math.max(0, elapsed);
+                            
+                            // Start countdown sequence - each number shows for 1000ms
+                            setShowCountdown(true);
+                            for (let i = 0; i < 10; i++) {
+                                const num = 10 - i;
+                                const showAt = Math.max(0, i * 1000 - offset);
+                                const flipAt = Math.max(0, i * 1000 + 850 - offset);
+                                setTimeout(() => {
+                                    if (!streamIntroStartedRef.current) return;
+                                    setCountdownFlipping(false);
+                                    setCountdownNumber(num);
+                                }, showAt);
+                                setTimeout(() => {
+                                    if (!streamIntroStartedRef.current) return;
+                                    setCountdownFlipping(true);
+                                }, flipAt);
+                            }
+                            
+                            // After countdown: white flash
+                            const flashAt = Math.max(0, 10000 - offset);
+                            setTimeout(() => {
+                                setCountdownFading(true);
+                                setTimeout(() => {
+                                    setCountdownFading(false);
+                                    setShowCountdown(false);
+                                    setWhiteFading(true);
+                                    setBackgroundFading(true);
+                                    setShowIntro(true);
+                                    // White fades out
+                                    setTimeout(() => setWhiteFading(false), 1500);
+                                    // Background fades in
+                                    setTimeout(() => setBackgroundFading(false), 3500);
+                                    // Intro steps (team logos fly in etc) - matching Host timing
+                                    setTimeout(() => setIntroStep(1), 6000);
+                                    setTimeout(() => setIntroStep(2), 7500);
+                                    setTimeout(() => setIntroStep(3), 9000);
+                                    setTimeout(() => setIntroStep(4), 10000);
+                                    setTimeout(() => setIntroStep(5), 11000);
+                                    setTimeout(() => {
+                                        setShowIntro(false);
+                                        // Don't set gameStarted - wait for Host broadcast
+                                    }, 12000);
+                                }, 2000);
+                            }, flashAt);
+                        });
+                        return () => {
+                            tsRef.off();
                         };
                     }
                 }
@@ -825,17 +881,6 @@
                     return () => timers.forEach(timer => clearTimeout(timer));
                 }
             }, [showIntro, userMode]);
-
-            // Play countdown audio on Stream when countdown starts - uses ref so flicker doesn't kill it
-            useEffect(() => {
-                if (userMode === 'stream' && streamIntroStartedRef.current && !streamAudioRef.current) {
-                    streamAudioRef.current = new Audio(`${audioPath}countdown.mp3`);
-                    streamAudioRef.current.volume = 1.0;
-                    streamAudioRef.current.play()
-                        .then(() => console.log('✅ Stream audio playing'))
-                        .catch((e) => console.log('❌ Stream audio failed:', e.message));
-                }
-            }, [userMode, showCountdown]);
 
             // Animate waiting dots for stream waiting screen
             useEffect(() => {
@@ -3417,8 +3462,7 @@
             }
 
             // Countdown Screen - shown on both Host and Stream
-            // Stream also shows this during brief showCountdown flickers (countdownNumber set = mid-countdown)
-            if (showCountdown || (userMode === 'stream' && streamIntroStartedRef.current && !showIntro && !gameStarted)) {
+            if (showCountdown) {
                 return (
                     <div style={{
                         position: 'fixed',
@@ -3486,30 +3530,6 @@
                                 opacity: 0
                             }} />
                         )}
-                        {/* Post-countdown white flash fading OUT (Stream only during transition) */}
-                        {whiteFading && (
-                            <div style={{
-                                position: 'fixed',
-                                inset: 0,
-                                backgroundColor: 'white',
-                                zIndex: 9998,
-                                animation: 'countdownFadeOut 1.5s ease-out forwards'
-                            }} />
-                        )}
-                        {/* Background fading in after white flash (Stream only during transition) */}
-                        {userMode === 'stream' && !showCountdown && streamIntroStartedRef.current && (
-                            <div style={{
-                                position: 'absolute',
-                                inset: 0,
-                                backgroundImage: `url(${imagePath}background.png)`,
-                                backgroundSize: '115%',
-                                backgroundPosition: '35% center',
-                                backgroundRepeat: 'no-repeat',
-                                opacity: backgroundFading ? 0 : 1,
-                                transition: 'opacity 2s ease-in',
-                                zIndex: 9990
-                            }} />
-                        )}
                         {userMode === 'host' && (
                             <button
                                 onClick={() => {
@@ -3556,7 +3576,7 @@
                     }} />
                 );
             }
-
+            
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !streamIntroStartedRef.current && userMode === 'stream') {
                 return (
