@@ -780,15 +780,20 @@
                             const elapsed = Math.max(0, Date.now() - ts);
                             
                             setShowCountdown(true);
+                            // Show countdown screen immediately (black during 2.5s audio lead-in)
+                            setShowCountdown(true);
+                            
+                            // Timestamp written 2500ms before "10" appears, so offset countdown by 2500ms
+                            const visualStart = 2500;
                             for (let i = 0; i < 10; i++) {
                                 const num = 10 - i;
                                 setTimeout(() => {
                                     setCountdownFlipping(false);
                                     setCountdownNumber(num);
-                                }, Math.max(0, i * 1000 - elapsed));
+                                }, Math.max(0, visualStart + i * 1000 - elapsed));
                                 setTimeout(() => {
                                     setCountdownFlipping(true);
-                                }, Math.max(0, i * 1000 + 850 - elapsed));
+                                }, Math.max(0, visualStart + i * 1000 + 850 - elapsed));
                             }
                             
                             setTimeout(() => {
@@ -808,7 +813,7 @@
                                     setTimeout(() => setIntroStep(5), 11000);
                                     setTimeout(() => setShowIntro(false), 12000);
                                 }, 2000);
-                            }, Math.max(0, 10000 - elapsed));
+                            }, Math.max(0, visualStart + 10000 - elapsed));
                         });
 
                         return () => {
@@ -1696,12 +1701,13 @@
                     }, startNum * 1000);
                 };
                 
+                // Write timestamp NOW so Stream starts audio at same time as Host
+                const startTime = Date.now();
+                setMatchStartTimestamp(startTime);
+                database.ref(`rooms/${roomCode}/matchStartTimestamp`).set(startTime);
+
                 // Wait 2.5 seconds for audio lead-in, then start visual countdown from 10
                 setTimeout(() => {
-                    // Write timestamp exactly when "10" appears
-                    const startTime = Date.now();
-                    setMatchStartTimestamp(startTime);
-                    database.ref(`rooms/${roomCode}/matchStartTimestamp`).set(startTime);
                     runCountdown(10);
                 }, 2500);
             };
