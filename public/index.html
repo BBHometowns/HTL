@@ -364,6 +364,7 @@
             const [team1GuessSubmitted, setTeam1GuessSubmitted] = useState(false);
             const [team2GuessSubmitted, setTeam2GuessSubmitted] = useState(false);
             const [showBonusAnswer, setShowBonusAnswer] = useState(false);
+            const [showDistances, setShowDistances] = useState(false);
             const [bonusWinnerAwarded, setBonusWinnerAwarded] = useState(false);
 
             // Shootout bonus states
@@ -705,6 +706,7 @@
                                 setBonusScore2(gameState.bonusScore2);
                                 setBonusQuestionIndex(gameState.bonusQuestionIndex);
                                 setShowBonusAnswer(gameState.showBonusAnswer);
+                                setShowDistances(gameState.showDistances || false);
                                 setTeam1Guess(gameState.team1Guess || '');
                                 setTeam2Guess(gameState.team2Guess || '');
                                 setTeam1GuessSubmitted(gameState.team1GuessSubmitted);
@@ -776,7 +778,7 @@
                 team1Time, team2Time, timerRunning, powerupPhase,
                 powerupTimer,
                 team1Powerups, team2Powerups, bonusScore1, bonusScore2,
-                bonusQuestionIndex, showBonusAnswer, team1Guess, team2Guess,
+                bonusQuestionIndex, showBonusAnswer, showDistances, team1Guess, team2Guess,
                 team1GuessSubmitted, team2GuessSubmitted, shootoutBoardRevealed, shootoutRevealedAnswers,
                 shootoutShuffledAnswers, shootoutTurnCount, shootoutActiveTeam, shootoutSuddenDeath,
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
@@ -1678,6 +1680,7 @@
                         bonusScore2,
                         bonusQuestionIndex,
                         showBonusAnswer,
+                        showDistances,
                         team1Guess,
                         team2Guess,
                         team1GuessSubmitted,
@@ -1756,40 +1759,42 @@
             };
             
             const handleRevealBonusAnswer = () => {
+                // Step 1: Show correct answer immediately
                 setShowBonusAnswer(true);
                 
-                // Calculate winner after 3 second delay
+                // Step 2: Show distances 2 seconds later
+                setTimeout(() => {
+                    setShowDistances(true);
+                }, 2000);
+                
+                // Step 3: Calculate and award winner 2 seconds after distances appear
                 setTimeout(() => {
                     const currentQuestion = closestToQuestions[bonusQuestionIndex];
                     const correctAnswer = currentQuestion.answer;
                     const guess1 = parseInt(team1Guess) || 0;
                     const guess2 = parseInt(team2Guess) || 0;
                     
-                    // If both teams have same answer, it's a tie - no points
                     if (guess1 === guess2) {
                         // No points awarded
                     } else {
                         const diff1 = Math.abs(correctAnswer - guess1);
                         const diff2 = Math.abs(correctAnswer - guess2);
                         
-                        // Check for exact answers (worth 2 points)
                         if (guess1 === correctAnswer) {
                             setBonusScore1(bonusScore1 + 2);
                         } else if (guess2 === correctAnswer) {
                             setBonusScore2(bonusScore2 + 2);
                         } else {
-                            // Award 1 point to closer team
                             if (diff1 < diff2) {
                                 setBonusScore1(bonusScore1 + 1);
                             } else if (diff2 < diff1) {
                                 setBonusScore2(bonusScore2 + 1);
                             }
-                            // If tied distance, no one gets a point
                         }
                     }
                     
                     setBonusWinnerAwarded(true);
-                }, 3000);
+                }, 4000);
             };
             
             const handleBonusNext = () => {
@@ -1854,6 +1859,7 @@
                 // Reset question states
                 setShowAnswer(false);
                 setShowBonusAnswer(false);
+                setShowDistances(false);
                 setBonusWinnerAwarded(false);
                 setTeam1Guess('');
                 setTeam2Guess('');
@@ -4788,7 +4794,7 @@
                                                         {/* Team 1 Side */}
                                                         <div className="flex items-center gap-8 flex-1">
                                                             <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                            {team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                            {showDistances && team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
                                                         </div>
                                                         
                                                         {/* Correct Answer */}
@@ -4797,9 +4803,22 @@
                                                         </div>
                                                         
                                                         {/* Team 2 Side */}
-                                                        <div className="flex items-center gap-8 flex-1">
-                                                            {team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                        <div className="flex items-center gap-8 flex-1 justify-end">
+                                                            {showDistances && team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
                                                             <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (team1GuessSubmitted || team2GuessSubmitted) ? (
+                                                    <div className="flex items-center justify-between w-full px-4">
+                                                        {/* Team 1 guess if submitted */}
+                                                        <div className="flex-1 text-left">
+                                                            {team1GuessSubmitted && <span className="text-cyan-400 font-bold text-5xl">{team1Guess}</span>}
+                                                        </div>
+                                                        {/* Empty center where answer will appear */}
+                                                        <div className="mx-8" />
+                                                        {/* Team 2 guess if submitted */}
+                                                        <div className="flex-1 text-right">
+                                                            {team2GuessSubmitted && <span className="text-orange-400 font-bold text-5xl">{team2Guess}</span>}
                                                         </div>
                                                     </div>
                                                 ) : null
