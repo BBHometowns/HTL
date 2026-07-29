@@ -745,14 +745,27 @@
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
-                                // Countdown and intro states
-                                setShowCountdown(gameState.showCountdown || false);
+                                // Countdown and intro states - use latching so states don't flicker
+                                const newShowCountdown = gameState.showCountdown || false;
+                                const newShowIntro = gameState.showIntro || false;
+                                const newGameStarted = gameState.gameStarted || false;
+                                console.log('🎬 Stream countdown state:', {
+                                    showCountdown: newShowCountdown,
+                                    showIntro: newShowIntro,
+                                    gameStarted: newGameStarted,
+                                    countdownNumber: gameState.countdownNumber,
+                                    backgroundFading: gameState.backgroundFading,
+                                    whiteFading: gameState.whiteFading,
+                                    introStep: gameState.introStep
+                                });
+                                setShowCountdown(newShowCountdown);
                                 setCountdownNumber(gameState.countdownNumber ?? null);
                                 setCountdownFlipping(gameState.countdownFlipping || false);
                                 setCountdownFading(gameState.countdownFading || false);
                                 setBackgroundFading(gameState.backgroundFading || false);
                                 setWhiteFading(gameState.whiteFading || false);
-                                setShowIntro(gameState.showIntro || false);
+                                // Only set showIntro to true - never back to false until gameStarted
+                                if (newShowIntro) setShowIntro(true);
                                 setIntroStep(gameState.introStep ?? 0);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted) {
@@ -822,8 +835,11 @@
             // Play countdown audio on Stream when countdown starts
             useEffect(() => {
                 if (userMode === 'stream' && showCountdown) {
+                    console.log('🔊 Stream attempting to play countdown audio');
                     const audio = new Audio(`${audioPath}countdown.mp3`);
-                    audio.play().catch(() => {});
+                    audio.play()
+                        .then(() => console.log('✅ Stream audio playing'))
+                        .catch((e) => console.log('❌ Stream audio failed:', e.message));
                     return () => { audio.pause(); audio.currentTime = 0; };
                 }
             }, [userMode, showCountdown]);
@@ -3525,6 +3541,7 @@
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !showCountdown && userMode === 'stream') {
+                console.log('📺 Stream showing WAITING SCREEN - gameStarted:', gameStarted, 'showIntro:', showIntro, 'showCountdown:', showCountdown);
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
