@@ -391,6 +391,7 @@
             const [testModeRound, setTestModeRound] = useState(7);
             const [testModeBonusType, setTestModeBonusType] = useState('closestTo');
             const [waitingDots, setWaitingDots] = useState('.');
+            const skipIntroRef = React.useRef(false);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -1596,21 +1597,25 @@
                         const timeMs = i * 1000;
                         
                         setTimeout(() => {
+                            if (skipIntroRef.current) return;
                             setCountdownFlipping(false);
                             setCountdownNumber(num);
                             setTimeout(() => broadcastGameState(), 50);
                         }, timeMs);
                         
                         setTimeout(() => {
+                            if (skipIntroRef.current) return;
                             setCountdownFlipping(true);
                         }, timeMs + 850);
                     }
                     
                     // After last number, start white flash
                     setTimeout(() => {
+                        if (skipIntroRef.current) return;
                         setCountdownFading(true);
                         setTimeout(() => broadcastGameState(), 50);
                         setTimeout(() => {
+                            if (skipIntroRef.current) return;
                             setWhiteFading(true);
                             setShowCountdown(false);
                             setCountdownFading(false);
@@ -1619,11 +1624,13 @@
                             setTimeout(() => broadcastGameState(), 50);
                             // White fades out after 1.5 seconds
                             setTimeout(() => {
+                                if (skipIntroRef.current) return;
                                 setWhiteFading(false);
                                 setTimeout(() => broadcastGameState(), 200);
                             }, 1500);
                             // Background fully visible after 3.5 seconds
                             setTimeout(() => {
+                                if (skipIntroRef.current) return;
                                 setBackgroundFading(false);
                                 setTimeout(() => broadcastGameState(), 50);
                             }, 3500);
@@ -3445,8 +3452,11 @@
                         {userMode === 'host' && (
                             <button
                                 onClick={() => {
+                                    skipIntroRef.current = true;
                                     setShowCountdown(false);
                                     setShowIntro(false);
+                                    setCountdownFading(false);
+                                    setCountdownFlipping(false);
                                     setBackgroundFading(false);
                                     setWhiteFading(false);
                                     setGameStarted(true);
@@ -3918,6 +3928,7 @@
                         {userMode === 'host' && (
                             <button
                                 onClick={() => {
+                                    skipIntroRef.current = true;
                                     setShowCountdown(false);
                                     setShowIntro(false);
                                     setBackgroundFading(false);
@@ -3964,7 +3975,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}${selectedTeam1.logo}`}
+                                src={`${imagePath}${selectedTeam1?.logo}`}
                                 alt="Team 1 Background Logo" 
                                 className={`${isResuming ? '' : 'team-logo-transition'} ${activeTeam === 1 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
@@ -3984,7 +3995,7 @@
                             transform: 'translateY(-50%)'
                         }}>
                             <img 
-                                src={`${imagePath}${selectedTeam2.logo}`}
+                                src={`${imagePath}${selectedTeam2?.logo}`}
                                 alt="Team 2 Background Logo" 
                                 className={`${isResuming ? '' : 'team-logo-transition'} ${activeTeam === 2 ? 'team-glow' : 'team-inactive'} ${showWinnerScreen ? 'team-logo-winner' : ''}`}
                                 style={{
@@ -4004,7 +4015,7 @@
                         <>
                             {/* Team 1 Input */}
                             <div className="absolute" style={{left: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
-                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam1.color, width: '250px'}}>
+                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam1?.color, width: '250px'}}>
                                     <input
                                         type="number"
                                         value={team1Guess}
@@ -4029,7 +4040,7 @@
                             
                             {/* Team 2 Input */}
                             <div className="absolute" style={{right: 'calc(5% + 50px)', top: '40%', zIndex: 15}}>
-                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam2.color, width: '250px'}}>
+                                <div className="bg-gray-900 rounded-lg p-6 border-4 flex flex-col items-center" style={{borderColor: selectedTeam2?.color, width: '250px'}}>
                                     <input
                                         type="number"
                                         value={team2Guess}
