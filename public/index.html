@@ -4351,32 +4351,6 @@
                                     >
                                         END MATCH
                                     </button>
-                                    {roomCode.startsWith('TEST') && (
-                                        <button
-                                            onClick={() => {
-                                                // Reset game state and go back to test mode screen
-                                                setGameStarted(false);
-                                                setTeamsConfirmed(false);
-                                                setShowCategory(false);
-                                                setShowQuestion(false);
-                                                setShowAnswer(false);
-                                                setBonusScore1(0);
-                                                setBonusScore2(0);
-                                                setTeam1Score(0);
-                                                setTeam2Score(0);
-                                                setShootoutBoardRevealed(false);
-                                                setShootoutRevealedAnswers([]);
-                                                setShootoutComplete(false);
-                                                setShootoutBoxExpanded(false);
-                                                setBottomsUpPhase('reveal');
-                                                setShowTestMode(true);
-                                            }}
-                                            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-4 px-12 rounded-lg border-4 border-black text-2xl"
-                                            style={{pointerEvents: 'auto'}}
-                                        >
-                                            BACK TO TEST MODE
-                                        </button>
-                                    )}
                                 </div>
                             )}
                         </>
