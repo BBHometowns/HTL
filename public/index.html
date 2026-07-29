@@ -781,10 +781,7 @@
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, roomCode,
                 showCountdown, countdownNumber, countdownFlipping, countdownFading,
-                backgroundFading, whiteFading, introStep,
-                bottomsUpAnimating, bottomsUpAnimationValue, bottomsUpPhase,
-                bottomsUpFlyingScore, bottomsUpShowAnswer, bottomsUpGlowing,
-                bottomsUpConfirmedAnswer, bottomsUpActiveTeam, bottomsUpUsedAnswers, bottomsUpTurnNumber
+                backgroundFading, whiteFading, introStep
             ]);
             
             // Intro animation sequence
@@ -1421,7 +1418,9 @@
                         if (team1Score === team2Score) {
                             // Tie-breaker needed!
                             setIsTieBreaker(true);
-                            // tieBreakerType was already set during admin wizard setup - do not override it here
+                            // Set opposite bonus type
+                            const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
+                            setTieBreakerType(oppositeBonusType);
                             setCurrentRound(14); // Tie-breaker round
                             setCurrentQuestion(1);
                             setActiveTeam(1);
@@ -2682,12 +2681,16 @@
                                     setShowCategory(false);
                                     setShowQuestion(false);
                                     setShowAnswer(false);
+                                    setShowCountdown(false);
+                                    setShowIntro(false);
+                                    setBackgroundFading(false);
+                                    setWhiteFading(false);
                                     setGameStarted(true);
                                     setShowTestMode(false);
                                     
                                     // Connect to Firebase so Stream can see it
                                     setShouldConnect(true);
-                                    setTimeout(() => broadcastGameState(), 300);
+                                    setTimeout(() => broadcastGameState(), 800);
                                 }}
                                 className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-5 rounded-lg border-4 border-black text-2xl mb-3"
                             >
@@ -3439,6 +3442,34 @@
                                 opacity: 0
                             }} />
                         )}
+                        {userMode === 'host' && (
+                            <button
+                                onClick={() => {
+                                    setShowCountdown(false);
+                                    setShowIntro(false);
+                                    setBackgroundFading(false);
+                                    setWhiteFading(false);
+                                    setGameStarted(true);
+                                    setTimeout(() => broadcastGameState(), 100);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '40px',
+                                    right: '40px',
+                                    zIndex: 9999,
+                                    backgroundColor: 'rgba(0,0,0,0.6)',
+                                    color: 'white',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderRadius: '8px',
+                                    padding: '10px 24px',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                SKIP →
+                            </button>
+                        )}
                     </div>
                 );
             }
@@ -3464,12 +3495,6 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
-                        {roomCode && (
-                            <div className="text-center mb-4">
-                                <p className="text-gray-400 text-2xl">Room Code</p>
-                                <p className="text-white font-black text-5xl font-mono" style={{WebkitTextStroke: '2px black'}}>{roomCode}</p>
-                            </div>
-                        )}
                         <img 
                             src={`${imagePath}htl-logo.png`}
                             alt="HTL - Hometown Trivia League" 
@@ -3889,6 +3914,34 @@
                                     </div>
                                 </div>
                             </div>
+                        )}
+                        {userMode === 'host' && (
+                            <button
+                                onClick={() => {
+                                    setShowCountdown(false);
+                                    setShowIntro(false);
+                                    setBackgroundFading(false);
+                                    setWhiteFading(false);
+                                    setGameStarted(true);
+                                    setTimeout(() => broadcastGameState(), 100);
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '40px',
+                                    right: '40px',
+                                    zIndex: 9999,
+                                    backgroundColor: 'rgba(0,0,0,0.6)',
+                                    color: 'white',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderRadius: '8px',
+                                    padding: '10px 24px',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                SKIP →
+                            </button>
                         )}
                     </div>
                 );
