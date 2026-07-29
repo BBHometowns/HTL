@@ -687,7 +687,7 @@
                                 setBonusType(gameState.bonusType);
                                 setTeam1Score(gameState.team1Score);
                                 setTeam2Score(gameState.team2Score);
-                                setCurrentRound(gameState.currentRound);
+                                if (gameState.currentRound) setCurrentRound(gameState.currentRound);
                                 setCurrentQuestion(gameState.currentQuestion);
                                 setShowCategory(gameState.showCategory);
                                 setShowQuestion(gameState.showQuestion);
@@ -781,7 +781,10 @@
                 isTieBreaker, tieBreakerType, teamsConfirmed, gameStarted, showIntro,
                 showWinnerScreen, winnerTeam, userMode, roomCode,
                 showCountdown, countdownNumber, countdownFlipping, countdownFading,
-                backgroundFading, whiteFading, introStep
+                backgroundFading, whiteFading, introStep,
+                bottomsUpAnimating, bottomsUpAnimationValue, bottomsUpPhase,
+                bottomsUpFlyingScore, bottomsUpShowAnswer, bottomsUpGlowing,
+                bottomsUpConfirmedAnswer, bottomsUpActiveTeam, bottomsUpUsedAnswers, bottomsUpTurnNumber
             ]);
             
             // Intro animation sequence
@@ -4250,6 +4253,36 @@
                     )}
 
                     {/* Main Content */}
+                    {/* Back to Test Mode - always visible during test session */}
+                    {userMode === 'host' && roomCode.startsWith('TEST') && (
+                        <div style={{position: 'fixed', bottom: '40px', right: '40px', zIndex: 9999, pointerEvents: 'auto'}}>
+                            <button
+                                onClick={() => {
+                                    setGameStarted(false);
+                                    setTeamsConfirmed(false);
+                                    setShowCategory(false);
+                                    setShowQuestion(false);
+                                    setShowAnswer(false);
+                                    setBonusScore1(0);
+                                    setBonusScore2(0);
+                                    setTeam1Score(0);
+                                    setTeam2Score(0);
+                                    setShootoutBoardRevealed(false);
+                                    setShootoutRevealedAnswers([]);
+                                    setShootoutComplete(false);
+                                    setShootoutBoxExpanded(false);
+                                    setBottomsUpPhase('question');
+                                    setIsTieBreaker(false);
+                                    setShowWinnerScreen(false);
+                                    setShowTestMode(true);
+                                }}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg border-4 border-black text-xl"
+                            >
+                                ← BACK TO TEST MODE
+                            </button>
+                        </div>
+                    )}
+
                     {/* Winner Screen Overlay */}
                     {showWinnerScreen && (
                         <>
