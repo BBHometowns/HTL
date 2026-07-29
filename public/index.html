@@ -720,6 +720,16 @@
                                 if (gameState.selectedShootoutQuestion) setSelectedShootoutQuestion(gameState.selectedShootoutQuestion);
                                 if (gameState.selectedTieBreakerShootoutQuestion) setSelectedTieBreakerShootoutQuestion(gameState.selectedTieBreakerShootoutQuestion);
                                 if (gameState.bottomsUpQuestion) setBottomsUpQuestion(gameState.bottomsUpQuestion);
+                                if (gameState.bottomsUpTurnNumber !== undefined) setBottomsUpTurnNumber(gameState.bottomsUpTurnNumber);
+                                setBottomsUpActiveTeam(gameState.bottomsUpActiveTeam || 1);
+                                setBottomsUpUsedAnswers(gameState.bottomsUpUsedAnswers || []);
+                                setBottomsUpAnimating(gameState.bottomsUpAnimating || false);
+                                setBottomsUpAnimationValue(gameState.bottomsUpAnimationValue ?? 0);
+                                setBottomsUpPhase(gameState.bottomsUpPhase || 'question');
+                                setBottomsUpFlyingScore(gameState.bottomsUpFlyingScore || false);
+                                setBottomsUpShowAnswer(gameState.bottomsUpShowAnswer || false);
+                                setBottomsUpGlowing(gameState.bottomsUpGlowing || false);
+                                setBottomsUpConfirmedAnswer(gameState.bottomsUpConfirmedAnswer ?? null);
                                 if (gameState.tieBreakerBottomsUpQuestion) setTieBreakerBottomsUpQuestion(gameState.tieBreakerBottomsUpQuestion);
                                 if (gameState.closestToQuestions && gameState.closestToQuestions.length > 0) setClosestToQuestions(gameState.closestToQuestions);
                                 setIsTieBreaker(gameState.isTieBreaker);
@@ -1408,7 +1418,9 @@
                         if (team1Score === team2Score) {
                             // Tie-breaker needed!
                             setIsTieBreaker(true);
-                            // Use the tieBreakerType already set in admin wizard - don't override it
+                            // Set opposite bonus type
+                            const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
+                            setTieBreakerType(oppositeBonusType);
                             setCurrentRound(14); // Tie-breaker round
                             setCurrentQuestion(1);
                             setActiveTeam(1);
@@ -1672,6 +1684,16 @@
                         selectedShootoutQuestion: selectedShootoutQuestion ?? null,
                         selectedTieBreakerShootoutQuestion: selectedTieBreakerShootoutQuestion ?? null,
                         bottomsUpQuestion: bottomsUpQuestion ?? null,
+                        bottomsUpTurnNumber,
+                        bottomsUpActiveTeam,
+                        bottomsUpUsedAnswers,
+                        bottomsUpAnimating,
+                        bottomsUpAnimationValue,
+                        bottomsUpPhase,
+                        bottomsUpFlyingScore,
+                        bottomsUpShowAnswer,
+                        bottomsUpGlowing,
+                        bottomsUpConfirmedAnswer,
                         tieBreakerBottomsUpQuestion: tieBreakerBottomsUpQuestion ?? null,
                         closestToQuestions: closestToQuestions ?? [],
                         isTieBreaker,
