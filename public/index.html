@@ -681,8 +681,8 @@
                             if (gameState) {
                                 console.log('📥 Received game state update:', gameState);
                                 
-                                setSelectedTeam1(gameState.selectedTeam1);
-                                setSelectedTeam2(gameState.selectedTeam2);
+                                if (gameState.selectedTeam1) setSelectedTeam1(gameState.selectedTeam1);
+                                if (gameState.selectedTeam2) setSelectedTeam2(gameState.selectedTeam2);
                                 setSelectedMatch(gameState.selectedMatch);
                                 setBonusType(gameState.bonusType);
                                 setTeam1Score(gameState.team1Score);
@@ -3948,17 +3948,6 @@
             }
             
             // Main Game (your existing game code, but with dynamic teams)
-            // Guard against rendering before team data arrives from Firebase
-            if (!selectedTeam1 || !selectedTeam2) {
-                return (
-                    <div style={{
-                        position: 'fixed', inset: 0, backgroundColor: 'black',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                        <img src={`${imagePath}htl-logo.png`} alt="HTL" style={{height: '300px', objectFit: 'contain'}} />
-                    </div>
-                );
-            }
             return (
                 <>
                 <div className="relative w-screen h-screen" style={{
