@@ -827,6 +827,10 @@
                                     setWhiteFading(true);
                                     setBackgroundFading(true);
                                     setShowIntro(true);
+                                    // Play Team Announcement audio at white flash peak
+                                    const announceAudio = new Audio(`${audioPath}Team Announcement.mp3`);
+                                    announceAudio.volume = 1.0;
+                                    announceAudio.play().catch(() => {});
                                     setTimeout(() => { if (!streamSkipRef.current) setWhiteFading(false); }, 1500);
                                     setTimeout(() => { if (!streamSkipRef.current) setBackgroundFading(false); }, 3500);
                                     setTimeout(() => { if (!streamSkipRef.current) setIntroStep(1); }, 6000);
@@ -1707,10 +1711,6 @@
                             setCountdownFading(false);
                             setBackgroundFading(true);
                             setShowIntro(true);
-                            // Play Team Announcement audio at white flash peak
-                            const announceAudio = new Audio(`${audioPath}Team Announcement.mp3`);
-                            announceAudio.volume = 1.0;
-                            announceAudio.play().catch(() => {});
                             setTimeout(() => broadcastGameState(), 50);
                             // White fades out after 1.5 seconds
                             setTimeout(() => {
