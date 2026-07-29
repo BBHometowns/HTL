@@ -1408,9 +1408,7 @@
                         if (team1Score === team2Score) {
                             // Tie-breaker needed!
                             setIsTieBreaker(true);
-                            // Set opposite bonus type
-                            const oppositeBonusType = bonusType === 'closestTo' ? 'shootout' : 'closestTo';
-                            setTieBreakerType(oppositeBonusType);
+                            // Use the tieBreakerType already set in admin wizard - don't override it
                             setCurrentRound(14); // Tie-breaker round
                             setCurrentQuestion(1);
                             setActiveTeam(1);
