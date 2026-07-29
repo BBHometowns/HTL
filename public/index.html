@@ -745,6 +745,15 @@
                                 setDoubleDipSecondGuess(gameState.doubleDipSecondGuess || false);
                                 setDoubleDipTeam(gameState.doubleDipTeam ?? null);
                                 setDoubleDipActive(gameState.doubleDipActive || false);
+                                // Countdown and intro states
+                                setShowCountdown(gameState.showCountdown || false);
+                                setCountdownNumber(gameState.countdownNumber ?? null);
+                                setCountdownFlipping(gameState.countdownFlipping || false);
+                                setCountdownFading(gameState.countdownFading || false);
+                                setBackgroundFading(gameState.backgroundFading || false);
+                                setWhiteFading(gameState.whiteFading || false);
+                                setShowIntro(gameState.showIntro || false);
+                                setIntroStep(gameState.introStep ?? 0);
                                 
                                 if (gameState.teamsConfirmed && !gameState.gameStarted) {
                                     setTeamsConfirmed(true);
@@ -809,6 +818,15 @@
                     return () => timers.forEach(timer => clearTimeout(timer));
                 }
             }, [showIntro, userMode]);
+
+            // Play countdown audio on Stream when countdown starts
+            useEffect(() => {
+                if (userMode === 'stream' && showCountdown) {
+                    const audio = new Audio(`${audioPath}countdown.mp3`);
+                    audio.play().catch(() => {});
+                    return () => { audio.pause(); audio.currentTime = 0; };
+                }
+            }, [userMode, showCountdown]);
 
             // Animate waiting dots for stream waiting screen
             useEffect(() => {
@@ -3506,7 +3524,7 @@
             }
             
             // Stream Waiting Screen - Shows HTL Logo while host sets up
-            if (!gameStarted && !showIntro && userMode === 'stream') {
+            if (!gameStarted && !showIntro && !showCountdown && userMode === 'stream') {
                 return (
                     <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
