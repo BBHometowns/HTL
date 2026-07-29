@@ -387,6 +387,9 @@
             const [isConnected, setIsConnected] = useState(false);
             const [socket, setSocket] = useState(null);
             const [showRoomSetup, setShowRoomSetup] = useState(false);
+            const [showTestMode, setShowTestMode] = useState(false);
+            const [testModeRound, setTestModeRound] = useState(7);
+            const [testModeBonusType, setTestModeBonusType] = useState('closestTo');
             const [waitingDots, setWaitingDots] = useState('.');
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
@@ -2525,6 +2528,19 @@
                             >
                                 {userMode === 'host' ? 'CREATE ROOM' : 'JOIN ROOM'}
                             </button>
+                            {userMode === 'host' && (
+                                <button
+                                    onClick={() => {
+                                        // Generate a test room code and enter test mode
+                                        const testCode = 'TEST' + Math.floor(1000 + Math.random() * 9000);
+                                        setRoomCode(testCode);
+                                        setShowTestMode(true);
+                                    }}
+                                    className="w-full mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-4 px-8 rounded-lg border-4 border-black text-2xl"
+                                >
+                                    TEST MODE
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     setUserMode(null);
@@ -2539,6 +2555,138 @@
                 );
             }
             
+            // Test Mode Setup Screen
+            if (userMode === 'host' && showTestMode && !gameStarted) {
+                return (
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
+                        backgroundImage: `url(${imagePath}background.png)`,
+                        backgroundSize: '115%',
+                        backgroundPosition: '35% center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundColor: 'black'
+                    }}>
+                        <div className="bg-gray-900 rounded-3xl p-8 border-8" style={{
+                            borderColor: '#f59e0b',
+                            maxWidth: '700px',
+                            width: '100%'
+                        }}>
+                            <div className="text-center mb-8">
+                                <div className="text-yellow-400 font-bold text-5xl mb-2">🧪 TEST MODE</div>
+                                <div className="text-gray-400 text-xl">Room Code: <span className="text-white font-bold font-mono">{roomCode}</span></div>
+                                <div className="text-gray-500 text-sm mt-1">Stream can join using this code</div>
+                            </div>
+
+                            {/* Round Type Selection */}
+                            <div className="mb-6">
+                                <p className="text-white font-bold text-xl mb-3">Round Type:</p>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setTestModeRound(7)}
+                                        className={`flex-1 py-4 rounded-lg border-4 font-bold text-xl ${testModeRound === 7 ? 'bg-purple-600 border-purple-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}
+                                    >
+                                        ROUND 7 (BONUS)
+                                    </button>
+                                    <button
+                                        onClick={() => setTestModeRound(14)}
+                                        className={`flex-1 py-4 rounded-lg border-4 font-bold text-xl ${testModeRound === 14 ? 'bg-purple-600 border-purple-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}
+                                    >
+                                        ROUND 14 (TIEBREAKER)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Bonus Type Selection */}
+                            <div className="mb-8">
+                                <p className="text-white font-bold text-xl mb-3">Bonus Type:</p>
+                                <div className="flex gap-4">
+                                    {['closestTo', 'shootout', 'bottomsUp'].map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setTestModeBonusType(type)}
+                                            className={`flex-1 py-4 rounded-lg border-4 font-bold text-lg ${testModeBonusType === type ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}
+                                        >
+                                            {type === 'closestTo' ? 'CLOSEST TO' : type === 'shootout' ? 'SHOOTOUT' : 'BOTTOMS UP'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Start Test Button */}
+                            <button
+                                onClick={() => {
+                                    // Pick 2 random teams
+                                    const shuffled = [...teamsData].sort(() => Math.random() - 0.5);
+                                    const team1 = shuffled[0];
+                                    const team2 = shuffled[1];
+                                    setSelectedTeam1(team1);
+                                    setSelectedTeam2(team2);
+                                    
+                                    // Set round and bonus type
+                                    setCurrentRound(testModeRound);
+                                    if (testModeRound === 7) {
+                                        setBonusType(testModeBonusType);
+                                        setTieBreakerType('closestTo');
+                                    } else {
+                                        setBonusType('closestTo');
+                                        setTieBreakerType(testModeBonusType);
+                                        setIsTieBreaker(true);
+                                    }
+                                    
+                                    // Select random questions
+                                    if (testModeBonusType === 'bottomsUp' && bottomsUpQuestions.length > 0) {
+                                        const idx = Math.floor(Math.random() * bottomsUpQuestions.length);
+                                        setBottomsUpQuestion(bottomsUpQuestions[idx]);
+                                        if (testModeRound === 14) setTieBreakerBottomsUpQuestion(bottomsUpQuestions[idx]);
+                                    }
+                                    if (testModeBonusType === 'shootout' && shootoutQuestions.length > 0) {
+                                        const idx = Math.floor(Math.random() * shootoutQuestions.length);
+                                        if (testModeRound === 7) setSelectedShootoutQuestion(shootoutQuestions[idx]);
+                                        else setSelectedTieBreakerShootoutQuestion(shootoutQuestions[idx]);
+                                    }
+                                    
+                                    // Set scores to 0-0
+                                    setTeam1Score(0);
+                                    setTeam2Score(0);
+                                    setBonusScore1(0);
+                                    setBonusScore2(0);
+                                    
+                                    // Set timers
+                                    setTeam1Time(30);
+                                    setTeam2Time(15);
+                                    setActiveTeam(1);
+                                    setActiveTimer(1);
+                                    
+                                    // Skip straight to bonus round
+                                    setTeamsConfirmed(true);
+                                    setShowCategory(false);
+                                    setShowQuestion(false);
+                                    setShowAnswer(false);
+                                    setGameStarted(true);
+                                    setShowTestMode(false);
+                                    
+                                    // Connect to Firebase so Stream can see it
+                                    setShouldConnect(true);
+                                    setTimeout(() => broadcastGameState(), 300);
+                                }}
+                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-5 rounded-lg border-4 border-black text-2xl mb-3"
+                            >
+                                START TEST
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setShowTestMode(false);
+                                    setRoomCode('');
+                                }}
+                                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg border-4 border-black text-xl"
+                            >
+                                BACK TO ROOM CREATION
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
             // Admin Setup Wizard (HOST ONLY) - Steps 1-5
             if (userMode === 'host' && !gameStarted && !showIntro && !showCountdown && !backgroundFading && (!teamsConfirmed || adminStep === 5)) {
                 return (
@@ -3295,6 +3443,12 @@
                         backgroundPosition: '35% center',
                         backgroundRepeat: 'no-repeat'
                     }}>
+                        {roomCode && (
+                            <div className="text-center mb-4">
+                                <p className="text-gray-400 text-2xl">Room Code</p>
+                                <p className="text-white font-black text-5xl font-mono" style={{WebkitTextStroke: '2px black'}}>{roomCode}</p>
+                            </div>
+                        )}
                         <img 
                             src={`${imagePath}htl-logo.png`}
                             alt="HTL - Hometown Trivia League" 
@@ -4123,6 +4277,32 @@
                                     >
                                         END MATCH
                                     </button>
+                                    {roomCode.startsWith('TEST') && (
+                                        <button
+                                            onClick={() => {
+                                                // Reset game state and go back to test mode screen
+                                                setGameStarted(false);
+                                                setTeamsConfirmed(false);
+                                                setShowCategory(false);
+                                                setShowQuestion(false);
+                                                setShowAnswer(false);
+                                                setBonusScore1(0);
+                                                setBonusScore2(0);
+                                                setTeam1Score(0);
+                                                setTeam2Score(0);
+                                                setShootoutBoardRevealed(false);
+                                                setShootoutRevealedAnswers([]);
+                                                setShootoutComplete(false);
+                                                setShootoutBoxExpanded(false);
+                                                setBottomsUpPhase('reveal');
+                                                setShowTestMode(true);
+                                            }}
+                                            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-4 px-12 rounded-lg border-4 border-black text-2xl"
+                                            style={{pointerEvents: 'auto'}}
+                                        >
+                                            BACK TO TEST MODE
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </>
