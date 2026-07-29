@@ -763,49 +763,34 @@
                             }
                         });
 
-                        return () => {
-                            gameStateRef.off();
-                        };
-                    }
-                    
-                    // Stream watches matchStartTimestamp to run its own local countdown+intro
-                    if (userMode === 'stream') {
+                        // Also watch matchStartTimestamp to trigger local countdown+intro
                         const tsRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
                         tsRef.on('value', (snapshot) => {
                             const ts = snapshot.val();
                             if (!ts || streamIntroStartedRef.current) return;
+                            console.log('🚀 Stream received matchStartTimestamp, starting local sequence');
                             streamIntroStartedRef.current = true;
                             
-                            // Play audio immediately
                             if (!streamAudioRef.current) {
                                 streamAudioRef.current = new Audio(`${audioPath}countdown.mp3`);
                                 streamAudioRef.current.volume = 1.0;
                                 streamAudioRef.current.play().catch(e => console.log('Audio failed:', e.message));
                             }
                             
-                            // Calculate how much time has elapsed since timestamp was set
-                            const elapsed = Date.now() - ts;
-                            const offset = Math.max(0, elapsed);
+                            const elapsed = Math.max(0, Date.now() - ts);
                             
-                            // Start countdown sequence - each number shows for 1000ms
                             setShowCountdown(true);
                             for (let i = 0; i < 10; i++) {
                                 const num = 10 - i;
-                                const showAt = Math.max(0, i * 1000 - offset);
-                                const flipAt = Math.max(0, i * 1000 + 850 - offset);
                                 setTimeout(() => {
-                                    if (!streamIntroStartedRef.current) return;
                                     setCountdownFlipping(false);
                                     setCountdownNumber(num);
-                                }, showAt);
+                                }, Math.max(0, i * 1000 - elapsed));
                                 setTimeout(() => {
-                                    if (!streamIntroStartedRef.current) return;
                                     setCountdownFlipping(true);
-                                }, flipAt);
+                                }, Math.max(0, i * 1000 + 850 - elapsed));
                             }
                             
-                            // After countdown: white flash
-                            const flashAt = Math.max(0, 10000 - offset);
                             setTimeout(() => {
                                 setCountdownFading(true);
                                 setTimeout(() => {
@@ -814,24 +799,20 @@
                                     setWhiteFading(true);
                                     setBackgroundFading(true);
                                     setShowIntro(true);
-                                    // White fades out
                                     setTimeout(() => setWhiteFading(false), 1500);
-                                    // Background fades in
                                     setTimeout(() => setBackgroundFading(false), 3500);
-                                    // Intro steps (team logos fly in etc) - matching Host timing
                                     setTimeout(() => setIntroStep(1), 6000);
                                     setTimeout(() => setIntroStep(2), 7500);
                                     setTimeout(() => setIntroStep(3), 9000);
                                     setTimeout(() => setIntroStep(4), 10000);
                                     setTimeout(() => setIntroStep(5), 11000);
-                                    setTimeout(() => {
-                                        setShowIntro(false);
-                                        // Don't set gameStarted - wait for Host broadcast
-                                    }, 12000);
+                                    setTimeout(() => setShowIntro(false), 12000);
                                 }, 2000);
-                            }, flashAt);
+                            }, Math.max(0, 10000 - elapsed));
                         });
+
                         return () => {
+                            gameStateRef.off();
                             tsRef.off();
                         };
                     }
