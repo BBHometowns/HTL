@@ -943,6 +943,23 @@
                 }
             }, [userMode, currentTrack, isPlaying, trackPosition]);
 
+            // Host: stop any soundbar track the moment the winner reveal begins,
+            // so Winner.mp3 is the only thing playing (no overlap).
+            useEffect(() => {
+                if (userMode === 'host' && showWinnerScreen && (currentTrack || isPlaying)) {
+                    setCurrentTrack(null);
+                    setIsPlaying(false);
+                    setTrackPosition(0);
+                    if (roomCode) {
+                        database.ref(`rooms/${roomCode}/gameState`).update({
+                            currentTrack: null,
+                            isPlaying: false,
+                            trackPosition: 0,
+                        });
+                    }
+                }
+            }, [userMode, showWinnerScreen]);
+
             // Animate waiting dots for stream waiting screen
             useEffect(() => {
                 if (userMode === 'stream' && !gameStarted && !showIntro) {
@@ -5250,8 +5267,8 @@
                             ))}
                         </div>
 
-                        {/* Soundbar - Host only */}
-                        {userMode === 'host' && (
+                        {/* Soundbar - Host only, hidden once winner reveal begins */}
+                        {userMode === 'host' && !showWinnerScreen && (
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -5281,14 +5298,16 @@
                                             title={track.title}
                                             onClick={() => {
                                                 if (currentTrack === track.name && isPlaying) return;
-                                                // Save position of current track before switching
-                                                if (soundbarAudioRef.current && currentTrack !== track.name) {
-                                                    setTrackPosition(0);
-                                                }
                                                 setCurrentTrack(track.name);
                                                 setIsPlaying(true);
                                                 setTrackPosition(0);
-                                                setTimeout(() => broadcastGameState(), 50);
+                                                if (roomCode) {
+                                                    database.ref(`rooms/${roomCode}/gameState`).update({
+                                                        currentTrack: track.name,
+                                                        isPlaying: true,
+                                                        trackPosition: 0,
+                                                    });
+                                                }
                                             }}
                                             style={{
                                                 width: '44px',
@@ -5317,12 +5336,13 @@
                                     title={isPlaying ? 'Pause' : 'Play'}
                                     onClick={() => {
                                         if (!currentTrack) return;
-                                        // Save current position before pausing
-                                        if (isPlaying && soundbarAudioRef.current) {
-                                            setTrackPosition(soundbarAudioRef.current.currentTime);
+                                        const nextIsPlaying = !isPlaying;
+                                        setIsPlaying(nextIsPlaying);
+                                        if (roomCode) {
+                                            database.ref(`rooms/${roomCode}/gameState`).update({
+                                                isPlaying: nextIsPlaying,
+                                            });
                                         }
-                                        setIsPlaying(!isPlaying);
-                                        setTimeout(() => broadcastGameState(), 50);
                                     }}
                                     style={{
                                         width: '44px',
@@ -5348,7 +5368,13 @@
                                         setCurrentTrack(null);
                                         setIsPlaying(false);
                                         setTrackPosition(0);
-                                        setTimeout(() => broadcastGameState(), 50);
+                                        if (roomCode) {
+                                            database.ref(`rooms/${roomCode}/gameState`).update({
+                                                currentTrack: null,
+                                                isPlaying: false,
+                                                trackPosition: 0,
+                                            });
+                                        }
                                     }}
                                     style={{
                                         width: '44px',
