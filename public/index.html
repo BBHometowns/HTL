@@ -825,6 +825,22 @@
 
                         // Also watch matchStartTimestamp to trigger local countdown+intro
                         const tsRef = database.ref(`rooms/${roomCode}/matchStartTimestamp`);
+
+                        // Before attaching the listener above, check ONCE whether this Stream is
+                        // rejoining a match that's already in progress (e.g. a page refresh mid-game).
+                        // matchStartTimestamp is never cleared from Firebase, so without this check
+                        // the listener below would replay the full countdown/intro/audio sequence
+                        // every time the Stream reconnects, even well into Round 1 or later.
+                        // We wait for this check to finish before attaching tsRef.on(...) so there's
+                        // no race between the two - it's not enough to just start the check earlier,
+                        // since matchStartTimestamp is a single small value and often loads faster
+                        // than the full gameState object we're checking here.
+                        gameStateRef.once('value').then((existingSnapshot) => {
+                        const existingState = existingSnapshot.val();
+                        if (existingState && existingState.gameStarted) {
+                            streamIntroStartedRef.current = true;
+                        }
+
                         tsRef.on('value', (snapshot) => {
                             const ts = snapshot.val();
                             if (!ts || streamIntroStartedRef.current) return;
@@ -884,6 +900,7 @@
                                     setTimeout(() => { if (!streamSkipRef.current) setShowIntro(false); }, 12000);
                                 }, 2000);
                             }, Math.max(0, visualStart + 10000 - elapsed));
+                        });
                         });
 
                         return () => {
