@@ -290,6 +290,39 @@
             pointer-events: none;
             transition: opacity 0.5s ease-out;
         }
+        .soundbar-volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 90px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.25);
+            outline: none;
+            cursor: pointer;
+        }
+        .soundbar-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        .soundbar-volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        .soundbar-volume-slider::-moz-range-track {
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.25);
+        }
     </style>
 </head>
 <body>
@@ -382,6 +415,8 @@
             const [currentTrack, setCurrentTrack] = useState(null);
             const [isPlaying, setIsPlaying] = useState(false);
             const [trackPosition, setTrackPosition] = useState(0);
+            const [soundbarVolume, setSoundbarVolume] = useState(1); // 1 = 100%, can only go down from here
+            const [showVolumeTooltip, setShowVolumeTooltip] = useState(false);
             const soundbarAudioRef = React.useRef(null);
             const [winnerTeam, setWinnerTeam] = useState(null);
 
@@ -755,6 +790,7 @@
                                 setCurrentTrack(gameState.currentTrack ?? null);
                                 setIsPlaying(gameState.isPlaying || false);
                                 setTrackPosition(gameState.trackPosition ?? 0);
+                                setSoundbarVolume(gameState.soundbarVolume ?? 1);
                                 // Countdown and intro states no longer synced via gameState
                                 // Stream runs its own local sequence triggered by matchStartTimestamp
                                 
@@ -926,7 +962,7 @@
                         soundbarAudioRef.current._track = currentTrack;
                         soundbarAudioRef.current.currentTime = trackPosition;
                         soundbarAudioRef.current.loop = (currentTrack !== LIGHTS_DOWN);
-                        soundbarAudioRef.current.volume = 1.0;
+                        soundbarAudioRef.current.volume = soundbarVolume;
                         soundbarAudioRef.current.play().catch(() => {});
                     } else {
                         // Same track - just resume from saved position
@@ -942,6 +978,14 @@
                     soundbarAudioRef.current = null;
                 }
             }, [userMode, currentTrack, isPlaying, trackPosition]);
+
+            // Stream: keep the currently playing soundbar track's volume in sync
+            // with the Host's slider in real time, without restarting playback.
+            useEffect(() => {
+                if (userMode === 'stream' && soundbarAudioRef.current) {
+                    soundbarAudioRef.current.volume = soundbarVolume;
+                }
+            }, [userMode, soundbarVolume]);
 
             // Host: stop any soundbar track the moment the winner reveal begins,
             // so Winner.mp3 is the only thing playing (no overlap).
@@ -1883,6 +1927,7 @@
                         currentTrack,
                         isPlaying,
                         trackPosition,
+                        soundbarVolume,
                     };
                     
                     database.ref(`rooms/${roomCode}/gameState`).set(gameState);
@@ -5283,6 +5328,53 @@
                                 marginLeft: 'auto',
                                 marginRight: 'auto',
                             }}>
+                                {/* Volume slider */}
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    {showVolumeTooltip && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '28px',
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            background: 'rgba(0,0,0,0.85)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            borderRadius: '6px',
+                                            padding: '3px 8px',
+                                            fontSize: '12px',
+                                            fontWeight: 'bold',
+                                            color: '#4ade80',
+                                            whiteSpace: 'nowrap',
+                                            pointerEvents: 'none',
+                                        }}>
+                                            {Math.round(soundbarVolume * 100)}%
+                                        </div>
+                                    )}
+                                    <input
+                                        type="range"
+                                        className="soundbar-volume-slider"
+                                        min="0"
+                                        max="100"
+                                        value={Math.round(soundbarVolume * 100)}
+                                        onChange={(e) => {
+                                            const newVolume = Number(e.target.value) / 100;
+                                            setSoundbarVolume(newVolume);
+                                            if (roomCode) {
+                                                database.ref(`rooms/${roomCode}/gameState`).update({
+                                                    soundbarVolume: newVolume,
+                                                });
+                                            }
+                                        }}
+                                        onMouseDown={() => setShowVolumeTooltip(true)}
+                                        onMouseUp={() => setShowVolumeTooltip(false)}
+                                        onTouchStart={() => setShowVolumeTooltip(true)}
+                                        onTouchEnd={() => setShowVolumeTooltip(false)}
+                                        title="Soundbar volume"
+                                    />
+                                </div>
+
+                                {/* Divider */}
+                                <div style={{width: '1px', height: '30px', background: 'rgba(255,255,255,0.2)'}} />
+
                                 {/* Track buttons */}
                                 {[
                                     { label: '🌑', name: 'Lights Down.mp3', title: 'Lights Down' },
