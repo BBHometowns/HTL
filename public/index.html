@@ -2523,7 +2523,7 @@
             // Password Login Screen
             if (!adminAuthenticated) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2554,7 +2554,7 @@
             // Mode Selection Screen (Host or Stream)
             if (adminAuthenticated && showRoomSetup && !userMode) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2584,7 +2584,7 @@
             // Room Code Entry Screen
             if (adminAuthenticated && showRoomSetup && userMode && !isConnected) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2810,7 +2810,7 @@
             // Test Mode Setup Screen
             if (userMode === 'host' && showTestMode && !gameStarted) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
+                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2946,7 +2946,7 @@
             // Admin Setup Wizard (HOST ONLY) - Steps 1-5
             if (userMode === 'host' && !gameStarted && !showIntro && !showCountdown && !backgroundFading && (!teamsConfirmed || adminStep === 5)) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
+                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2956,7 +2956,7 @@
                             borderColor: '#7d3ad4',
                             maxWidth: '1200px',
                             minHeight: '700px',
-                            maxHeight: '90vh',
+                            maxHeight: '972px', // was 90vh, now fixed to 90% of the 1080px canvas
                             overflow: 'hidden'
                         }}>
 
@@ -2976,7 +2976,7 @@
                                             alt="Question Image Preview"
                                             style={{
                                                 maxWidth: '900px',
-                                                maxHeight: '75vh',
+                                                maxHeight: '810px', // was 75vh, now fixed to 75% of the 1080px canvas
                                                 width: 'auto',
                                                 height: 'auto',
                                                 objectFit: 'contain',
@@ -3724,7 +3724,7 @@
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !streamIntroStartedRef.current && userMode === 'stream') {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
+                    <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -3749,7 +3749,7 @@
             // Team Selection Screen (DEPRECATED - Now using Admin Modal)
             if (false && !gameStarted && !showIntro && !teamsConfirmed) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center p-8" style={{
+                    <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -3834,7 +3834,7 @@
             // Intro Animation Screen
             if (showIntro) {
                 return (
-                    <div className="relative w-screen h-screen overflow-hidden" style={{backgroundColor: 'black'}}>
+                    <div className="relative w-full h-full overflow-hidden" style={{backgroundColor: 'black'}}>
                         
                         {/* Background image - fades in after black appears */}
                         <div style={{
@@ -4188,7 +4188,7 @@
             // Main Game (your existing game code, but with dynamic teams)
             return (
                 <>
-                <div className="relative w-screen h-screen" style={{
+                <div className="relative w-full h-full" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
                     backgroundSize: '115%',
                     backgroundPosition: '35% center',
@@ -4298,13 +4298,14 @@
                             className="image-overlay-fade"
                             style={{
                                 position: 'fixed',
-                                top: '5%',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
+                                top: '162px',
+                                left: '560px',
+                                width: '800px',
+                                height: '756px',
                                 zIndex: 45,
                                 pointerEvents: 'none',
                                 display: 'flex',
-                                alignItems: 'flex-start',
+                                alignItems: 'center',
                                 justifyContent: 'center'
                             }}
                         >
@@ -4328,7 +4329,7 @@
                                     onError={() => setImageLoadError(true)}
                                     style={{
                                         maxWidth: '800px',
-                                        maxHeight: '70vh',
+                                        maxHeight: '756px', // was 70vh, now fixed to 70% of the 1080px canvas
                                         width: 'auto',
                                         height: 'auto',
                                         objectFit: 'contain',
@@ -4401,7 +4402,7 @@
                                     borderColor: '#7d3ad4',
                                     maxWidth: '1100px',
                                     width: '90%',
-                                    maxHeight: '80vh',
+                                    maxHeight: '864px', // was 80vh, now fixed to 80% of the 1080px canvas
                                     overflowY: 'auto'
                                 }}>
 
@@ -4826,8 +4827,10 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                transform: timersExpanded ? 'translateX(-900px)' : 'translateX(0)',
-                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
+                                position: timersExpanded ? 'fixed' : 'relative',
+                                top: timersExpanded ? '440px' : 'auto',
+                                left: timersExpanded ? '320px' : 'auto',
+                                transition: isResuming ? 'none' : 'all 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 1) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') ||
@@ -4865,8 +4868,10 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                transform: timersExpanded ? 'translateX(900px)' : 'translateX(0)',
-                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
+                                position: timersExpanded ? 'fixed' : 'relative',
+                                top: timersExpanded ? '440px' : 'auto',
+                                left: timersExpanded ? '1400px' : 'auto',
+                                transition: isResuming ? 'none' : 'all 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 2) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') || 
@@ -5520,7 +5525,56 @@
             );
         }
 
-        ReactDOM.render(<TriviaGame />, document.getElementById('root'));
+        // ScaledCanvas: renders its children on a fixed 1920x1080 "virtual screen",
+        // then scales that whole virtual screen up or down (via CSS transform) to fit
+        // whatever browser window it's actually displayed in - StreamYard, a laptop,
+        // a phone, whatever. Because the canvas itself is always exactly 1920x1080,
+        // every pixel value and percentage inside TriviaGame now means the same real
+        // thing every time, on every machine, instead of shifting based on each
+        // host's actual window size like it did before.
+        function ScaledCanvas({ children }) {
+            const CANVAS_WIDTH = 1920;
+            const CANVAS_HEIGHT = 1080;
+            const [scale, setScale] = React.useState(1);
+
+            React.useEffect(() => {
+                const updateScale = () => {
+                    const scaleX = window.innerWidth / CANVAS_WIDTH;
+                    const scaleY = window.innerHeight / CANVAS_HEIGHT;
+                    // Use the smaller of the two so the whole 1920x1080 canvas always
+                    // fits on screen without cropping (may letterbox on odd aspect ratios).
+                    setScale(Math.min(scaleX, scaleY));
+                };
+                updateScale();
+                window.addEventListener('resize', updateScale);
+                return () => window.removeEventListener('resize', updateScale);
+            }, []);
+
+            return (
+                <div style={{
+                    width: '100vw',
+                    height: '100vh',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'black'
+                }}>
+                    <div style={{
+                        width: `${CANVAS_WIDTH}px`,
+                        height: `${CANVAS_HEIGHT}px`,
+                        flexShrink: 0,
+                        transform: `scale(${scale})`,
+                        transformOrigin: 'center center',
+                        position: 'relative'
+                    }}>
+                        {children}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ScaledCanvas><TriviaGame /></ScaledCanvas>, document.getElementById('root'));
     </script>
 </body>
 </html>
