@@ -331,7 +331,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function TriviaGame() {
+        function TriviaGame({ onModeChange }) {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
             const [currentRound, setCurrentRound] = useState(1);
@@ -422,6 +422,12 @@
 
             // Stream profile states
             const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
+
+            // Let the outer ScaledCanvas know which mode we're in, so it can apply
+            // the right extra "everything fits, no zoom needed" safety scale below.
+            useEffect(() => {
+                if (onModeChange) onModeChange(userMode);
+            }, [userMode]);
             const [roomCode, setRoomCode] = useState('');
             const [shouldConnect, setShouldConnect] = useState(false);
             const [isConnected, setIsConnected] = useState(false);
@@ -5525,17 +5531,18 @@
             );
         }
 
-        // ScaledCanvas: renders its children on a fixed 1920x1080 "virtual screen",
+        // ScaledCanvas: renders TriviaGame on a fixed 1920x1080 "virtual screen",
         // then scales that whole virtual screen up or down (via CSS transform) to fit
         // whatever browser window it's actually displayed in - StreamYard, a laptop,
         // a phone, whatever. Because the canvas itself is always exactly 1920x1080,
         // every pixel value and percentage inside TriviaGame now means the same real
         // thing every time, on every machine, instead of shifting based on each
         // host's actual window size like it did before.
-        function ScaledCanvas({ children }) {
+        function ScaledCanvas() {
             const CANVAS_WIDTH = 1920;
             const CANVAS_HEIGHT = 1080;
             const [scale, setScale] = React.useState(1);
+            const [contentScale, setContentScale] = React.useState(1);
 
             React.useEffect(() => {
                 const updateScale = () => {
@@ -5549,6 +5556,16 @@
                 window.addEventListener('resize', updateScale);
                 return () => window.removeEventListener('resize', updateScale);
             }, []);
+
+            // Extra "everything fits, no one needs to zoom" safety scale, applied on
+            // top of the window-fit scale above. 0.8 and 0.75 are the exact numbers
+            // confirmed by hand: everything fit at 80% browser zoom on Stream and
+            // 75% on Host, so that same shrink is baked in here instead, permanently.
+            const handleModeChange = (mode) => {
+                if (mode === 'stream') setContentScale(0.8);
+                else if (mode === 'host') setContentScale(0.75);
+                else setContentScale(1);
+            };
 
             return (
                 <div style={{
@@ -5568,13 +5585,20 @@
                         transformOrigin: 'center center',
                         position: 'relative'
                     }}>
-                        {children}
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            transform: `scale(${contentScale})`,
+                            transformOrigin: 'center center'
+                        }}>
+                            <TriviaGame onModeChange={handleModeChange} />
+                        </div>
                     </div>
                 </div>
             );
         }
 
-        ReactDOM.render(<ScaledCanvas><TriviaGame /></ScaledCanvas>, document.getElementById('root'));
+        ReactDOM.render(<ScaledCanvas />, document.getElementById('root'));
     </script>
 </body>
 </html>
