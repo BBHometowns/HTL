@@ -331,7 +331,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function TriviaGame({ portalRoot }) {
+        function TriviaGame({ portalRoot, onModeChange }) {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
             const [currentRound, setCurrentRound] = useState(1);
@@ -422,6 +422,12 @@
 
             // Stream profile states
             const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
+
+            // Let the outer ScaledCanvas know which mode we're in, so it can shrink
+            // the content down to a size that's confirmed to actually fit.
+            useEffect(() => {
+                if (onModeChange) onModeChange(userMode);
+            }, [userMode]);
             const [roomCode, setRoomCode] = useState('');
             const [shouldConnect, setShouldConnect] = useState(false);
             const [isConnected, setIsConnected] = useState(false);
@@ -564,17 +570,24 @@
 
             // Measure answer text position for image overlay portal
             useEffect(() => {
-                if (showImageOverlay && answerTextRef.current) {
+                if (showImageOverlay && answerTextRef.current && portalRoot) {
                     const rect = answerTextRef.current.getBoundingClientRect();
+                    const rootRect = portalRoot.getBoundingClientRect();
+                    // portalRoot is itself scaled by the outer fit-to-window transform,
+                    // so a raw screen-pixel measurement can't be used directly - convert
+                    // it into portalRoot's own local (unscaled, 1920-wide) pixel space
+                    // first, or this drifts out of alignment on any screen that isn't
+                    // exactly 1920x1080.
+                    const rootScale = rootRect.width / portalRoot.offsetWidth;
                     setAnswerTextPosition({
-                        top: rect.top,
-                        left: rect.left,
-                        width: rect.width
+                        top: (rect.top - rootRect.top) / rootScale,
+                        left: (rect.left - rootRect.left) / rootScale,
+                        width: rect.width / rootScale
                     });
                 } else {
                     setAnswerTextPosition(null);
                 }
-            }, [showAnswer, showImageOverlay]);
+            }, [showAnswer, showImageOverlay, portalRoot]);
 
             // Load Google Sheets data on page load
             useEffect(() => {
@@ -5543,6 +5556,7 @@
             const CANVAS_HEIGHT = 1080;
             const [scale, setScale] = React.useState(1);
             const [portalRoot, setPortalRoot] = React.useState(null);
+            const [contentScale, setContentScale] = React.useState(1);
 
             React.useEffect(() => {
                 const updateScale = () => {
@@ -5556,6 +5570,18 @@
                 window.addEventListener('resize', updateScale);
                 return () => window.removeEventListener('resize', updateScale);
             }, []);
+
+            // Extra "everything fits, no one needs to zoom" safety scale, applied on
+            // top of the window-fit scale above. 0.8 and 0.75 are the exact numbers
+            // confirmed by hand previously: everything fit at 80% browser zoom on
+            // Stream and 75% on Host. The underlying game layout hasn't changed since
+            // that test, so these are still the best numbers available - flag it to
+            // Sam if either one still needs adjusting.
+            const handleModeChange = (mode) => {
+                if (mode === 'stream') setContentScale(0.8);
+                else if (mode === 'host') setContentScale(0.75);
+                else setContentScale(1);
+            };
 
             return (
                 <div style={{
@@ -5578,7 +5604,14 @@
                             position: 'relative'
                         }}
                     >
-                        <TriviaGame portalRoot={portalRoot} />
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            transform: `scale(${contentScale})`,
+                            transformOrigin: 'center center'
+                        }}>
+                            <TriviaGame portalRoot={portalRoot} onModeChange={handleModeChange} />
+                        </div>
                     </div>
                 </div>
             );
