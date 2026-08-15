@@ -331,7 +331,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function TriviaGame({ onModeChange }) {
+        function TriviaGame({ portalRoot }) {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
             const [currentRound, setCurrentRound] = useState(1);
@@ -422,12 +422,6 @@
 
             // Stream profile states
             const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
-
-            // Let the outer ScaledCanvas know which mode we're in, so it can apply
-            // the right extra "everything fits, no zoom needed" safety scale below.
-            useEffect(() => {
-                if (onModeChange) onModeChange(userMode);
-            }, [userMode]);
             const [roomCode, setRoomCode] = useState('');
             const [shouldConnect, setShouldConnect] = useState(false);
             const [isConnected, setIsConnected] = useState(false);
@@ -4304,14 +4298,13 @@
                             className="image-overlay-fade"
                             style={{
                                 position: 'fixed',
-                                top: '162px',
-                                left: '560px',
-                                width: '800px',
-                                height: '756px',
+                                top: '5%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
                                 zIndex: 45,
                                 pointerEvents: 'none',
                                 display: 'flex',
-                                alignItems: 'center',
+                                alignItems: 'flex-start',
                                 justifyContent: 'center'
                             }}
                         >
@@ -4833,10 +4826,8 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                position: timersExpanded ? 'fixed' : 'relative',
-                                top: timersExpanded ? '440px' : 'auto',
-                                left: timersExpanded ? '320px' : 'auto',
-                                transition: isResuming ? 'none' : 'all 0.8s ease-in-out',
+                                transform: timersExpanded ? 'translateX(-900px)' : 'translateX(0)',
+                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 1) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') ||
@@ -4874,10 +4865,8 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                position: timersExpanded ? 'fixed' : 'relative',
-                                top: timersExpanded ? '440px' : 'auto',
-                                left: timersExpanded ? '1400px' : 'auto',
-                                transition: isResuming ? 'none' : 'all 0.8s ease-in-out',
+                                transform: timersExpanded ? 'translateX(900px)' : 'translateX(0)',
+                                transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 2) || 
                                          ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'closestTo') || 
@@ -5079,7 +5068,10 @@
                                                         }}>
                                                             {currentAnswerText}
                                                         </p>,
-                                                        document.body
+                                                        // portalRoot keeps this inside the game canvas's own stacking
+                                                        // context; falls back to document.body only for the very
+                                                        // first instant before the canvas ref has attached.
+                                                        portalRoot || document.body
                                                     )}
                                                 </>
                                             ) : null}
@@ -5525,7 +5517,7 @@
                         pointerEvents: 'none',
                         animation: 'imageFadeIn 0.5s ease-in forwards'
                     }} />,
-                    document.body
+                    portalRoot || document.body
                 )}
                 </>
             );
@@ -5538,11 +5530,19 @@
         // every pixel value and percentage inside TriviaGame now means the same real
         // thing every time, on every machine, instead of shifting based on each
         // host's actual window size like it did before.
+        //
+        // portalRoot: some parts of the game (the darkened backdrop behind the image
+        // overlay, and the host-only answer-text overlay) use React portals to render
+        // themselves directly onto the page, escaping their normal position in the
+        // layout. Those MUST mount inside this scaled canvas rather than the true
+        // document.body - otherwise they render outside the canvas's transform and
+        // ignore its z-index/stacking order entirely, which is what caused the
+        // whole screen to go dark before. portalRoot is the DOM node they mount into.
         function ScaledCanvas() {
             const CANVAS_WIDTH = 1920;
             const CANVAS_HEIGHT = 1080;
             const [scale, setScale] = React.useState(1);
-            const [contentScale, setContentScale] = React.useState(1);
+            const [portalRoot, setPortalRoot] = React.useState(null);
 
             React.useEffect(() => {
                 const updateScale = () => {
@@ -5557,16 +5557,6 @@
                 return () => window.removeEventListener('resize', updateScale);
             }, []);
 
-            // Extra "everything fits, no one needs to zoom" safety scale, applied on
-            // top of the window-fit scale above. 0.8 and 0.75 are the exact numbers
-            // confirmed by hand: everything fit at 80% browser zoom on Stream and
-            // 75% on Host, so that same shrink is baked in here instead, permanently.
-            const handleModeChange = (mode) => {
-                if (mode === 'stream') setContentScale(0.8);
-                else if (mode === 'host') setContentScale(0.75);
-                else setContentScale(1);
-            };
-
             return (
                 <div style={{
                     width: '100vw',
@@ -5577,22 +5567,18 @@
                     justifyContent: 'center',
                     backgroundColor: 'black'
                 }}>
-                    <div style={{
-                        width: `${CANVAS_WIDTH}px`,
-                        height: `${CANVAS_HEIGHT}px`,
-                        flexShrink: 0,
-                        transform: `scale(${scale})`,
-                        transformOrigin: 'center center',
-                        position: 'relative'
-                    }}>
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            transform: `scale(${contentScale})`,
-                            transformOrigin: 'center center'
-                        }}>
-                            <TriviaGame onModeChange={handleModeChange} />
-                        </div>
+                    <div
+                        ref={(el) => { if (el && el !== portalRoot) setPortalRoot(el); }}
+                        style={{
+                            width: `${CANVAS_WIDTH}px`,
+                            height: `${CANVAS_HEIGHT}px`,
+                            flexShrink: 0,
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'center center',
+                            position: 'relative'
+                        }}
+                    >
+                        <TriviaGame portalRoot={portalRoot} />
                     </div>
                 </div>
             );
