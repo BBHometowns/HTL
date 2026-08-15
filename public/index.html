@@ -331,7 +331,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        function TriviaGame({ onModeChange }) {
+        function TriviaGame() {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
             const [currentRound, setCurrentRound] = useState(1);
@@ -422,12 +422,6 @@
 
             // Stream profile states
             const [userMode, setUserMode] = useState(null); // 'host' or 'stream'
-
-            // Let the outer ScaledCanvas know which mode we're in, so it can shrink
-            // the content down to a size that's confirmed to actually fit.
-            useEffect(() => {
-                if (onModeChange) onModeChange(userMode);
-            }, [userMode]);
             const [roomCode, setRoomCode] = useState('');
             const [shouldConnect, setShouldConnect] = useState(false);
             const [isConnected, setIsConnected] = useState(false);
@@ -486,6 +480,7 @@
             const [backgroundFading, setBackgroundFading] = useState(false);
             const [showBlackScreen, setShowBlackScreen] = useState(false);
             const [whiteFading, setWhiteFading] = useState(false);
+            const [answerTextPosition, setAnswerTextPosition] = useState(null);
 
             // Google Sheets data
             const [sheetsMatches, setSheetsMatches] = useState([]);
@@ -566,6 +561,20 @@
             
             const timer1Color = getTimerColor(timer1Value);
             const timer2Color = getTimerColor(timer2Value);
+
+            // Measure answer text position for image overlay portal
+            useEffect(() => {
+                if (showImageOverlay && answerTextRef.current) {
+                    const rect = answerTextRef.current.getBoundingClientRect();
+                    setAnswerTextPosition({
+                        top: rect.top,
+                        left: rect.left,
+                        width: rect.width
+                    });
+                } else {
+                    setAnswerTextPosition(null);
+                }
+            }, [showAnswer, showImageOverlay]);
 
             // Load Google Sheets data on page load
             useEffect(() => {
@@ -2514,7 +2523,7 @@
             // Password Login Screen
             if (!adminAuthenticated) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2545,7 +2554,7 @@
             // Mode Selection Screen (Host or Stream)
             if (adminAuthenticated && showRoomSetup && !userMode) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2575,7 +2584,7 @@
             // Room Code Entry Screen
             if (adminAuthenticated && showRoomSetup && userMode && !isConnected) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2801,7 +2810,7 @@
             // Test Mode Setup Screen
             if (userMode === 'host' && showTestMode && !gameStarted) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center p-8" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2937,7 +2946,7 @@
             // Admin Setup Wizard (HOST ONLY) - Steps 1-5
             if (userMode === 'host' && !gameStarted && !showIntro && !showCountdown && !backgroundFading && (!teamsConfirmed || adminStep === 5)) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex items-center justify-center p-8" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -2947,7 +2956,7 @@
                             borderColor: '#7d3ad4',
                             maxWidth: '1200px',
                             minHeight: '700px',
-                            maxHeight: '972px', // was 90vh, now fixed to 90% of the 1080px canvas
+                            maxHeight: '90vh',
                             overflow: 'hidden'
                         }}>
 
@@ -2967,7 +2976,7 @@
                                             alt="Question Image Preview"
                                             style={{
                                                 maxWidth: '900px',
-                                                maxHeight: '810px', // was 75vh, now fixed to 75% of the 1080px canvas
+                                                maxHeight: '75vh',
                                                 width: 'auto',
                                                 height: 'auto',
                                                 objectFit: 'contain',
@@ -3715,7 +3724,7 @@
             // Stream Waiting Screen - Shows HTL Logo while host sets up
             if (!gameStarted && !showIntro && !streamIntroStartedRef.current && userMode === 'stream') {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -3740,7 +3749,7 @@
             // Team Selection Screen (DEPRECATED - Now using Admin Modal)
             if (false && !gameStarted && !showIntro && !teamsConfirmed) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center p-8" style={{
+                    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center p-8" style={{
                         backgroundImage: `url(${imagePath}background.png)`,
                         backgroundSize: '115%',
                         backgroundPosition: '35% center',
@@ -3825,7 +3834,7 @@
             // Intro Animation Screen
             if (showIntro) {
                 return (
-                    <div className="relative w-full h-full overflow-hidden" style={{backgroundColor: 'black'}}>
+                    <div className="relative w-screen h-screen overflow-hidden" style={{backgroundColor: 'black'}}>
                         
                         {/* Background image - fades in after black appears */}
                         <div style={{
@@ -4179,7 +4188,7 @@
             // Main Game (your existing game code, but with dynamic teams)
             return (
                 <>
-                <div className="relative w-full h-full" style={{
+                <div className="relative w-screen h-screen" style={{
                     backgroundImage: `url(${imagePath}background.png)`,
                     backgroundSize: '115%',
                     backgroundPosition: '35% center',
@@ -4319,7 +4328,7 @@
                                     onError={() => setImageLoadError(true)}
                                     style={{
                                         maxWidth: '800px',
-                                        maxHeight: '756px', // was 70vh, now fixed to 70% of the 1080px canvas
+                                        maxHeight: '70vh',
                                         width: 'auto',
                                         height: 'auto',
                                         objectFit: 'contain',
@@ -4392,7 +4401,7 @@
                                     borderColor: '#7d3ad4',
                                     maxWidth: '1100px',
                                     width: '90%',
-                                    maxHeight: '864px', // was 80vh, now fixed to 80% of the 1080px canvas
+                                    maxHeight: '80vh',
                                     overflowY: 'auto'
                                 }}>
 
@@ -5031,28 +5040,36 @@
                                                 ) : null
                                             ) : showQuestion ? (
                                                 <>
-                                                    {/* Answer text - on Stream this stays hidden while the image
-                                                        overlay is up (viewers shouldn't see it). On Host, instead of
-                                                        hiding it and drawing a separate positioned copy elsewhere
-                                                        (which is what used to escape the canvas's stacking order and
-                                                        break scaling), this same element just raises its own z-index
-                                                        above the image so it's visible in its normal, already-correct
-                                                        position - no extra measurement or duplication needed. */}
+                                                    {/* Original answer text - invisible when image overlay showing */}
                                                     <p 
                                                         ref={answerTextRef}
                                                         className="text-yellow-400 font-bold text-5xl" 
                                                         style={{
-                                                            position: (showImageOverlay && userMode === 'host') ? 'relative' : 'static',
-                                                            zIndex: (showImageOverlay && userMode === 'host') ? 48 : 'auto',
-                                                            textShadow: showImageOverlay ? '2px 2px 8px rgba(0,0,0,0.8)' : 'none',
-                                                            opacity: showImageOverlay
-                                                                ? (userMode === 'host' ? (showAnswer ? 1 : 0.3) : 0)
-                                                                : (userMode === 'stream' && !showAnswer) ? 0 :
-                                                                  (showAnswer ? 1 : 0.3)
+                                                            opacity: showImageOverlay ? 0 : 
+                                                                    (userMode === 'stream' && !showAnswer) ? 0 : 
+                                                                    (showAnswer ? 1 : 0.3)
                                                         }}
                                                     >
                                                         {currentAnswerText}
                                                     </p>
+                                                    {/* Portal copy - visible above image overlay, host only */}
+                                                    {showImageOverlay && userMode === 'host' && answerTextPosition && ReactDOM.createPortal(
+                                                        <p className="text-yellow-400 font-bold text-5xl" style={{
+                                                            position: 'fixed',
+                                                            top: `${answerTextPosition.top}px`,
+                                                            left: `${answerTextPosition.left}px`,
+                                                            width: `${answerTextPosition.width}px`,
+                                                            zIndex: 48,
+                                                            textAlign: 'center',
+                                                            pointerEvents: 'none',
+                                                            textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
+                                                            margin: 0,
+                                                            opacity: showAnswer ? 1 : 0.3
+                                                        }}>
+                                                            {currentAnswerText}
+                                                        </p>,
+                                                        document.body
+                                                    )}
                                                 </>
                                             ) : null}
                                         </div>
@@ -5488,7 +5505,7 @@
                         )}
                     </div>
                 </div>
-                {showImageOverlay && (
+                {showImageOverlay && ReactDOM.createPortal(
                     <div style={{
                         position: 'fixed',
                         inset: 0,
@@ -5496,84 +5513,14 @@
                         zIndex: 44,
                         pointerEvents: 'none',
                         animation: 'imageFadeIn 0.5s ease-in forwards'
-                    }} />
+                    }} />,
+                    document.body
                 )}
                 </>
             );
         }
 
-        // ScaledCanvas: renders TriviaGame on a fixed 1920x1080 "virtual screen",
-        // then scales that whole virtual screen up or down (via CSS transform) to fit
-        // whatever browser window it's actually displayed in - StreamYard, a laptop,
-        // a phone, whatever. Because the canvas itself is always exactly 1920x1080,
-        // every pixel value and percentage inside TriviaGame now means the same real
-        // thing every time, on every machine, instead of shifting based on each
-        // host's actual window size like it did before.
-        function ScaledCanvas() {
-            const CANVAS_WIDTH = 1920;
-            const CANVAS_HEIGHT = 1080;
-            const [scale, setScale] = React.useState(1);
-            const [contentScale, setContentScale] = React.useState(1);
-
-            React.useEffect(() => {
-                const updateScale = () => {
-                    const scaleX = window.innerWidth / CANVAS_WIDTH;
-                    const scaleY = window.innerHeight / CANVAS_HEIGHT;
-                    // Use the smaller of the two so the whole 1920x1080 canvas always
-                    // fits on screen without cropping (may letterbox on odd aspect ratios).
-                    setScale(Math.min(scaleX, scaleY));
-                };
-                updateScale();
-                window.addEventListener('resize', updateScale);
-                return () => window.removeEventListener('resize', updateScale);
-            }, []);
-
-            // Extra "everything fits, no one needs to zoom" safety scale, applied on
-            // top of the window-fit scale above. 0.8 and 0.75 are the exact numbers
-            // confirmed by hand previously: everything fit at 80% browser zoom on
-            // Stream and 75% on Host. The underlying game layout hasn't changed since
-            // that test, so these are still the best numbers available - flag it to
-            // Sam if either one still needs adjusting.
-            const handleModeChange = (mode) => {
-                if (mode === 'stream') setContentScale(0.8);
-                else if (mode === 'host') setContentScale(0.75);
-                else setContentScale(1);
-            };
-
-            return (
-                <div style={{
-                    width: '100vw',
-                    height: '100vh',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'black'
-                }}>
-                    <div
-                        style={{
-                            width: `${CANVAS_WIDTH}px`,
-                            height: `${CANVAS_HEIGHT}px`,
-                            flexShrink: 0,
-                            transform: `scale(${scale})`,
-                            transformOrigin: 'center center',
-                            position: 'relative'
-                        }}
-                    >
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            transform: `scale(${contentScale})`,
-                            transformOrigin: 'center center'
-                        }}>
-                            <TriviaGame onModeChange={handleModeChange} />
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        ReactDOM.render(<ScaledCanvas />, document.getElementById('root'));
+        ReactDOM.render(<TriviaGame />, document.getElementById('root'));
     </script>
 </body>
 </html>
