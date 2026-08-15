@@ -4283,13 +4283,17 @@
                             className="image-overlay-fade"
                             style={{
                                 position: 'fixed',
-                                top: '5%',
+                                top: '50%',
                                 left: '50%',
-                                transform: 'translateX(-50%)',
+                                // Centers this box's own center point at the exact center of
+                                // the screen, no matter how tall or wide the image inside it
+                                // ends up being - translate(-50%, -50%) shifts the box back
+                                // by exactly half its own size in each direction.
+                                transform: 'translate(-50%, -50%)',
                                 zIndex: 45,
                                 pointerEvents: 'none',
                                 display: 'flex',
-                                alignItems: 'flex-start',
+                                alignItems: 'center',
                                 justifyContent: 'center'
                             }}
                         >
@@ -4811,7 +4815,7 @@
                                 backgroundColor: `${selectedTeam1.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                transform: timersExpanded ? 'translateX(-900px)' : 'translateX(0)',
+                                transform: timersExpanded ? 'translateX(-450px)' : 'translateX(0)',
                                 transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 1) || 
@@ -4850,7 +4854,7 @@
                                 backgroundColor: `${selectedTeam2.color}65`,
                                 width: '200px',
                                 height: '200px',
-                                transform: timersExpanded ? 'translateX(900px)' : 'translateX(0)',
+                                transform: timersExpanded ? 'translateX(450px)' : 'translateX(0)',
                                 transition: isResuming ? 'none' : 'transform 0.8s ease-in-out',
                                 zIndex: timersExpanded ? 60 : 'auto',
                                 opacity: ((currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' && shootoutActiveTeam === 2) || 
