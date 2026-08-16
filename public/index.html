@@ -5043,22 +5043,21 @@
                                                 ) : null
                                             ) : showQuestion ? (
                                                 <>
-                                                    {/* Answer text - on Stream this stays hidden while the image
-                                                        overlay is up (viewers shouldn't see it). On Host, instead of
-                                                        hiding it and drawing a separate positioned copy elsewhere
-                                                        (which is what used to escape the canvas's stacking order and
-                                                        break scaling), this same element just raises its own z-index
-                                                        above the image so it's visible in its normal, already-correct
-                                                        position - no extra measurement or duplication needed. */}
+                                                    {/* Answer text - during an image question, this element raises
+                                                        its own z-index above the image (instead of hiding and
+                                                        drawing a separate positioned copy elsewhere, which is what
+                                                        used to escape the canvas's stacking order and break scaling)
+                                                        so it's visible in its normal, already-correct position on
+                                                        BOTH Host and Stream once the host reveals the answer. */}
                                                     <p 
                                                         ref={answerTextRef}
                                                         className="text-yellow-400 font-bold text-5xl" 
                                                         style={{
-                                                            position: (showImageOverlay && userMode === 'host') ? 'relative' : 'static',
-                                                            zIndex: (showImageOverlay && userMode === 'host') ? 48 : 'auto',
+                                                            position: showImageOverlay ? 'relative' : 'static',
+                                                            zIndex: showImageOverlay ? 48 : 'auto',
                                                             textShadow: showImageOverlay ? '2px 2px 8px rgba(0,0,0,0.8)' : 'none',
                                                             opacity: showImageOverlay
-                                                                ? (userMode === 'host' ? (showAnswer ? 1 : 0.3) : 0)
+                                                                ? (showAnswer ? 1 : 0.3)
                                                                 : (userMode === 'stream' && !showAnswer) ? 0 :
                                                                   (showAnswer ? 1 : 0.3)
                                                         }}
