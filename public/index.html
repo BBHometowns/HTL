@@ -331,6 +331,20 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // Pulls a real number out of text that may contain formatting like commas,
+        // currency symbols, or other punctuation - e.g. "1,093" or "$1,093.50".
+        // Plain parseFloat/parseInt both stop reading at the first character that
+        // isn't part of a number, so "1,093" silently becomes just 1. This strips
+        // everything except digits, a single leading minus sign, and a decimal
+        // point first, so the full value is preserved. Used for Closest To answers
+        // and guesses specifically - Shootout and Bottoms Up compare answers as
+        // plain text and were never affected by this.
+        function parseCleanNumber(value) {
+            if (value === null || value === undefined) return NaN;
+            const cleaned = String(value).replace(/[^0-9.\-]/g, '');
+            return parseFloat(cleaned);
+        }
+
         function TriviaGame() {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
@@ -1100,7 +1114,7 @@
                             .filter(row => row[0] && row[1]) // Must have question and answer
                             .map((row, index) => ({
                                 question: row[0],
-                                answer: parseFloat(row[1]),
+                                answer: parseCleanNumber(row[1]),
                                 lastUsed: row[2] || '',
                                 rowIndex: index + 2 // +2 because row 1 is the header, data starts at row 2
                             }));
@@ -1972,8 +1986,8 @@
                 setTimeout(() => {
                     const currentQuestion = closestToQuestions[bonusQuestionIndex];
                     const correctAnswer = currentQuestion.answer;
-                    const guess1 = parseInt(team1Guess) || 0;
-                    const guess2 = parseInt(team2Guess) || 0;
+                    const guess1 = parseCleanNumber(team1Guess) || 0;
+                    const guess2 = parseCleanNumber(team2Guess) || 0;
                     
                     if (guess1 === guess2) {
                         // No points awarded
@@ -4999,7 +5013,7 @@
                                                         {/* Team 1 Side */}
                                                         <div className="flex items-center gap-8 flex-1">
                                                             <span className="text-cyan-400 font-bold text-5xl">{team1Guess || '?'}</span>
-                                                            {showDistances && team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team1Guess))}</span>}
+                                                            {showDistances && team1Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseCleanNumber(team1Guess))}</span>}
                                                         </div>
                                                         
                                                         {/* Correct Answer */}
@@ -5009,7 +5023,7 @@
                                                         
                                                         {/* Team 2 Side */}
                                                         <div className="flex items-center gap-8 flex-1 justify-end">
-                                                            {showDistances && team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseInt(team2Guess))}</span>}
+                                                            {showDistances && team2Guess && <span className="text-gray-400 text-3xl flex-1 text-center">{Math.abs((currentRound === 14 ? tieBreakerClosestToQuestions : legacyClosestToQuestions)[bonusQuestionIndex].answer - parseCleanNumber(team2Guess))}</span>}
                                                             <span className="text-orange-400 font-bold text-5xl">{team2Guess || '?'}</span>
                                                         </div>
                                                     </div>
