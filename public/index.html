@@ -449,6 +449,7 @@
             const streamIntroStartedRef = React.useRef(false);
             const streamSkipRef = React.useRef(false);
             const streamAudioRef = React.useRef(null);
+            const teamAnnounceAudioRef = React.useRef(null);
             const [adminStep, setAdminStep] = useState(1);
             const [showRoomCheckModal, setShowRoomCheckModal] = useState(false);
             const [roomCheckData, setRoomCheckData] = useState(null);
@@ -808,6 +809,10 @@
                                             streamAudioRef.current.pause();
                                             streamAudioRef.current = null;
                                         }
+                                        if (teamAnnounceAudioRef.current) {
+                                            teamAnnounceAudioRef.current.pause();
+                                            teamAnnounceAudioRef.current = null;
+                                        }
                                         // Clear all intro states
                                         setShowCountdown(false);
                                         setShowIntro(false);
@@ -888,6 +893,7 @@
                                     // Play Team Announcement audio at white flash peak
                                     const announceAudio = new Audio(`${audioPath}Team Announcement.mp3`);
                                     announceAudio.volume = 1.0;
+                                    teamAnnounceAudioRef.current = announceAudio;
                                     announceAudio.play().catch(() => {});
                                     setTimeout(() => { if (!streamSkipRef.current) setWhiteFading(false); }, 1500);
                                     setTimeout(() => { if (!streamSkipRef.current) setBackgroundFading(false); }, 3500);
@@ -5046,9 +5052,12 @@
                                                     {/* Answer text - during an image question, this element raises
                                                         its own z-index above the image (instead of hiding and
                                                         drawing a separate positioned copy elsewhere, which is what
-                                                        used to escape the canvas's stacking order and break scaling)
-                                                        so it's visible in its normal, already-correct position on
-                                                        BOTH Host and Stream once the host reveals the answer. */}
+                                                        used to escape the canvas's stacking order and break scaling).
+                                                        Host sees a dim 0.3-opacity reference of the answer even before
+                                                        it's revealed (so the host can judge a team's response), but
+                                                        that must stay Host-only - Stream needs to go straight from
+                                                        fully invisible to fully visible with nothing in between, or
+                                                        viewers can read the answer before it's officially revealed. */}
                                                     <p 
                                                         ref={answerTextRef}
                                                         className="text-yellow-400 font-bold text-5xl" 
@@ -5057,7 +5066,7 @@
                                                             zIndex: showImageOverlay ? 48 : 'auto',
                                                             textShadow: showImageOverlay ? '2px 2px 8px rgba(0,0,0,0.8)' : 'none',
                                                             opacity: showImageOverlay
-                                                                ? (showAnswer ? 1 : 0.3)
+                                                                ? (userMode === 'host' ? (showAnswer ? 1 : 0.3) : (showAnswer ? 1 : 0))
                                                                 : (userMode === 'stream' && !showAnswer) ? 0 :
                                                                   (showAnswer ? 1 : 0.3)
                                                         }}
