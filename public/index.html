@@ -1448,8 +1448,8 @@
                         }
                         setShowQuestion(true);
                     } else if (activeBonusType === 'shootout') {
-                        setTeam1Time(15);
-                        setTeam2Time(15);
+                        setTeam1Time(20);
+                        setTeam2Time(20);
                         setShootoutBoxExpanded(true);
                         setTimeout(() => setShowQuestion(true), 1000);
                     } else {
@@ -2410,12 +2410,32 @@
                     return;
                 }
                 
+                let enteringSuddenDeath = false;
                 if (newTurnCount >= 5 && !shootoutSuddenDeath) {
                     if (newScore1 !== newScore2) {
                         setTimeout(() => handleShootoutComplete(newScore1, newScore2), 100);
                         return;
                     } else {
                         setShootoutSuddenDeath(true);
+                        enteringSuddenDeath = true;
+                    }
+                }
+                
+                // End early (before all 5 rounds are played) if the trailing team can no
+                // longer catch up even if they get every one of their remaining turns
+                // right and the leading team misses every one of theirs. Team 1 always
+                // goes first each round, so by the time either team's turn is being
+                // resolved here, Team 1 has always already taken their turn for the
+                // current round - that's what makes "shootoutTurnCount + 1" always the
+                // right value for Team 1's turns taken, in both branches below.
+                if (!shootoutSuddenDeath && !enteringSuddenDeath) {
+                    const team1TurnsTaken = shootoutTurnCount + 1;
+                    const team2TurnsTaken = newTurnCount;
+                    const team1TurnsRemaining = 5 - team1TurnsTaken;
+                    const team2TurnsRemaining = 5 - team2TurnsTaken;
+                    if (newScore1 > newScore2 + team2TurnsRemaining || newScore2 > newScore1 + team1TurnsRemaining) {
+                        setTimeout(() => handleShootoutComplete(newScore1, newScore2), 100);
+                        return;
                     }
                 }
                 
@@ -2442,12 +2462,28 @@
                 }
                 
                 // Check for regular end after 5 turns
+                let enteringSuddenDeath = false;
                 if (newTurnCount >= 5 && !shootoutSuddenDeath) {
                     if (bonusScore1 !== bonusScore2) {
                         setTimeout(() => handleShootoutComplete(bonusScore1, bonusScore2), 100);
                         return;
                     } else {
                         setShootoutSuddenDeath(true);
+                        enteringSuddenDeath = true;
+                    }
+                }
+                
+                // Same early-win check as handleShootoutCorrect - a missed answer doesn't
+                // change either score, but it does use up a turn, so it can still be the
+                // moment the trailing team's chance to catch up runs out.
+                if (!shootoutSuddenDeath && !enteringSuddenDeath) {
+                    const team1TurnsTaken = shootoutTurnCount + 1;
+                    const team2TurnsTaken = newTurnCount;
+                    const team1TurnsRemaining = 5 - team1TurnsTaken;
+                    const team2TurnsRemaining = 5 - team2TurnsTaken;
+                    if (bonusScore1 > bonusScore2 + team2TurnsRemaining || bonusScore2 > bonusScore1 + team1TurnsRemaining) {
+                        setTimeout(() => handleShootoutComplete(bonusScore1, bonusScore2), 100);
+                        return;
                     }
                 }
                 
