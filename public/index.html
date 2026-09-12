@@ -502,6 +502,11 @@
             const [shootoutQuestions, setShootoutQuestions] = useState([]);
             const [selectedShootoutQuestion, setSelectedShootoutQuestion] = useState(null);
             const [selectedTieBreakerShootoutQuestion, setSelectedTieBreakerShootoutQuestion] = useState(null);
+            // Tracks every Shootout question (by colIndex) used anywhere so far this
+            // match - initial bonus round pick, initial tiebreaker pick, and any
+            // mid-match "board exhausted, start a new one" swaps - so a swap never
+            // repeats a question the teams have already seen and answered.
+            const [usedShootoutColIndices, setUsedShootoutColIndices] = useState([]);
             const [sheetsLoading, setSheetsLoading] = useState(true);
             const [sheetsError, setSheetsError] = useState(null);
             
@@ -764,6 +769,7 @@
                                 // Sync selected questions from Host so Stream shows same question
                                 if (gameState.selectedShootoutQuestion) setSelectedShootoutQuestion(gameState.selectedShootoutQuestion);
                                 if (gameState.selectedTieBreakerShootoutQuestion) setSelectedTieBreakerShootoutQuestion(gameState.selectedTieBreakerShootoutQuestion);
+                                if (gameState.usedShootoutColIndices) setUsedShootoutColIndices(gameState.usedShootoutColIndices);
                                 if (gameState.bottomsUpQuestion) setBottomsUpQuestion(gameState.bottomsUpQuestion);
                                 if (gameState.bottomsUpTurnNumber !== undefined) setBottomsUpTurnNumber(gameState.bottomsUpTurnNumber);
                                 setBottomsUpActiveTeam(gameState.bottomsUpActiveTeam || 1);
@@ -1187,20 +1193,32 @@
                             // Row 1 (index 0) = question text
                             // Row 2 (index 1) = Last Used (blank)
                             // Row 3+ (index 2+) = answer choices, where Row 3 = 1 point, Row 4 = 2 points, etc.
+                            // A cell can hold MULTIPLE tied answers separated by semicolons
+                            // (e.g. "Player A; Player B; Player C") when several entries share
+                            // the same real-world rank. All names in that cell get the same
+                            // point value, and every row after it skips ahead by however many
+                            // names tied for that spot - e.g. 5 players tied for 10th place
+                            // (worth 10 points each) means the next row is worth 15, not 11.
                             for (let col = 1; col < numCols; col++) {
                                 const questionText = buRows[0]?.[col] || '';
                                 const lastUsed = buRows[1]?.[col] || '';
                                 
                                 // Answers start at row index 2 (Row 3 in Sheet)
                                 const answers = [];
+                                let rankCounter = 0; // how many rank slots have been used up so far
                                 for (let row = 2; row < buRows.length; row++) {
-                                    const answer = buRows[row]?.[col];
-                                    if (answer && answer.trim() !== '') {
-                                        answers.push({
-                                            text: answer.trim(),
-                                            pointValue: row - 1, // Row 3 (index 2) = 1 point, Row 4 (index 3) = 2 points, etc.
-                                            rowIndex: row + 1    // Actual Sheet row number for Last Used tracking
+                                    const cellValue = buRows[row]?.[col];
+                                    if (cellValue && cellValue.trim() !== '') {
+                                        const tiedNames = cellValue.split(';').map(s => s.trim()).filter(s => s !== '');
+                                        const sharedPointValue = rankCounter + 1;
+                                        tiedNames.forEach(name => {
+                                            answers.push({
+                                                text: name,
+                                                pointValue: sharedPointValue, // all tied names share this value
+                                                rowIndex: row + 1             // Actual Sheet row number for Last Used tracking
+                                            });
                                         });
+                                        rankCounter += tiedNames.length;
                                     }
                                 }
                                 
@@ -1913,6 +1931,7 @@
                         // Broadcast selected questions so Stream shows same question as Host
                         selectedShootoutQuestion: selectedShootoutQuestion ?? null,
                         selectedTieBreakerShootoutQuestion: selectedTieBreakerShootoutQuestion ?? null,
+                        usedShootoutColIndices,
                         bottomsUpQuestion: bottomsUpQuestion ?? null,
                         bottomsUpTurnNumber,
                         bottomsUpActiveTeam,
@@ -2374,6 +2393,59 @@
                 }
             };
             
+            // Starts a brand new Shootout from scratch: a genuinely unused question
+            // (never repeats one already seen this match), scores reset to 0, no
+            // longer Sudden Death, Team 1 goes first. Used when the current board is
+            // about to run out of answers before a winner is decided. Returns true if
+            // it actually reset things, or false if there was no unused question left
+            // to switch to (in which case the current board just keeps going rather
+            // than repeat a question or crash).
+            const startSecondShootout = () => {
+                const availableQuestions = shootoutQuestions.filter(q => !usedShootoutColIndices.includes(q.colIndex));
+                if (availableQuestions.length === 0) {
+                    console.warn('No unused Shootout questions remain - continuing with the current board.');
+                    return false;
+                }
+                const newQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+                setUsedShootoutColIndices(prev => [...prev, newQuestion.colIndex]);
+
+                if (currentRound === 14) {
+                    setSelectedTieBreakerShootoutQuestion(newQuestion);
+                } else {
+                    setSelectedShootoutQuestion(newQuestion);
+                }
+
+                // Full reset - entirely fresh shootout, no longer sudden death
+                setBonusScore1(0);
+                setBonusScore2(0);
+                setShootoutTurnCount(0);
+                setShootoutActiveTeam(1);
+                setShootoutSuddenDeath(false);
+                setShootoutRevealedAnswers([]);
+                setShootoutBoardRevealed(false);
+                setShowQuestion(false);
+                setShootoutBoxExpanded(false);
+                setTimerRunning(false);
+
+                // Mirror the normal reveal pacing for a fresh Shootout question: box
+                // expands, question text appears, then the board itself is revealed
+                // and Team 1's timer starts - same sequence as the very first question.
+                setTimeout(() => {
+                    setShootoutBoxExpanded(true);
+                    setTimeout(() => {
+                        setShowQuestion(true);
+                        setTimeout(() => {
+                            setShootoutBoardRevealed(true);
+                            setTeam1Time(20);
+                            setTeam2Time(20);
+                            setTimerRunning(true);
+                        }, 1500);
+                    }, 1000);
+                }, 500);
+
+                return true;
+            };
+
             const handleShootoutAnswer = (answerIndex) => {
                 if (shootoutRevealedAnswers.includes(answerIndex)) return;
                 
@@ -2436,6 +2508,23 @@
                     if (newScore1 > newScore2 + team2TurnsRemaining || newScore2 > newScore1 + team1TurnsRemaining) {
                         setTimeout(() => handleShootoutComplete(newScore1, newScore2), 100);
                         return;
+                    }
+                }
+                
+                // Board exhaustion safety net: if this reveal uses up all the answers
+                // that can fairly be given (n-1 of an odd-sized board, since the last
+                // one would leave the teams with an unequal number of turns; all n of
+                // an even-sized board, since both teams have had equal turns), start a
+                // brand new Shootout rather than run out of answers mid-game.
+                const activeShootoutBoard = currentRound === 14
+                    ? (selectedTieBreakerShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null))
+                    : (selectedShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null));
+                if (activeShootoutBoard) {
+                    const totalAnswers = activeShootoutBoard.answers.length;
+                    const revealedSoFar = shootoutRevealedAnswers.length + 1; // +1 for the one just revealed above
+                    const exhaustionThreshold = totalAnswers % 2 === 0 ? totalAnswers : totalAnswers - 1;
+                    if (totalAnswers > 0 && revealedSoFar >= exhaustionThreshold) {
+                        if (startSecondShootout()) return;
                     }
                 }
                 
@@ -2935,6 +3024,7 @@
                                         const idx = Math.floor(Math.random() * shootoutQuestions.length);
                                         if (testModeRound === 7) setSelectedShootoutQuestion(shootoutQuestions[idx]);
                                         else setSelectedTieBreakerShootoutQuestion(shootoutQuestions[idx]);
+                                        setUsedShootoutColIndices(prev => [...prev, shootoutQuestions[idx].colIndex]);
                                     }
                                     
                                     // Set scores to 0-0
@@ -3295,6 +3385,7 @@
                                                 if (selectedBonusType === 'shootout' && shootoutQuestions.length > 0) {
                                                     const randomIndex = Math.floor(Math.random() * shootoutQuestions.length);
                                                     setSelectedShootoutQuestion(shootoutQuestions[randomIndex]);
+                                                    setUsedShootoutColIndices(prev => [...prev, shootoutQuestions[randomIndex].colIndex]);
                                                 }
                                                 setAdminStep(4);
                                             }}
@@ -3394,6 +3485,7 @@
                                                 if (selectedTiebreakerType === 'shootout' && shootoutQuestions.length > 0) {
                                                     const randomIndex = Math.floor(Math.random() * shootoutQuestions.length);
                                                     setSelectedTieBreakerShootoutQuestion(shootoutQuestions[randomIndex]);
+                                                    setUsedShootoutColIndices(prev => [...prev, shootoutQuestions[randomIndex].colIndex]);
                                                 }
                                                 if (selectedTiebreakerType === 'bottomsUp' && bottomsUpQuestions.length > 0) {
                                                     const randomIndex = Math.floor(Math.random() * bottomsUpQuestions.length);
@@ -4339,13 +4431,18 @@
                             className="image-overlay-fade"
                             style={{
                                 position: 'fixed',
-                                top: '50%',
+                                // Horizontally centered; vertically anchored to a fixed distance
+                                // from the bottom of the screen (rather than centered on-screen)
+                                // so the box's bottom edge never drifts down into the answer-text
+                                // area of the Question box below it. The Question box begins at
+                                // roughly y=798 on this 1800px-tall canvas and its answer text sits
+                                // in its last ~90px (~y=1310-1400), so bottom:'550px' (box bottom at
+                                // y=1250) leaves clear space above that with margin to spare.
+                                bottom: '550px',
                                 left: '50%',
-                                // Centers this box's own center point at the exact center of
-                                // the screen, no matter how tall or wide the image inside it
-                                // ends up being - translate(-50%, -50%) shifts the box back
-                                // by exactly half its own size in each direction.
-                                transform: 'translate(-50%, -50%)',
+                                transform: 'translateX(-50%)',
+                                width: '1500px',
+                                height: '700px',
                                 zIndex: 45,
                                 pointerEvents: 'none',
                                 display: 'flex',
@@ -4372,10 +4469,13 @@
                                     alt="Question Image"
                                     onError={() => setImageLoadError(true)}
                                     style={{
-                                        maxWidth: '800px',
-                                        maxHeight: '1260px', // was 70vh, now fixed to 70% of the 1800px canvas
-                                        width: 'auto',
-                                        height: 'auto',
+                                        // Always scales to fill the box, touching whichever pair of
+                                        // edges (left/right or top/bottom) the image's own aspect
+                                        // ratio reaches first - objectFit:'contain' against a fully
+                                        // sized (not auto) box does exactly this, upscaling small
+                                        // images instead of only ever shrinking large ones.
+                                        width: '100%',
+                                        height: '100%',
                                         objectFit: 'contain',
                                         display: 'block'
                                     }}
