@@ -4443,15 +4443,16 @@
                                 // Horizontally centered; vertically anchored to a fixed distance
                                 // from the bottom of the screen (rather than centered on-screen)
                                 // so the box's bottom edge never drifts down into the answer-text
-                                // area of the Question box below it. The Question box begins at
-                                // roughly y=798 on this 1800px-tall canvas and its answer text sits
-                                // in its last ~90px (~y=1310-1400), so bottom:'550px' (box bottom at
-                                // y=1250) leaves clear space above that with margin to spare.
+                                // area of the Question box below it. bottom:'550px' keeps the
+                                // bottom edge fixed at y=1250 on this 1800px-tall canvas - height
+                                // was grown from 700px to 1050px (top edge moved up by 50% of the
+                                // original height) so taller/portrait images have more room to
+                                // grow into, without touching the bottom edge or moving left/right.
                                 bottom: '550px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
                                 width: '1500px',
-                                height: '700px',
+                                height: '1050px',
                                 zIndex: 45,
                                 pointerEvents: 'none',
                                 display: 'flex',
