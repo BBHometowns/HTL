@@ -507,6 +507,11 @@
             // mid-match "board exhausted, start a new one" swaps - so a swap never
             // repeats a question the teams have already seen and answered.
             const [usedShootoutColIndices, setUsedShootoutColIndices] = useState([]);
+            // True right after the current Shootout board runs out of fairly-giveable
+            // answers, until the host clicks the button to actually move to a new
+            // question. While true, the finished board and scores stay on screen
+            // untouched - nothing resets until that click happens.
+            const [shootoutSecondBoardPending, setShootoutSecondBoardPending] = useState(false);
             const [sheetsLoading, setSheetsLoading] = useState(true);
             const [sheetsError, setSheetsError] = useState(null);
             
@@ -770,6 +775,7 @@
                                 if (gameState.selectedShootoutQuestion) setSelectedShootoutQuestion(gameState.selectedShootoutQuestion);
                                 if (gameState.selectedTieBreakerShootoutQuestion) setSelectedTieBreakerShootoutQuestion(gameState.selectedTieBreakerShootoutQuestion);
                                 if (gameState.usedShootoutColIndices) setUsedShootoutColIndices(gameState.usedShootoutColIndices);
+                                setShootoutSecondBoardPending(gameState.shootoutSecondBoardPending || false);
                                 if (gameState.bottomsUpQuestion) setBottomsUpQuestion(gameState.bottomsUpQuestion);
                                 if (gameState.bottomsUpTurnNumber !== undefined) setBottomsUpTurnNumber(gameState.bottomsUpTurnNumber);
                                 setBottomsUpActiveTeam(gameState.bottomsUpActiveTeam || 1);
@@ -1932,6 +1938,7 @@
                         selectedShootoutQuestion: selectedShootoutQuestion ?? null,
                         selectedTieBreakerShootoutQuestion: selectedTieBreakerShootoutQuestion ?? null,
                         usedShootoutColIndices,
+                        shootoutSecondBoardPending,
                         bottomsUpQuestion: bottomsUpQuestion ?? null,
                         bottomsUpTurnNumber,
                         bottomsUpActiveTeam,
@@ -2393,18 +2400,25 @@
                 }
             };
             
-            // Starts a brand new Shootout from scratch: a genuinely unused question
-            // (never repeats one already seen this match), scores reset to 0, no
-            // longer Sudden Death, Team 1 goes first. Used when the current board is
-            // about to run out of answers before a winner is decided. Returns true if
-            // it actually reset things, or false if there was no unused question left
-            // to switch to (in which case the current board just keeps going rather
-            // than repeat a question or crash).
-            const startSecondShootout = () => {
+            // Stage 1 of starting a second Shootout: called the instant the board is
+            // about to run out of answers. Deliberately changes NOTHING else - the
+            // finished board and final scores stay fully visible so the host can
+            // speak to the moment before anything resets. handleAdvanceToSecondShootout
+            // (Stage 2, triggered by a host button) does the actual reset.
+            
+            // Stage 2: host has clicked the button to actually move on. Picks a
+            // genuinely unused question (never repeats one already seen this match),
+            // resets scores to 0, turn count, active team, and Sudden Death, then
+            // replays the exact same "REVEAL QUESTION" step the very first question
+            // used (box expands, question text appears). From there it's identical
+            // to normal - the host still clicks REVEAL THE BOARD separately when
+            // ready, just like at the start of any Shootout.
+            const handleAdvanceToSecondShootout = () => {
                 const availableQuestions = shootoutQuestions.filter(q => !usedShootoutColIndices.includes(q.colIndex));
                 if (availableQuestions.length === 0) {
                     console.warn('No unused Shootout questions remain - continuing with the current board.');
-                    return false;
+                    setShootoutSecondBoardPending(false);
+                    return;
                 }
                 const newQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
                 setUsedShootoutColIndices(prev => [...prev, newQuestion.colIndex]);
@@ -2424,26 +2438,16 @@
                 setShootoutRevealedAnswers([]);
                 setShootoutBoardRevealed(false);
                 setShowQuestion(false);
-                setShootoutBoxExpanded(false);
                 setTimerRunning(false);
+                setShootoutSecondBoardPending(false);
 
-                // Mirror the normal reveal pacing for a fresh Shootout question: box
-                // expands, question text appears, then the board itself is revealed
-                // and Team 1's timer starts - same sequence as the very first question.
-                setTimeout(() => {
-                    setShootoutBoxExpanded(true);
-                    setTimeout(() => {
-                        setShowQuestion(true);
-                        setTimeout(() => {
-                            setShootoutBoardRevealed(true);
-                            setTeam1Time(20);
-                            setTeam2Time(20);
-                            setTimerRunning(true);
-                        }, 1500);
-                    }, 1000);
-                }, 500);
-
-                return true;
+                // Same as handleRevealQuestion's Shootout branch: box expands, then
+                // the question text appears shortly after. Host clicks REVEAL THE
+                // BOARD separately from here on, same as the first question.
+                setTeam1Time(20);
+                setTeam2Time(20);
+                setShootoutBoxExpanded(true);
+                setTimeout(() => setShowQuestion(true), 1000);
             };
 
             const handleShootoutAnswer = (answerIndex) => {
@@ -2514,8 +2518,9 @@
                 // Board exhaustion safety net: if this reveal uses up all the answers
                 // that can fairly be given (n-1 of an odd-sized board, since the last
                 // one would leave the teams with an unequal number of turns; all n of
-                // an even-sized board, since both teams have had equal turns), start a
-                // brand new Shootout rather than run out of answers mid-game.
+                // an even-sized board, since both teams have had equal turns), pause
+                // here - board and scores stay exactly as they are - until the host
+                // clicks the button to actually move on to a new Shootout question.
                 const activeShootoutBoard = currentRound === 14
                     ? (selectedTieBreakerShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null))
                     : (selectedShootoutQuestion || (shootoutQuestions.length > 0 ? shootoutQuestions[0] : null));
@@ -2524,7 +2529,8 @@
                     const revealedSoFar = shootoutRevealedAnswers.length + 1; // +1 for the one just revealed above
                     const exhaustionThreshold = totalAnswers % 2 === 0 ? totalAnswers : totalAnswers - 1;
                     if (totalAnswers > 0 && revealedSoFar >= exhaustionThreshold) {
-                        if (startSecondShootout()) return;
+                        setShootoutSecondBoardPending(true);
+                        return;
                     }
                 }
                 
@@ -2626,7 +2632,10 @@
             // Active Bottoms Up question - uses tiebreaker version for round 14
             const activeBottomsUpQuestion = (currentRound === 14 ? tieBreakerBottomsUpQuestion : bottomsUpQuestion) || bottomsUpQuestion;
 
-            // Shuffle shootout answers when match is selected
+            // Shuffle shootout answers when match is selected - also re-shuffles
+            // whenever a different Shootout question gets selected mid-match (e.g.
+            // a second-board swap after the first board runs out of answers),
+            // otherwise the board keeps showing the PREVIOUS question's answers.
             useEffect(() => {
                 const activeShootoutQuestion = currentRound === 14 ? tieBreakerShootoutQuestion : shootoutQuestion;
                 if (activeShootoutQuestion && activeShootoutQuestion.answers) {
@@ -2635,7 +2644,7 @@
                         .sort(() => Math.random() - 0.5);
                     setShootoutShuffledAnswers(shuffled);
                 }
-            }, [selectedMatch, currentRound]);
+            }, [selectedMatch, currentRound, selectedShootoutQuestion, selectedTieBreakerShootoutQuestion]);
             
             // Adjust index for rounds after bonus (round 8+ uses index 6+)
             const getRoundIndex = () => {
@@ -5105,11 +5114,11 @@
                                                                         return (
                                                                             <button
                                                                                 key={gridIndex}
-                                                                                onClick={() => handleShootoutAnswer(item.originalIndex)}
+                                                                                onClick={() => { if (userMode === 'host') handleShootoutAnswer(item.originalIndex); }}
                                                                                 className="font-bold rounded border-4 border-black transition relative flex-1 flex items-center justify-center"
                                                                                 style={{
                                                                                     backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
-                                                                                    cursor: 'pointer',
+                                                                                    cursor: userMode === 'host' ? 'pointer' : 'default',
                                                                                     fontSize: numRows <= 4 ? '22px' : numRows <= 5 ? '18px' : '14px'
                                                                                 }}
                                                                             >
@@ -5323,7 +5332,11 @@
                                                 ) : null
                                             ) : (
                                                 // Shootout Buttons
-                                                !showQuestion ? (
+                                                shootoutSecondBoardPending ? (
+                                                    <button onClick={handleAdvanceToSecondShootout} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
+                                                        START NEXT SHOOTOUT QUESTION
+                                                    </button>
+                                                ) : !showQuestion ? (
                                                     <button onClick={handleRevealQuestion} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg border-4 border-black transition text-xl">
                                                         REVEAL QUESTION
                                                     </button>
