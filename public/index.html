@@ -4457,13 +4457,9 @@
                                 pointerEvents: 'none',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                border: '4px solid red' // TEMP DEBUG - remove once image sizing is confirmed correct
+                                justifyContent: 'center'
                             }}
                         >
-                            {/* TEMP DEBUG: crosshair marking the box's exact center - remove once image sizing is confirmed correct */}
-                            <div style={{ position: 'absolute', top: 0, left: '50%', width: '2px', height: '100%', backgroundColor: 'red', zIndex: 9999 }} />
-                            <div style={{ position: 'absolute', left: 0, top: '50%', width: '100%', height: '2px', backgroundColor: 'red', zIndex: 9999 }} />
                             {imageLoadError ? (
                                 <div style={{
                                     backgroundColor: 'rgba(0,0,0,0.8)',
