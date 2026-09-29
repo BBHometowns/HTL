@@ -2698,6 +2698,14 @@
             // Active Bottoms Up question - uses tiebreaker version for round 14
             const activeBottomsUpQuestion = (currentRound === 14 ? tieBreakerBottomsUpQuestion : bottomsUpQuestion) || bottomsUpQuestion;
 
+            // Same idea as Shootout's shootoutBoxExpanded: while the host is typing a team's answer,
+            // the whole Question Display Area box grows a bit taller (animated, same as Shootout does)
+            // so the answer input has proper room inside the box, underneath the question - instead of
+            // floating outside/below it. bottomsUpPhase is already synced between Host and Stream via
+            // Firebase, so both screens grow/shrink the box at the same moment without needing a new
+            // synced flag of their own.
+            const bottomsUpBoxExpanded = (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && bottomsUpPhase === 'input';
+
             // Shuffle shootout answers when match is selected - also re-shuffles
             // whenever a different Shootout question gets selected mid-match (e.g.
             // a second-board swap after the first board runs out of answers),
@@ -5177,7 +5185,7 @@
                         <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
                             width: shootoutBoxExpanded ? '2275px' : '1400px',
-                            height: shootoutBoxExpanded ? '1170px' : '650px',
+                            height: shootoutBoxExpanded ? '1170px' : bottomsUpBoxExpanded ? '770px' : '650px',
                             padding: '48px',
                             position: shootoutBoxExpanded ? 'relative' : 'static',
                             zIndex: shootoutBoxExpanded ? 55 : 'auto',
@@ -5320,6 +5328,31 @@
                                     ) : null}
                                 </div>
 
+                                    {/* Bottoms Up host answer input - a sibling of the question box above (not
+                                        nested inside it), sitting in the leftover room inside this same larger
+                                        purple box, underneath the question. This slot is ALWAYS rendered during
+                                        a Bottoms Up round/tiebreaker (same height every phase) - only the
+                                        <input> itself inside it comes and goes with bottomsUpPhase, and the
+                                        purple box itself grows/shrinks by a fixed amount (bottomsUpBoxExpanded,
+                                        set up above near activeBottomsUpQuestion) to make room for it, same way
+                                        shootoutBoxExpanded does for the Shootout board. */}
+                                    {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && (
+                                        <div className="flex items-center justify-center" style={{height: '90px', marginTop: '16px'}}>
+                                            {userMode === 'host' && bottomsUpPhase === 'input' && (
+                                                <input
+                                                    type="text"
+                                                    value={bottomsUpHostInput}
+                                                    onChange={(e) => setBottomsUpHostInput(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
+                                                    className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
+                                                    style={{width: '400px'}}
+                                                    placeholder="Type team's answer..."
+                                                    autoFocus
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+
                                     {!((currentRound === 7 || currentRound === 14) && ((currentRound === 7 ? bonusType : tieBreakerType) === 'shootout' || (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp')) && (
                                         <div className="bg-gray-800 rounded-lg flex items-center justify-center p-6" style={{
                                             height: '120px',
@@ -5391,30 +5424,6 @@
                                     )}
                             </div>
                         </div>
-
-                        {/* Bottoms Up host answer input - a completely separate element AFTER the whole
-                            question box above (not nested inside it), so it can never change that box's own
-                            size or position. This reserved slot is ALWAYS rendered during a Bottoms Up
-                            round/tiebreaker (same height every phase) - only the <input> itself inside it
-                            comes and goes with bottomsUpPhase. That way nothing below (the Reveal/Start
-                            Timer/No Guess buttons, the powerups) ever shifts position when the input phase
-                            starts or ends - the space for it is always there, just empty otherwise. */}
-                        {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && (
-                            <div className="flex items-center justify-center mb-8" style={{height: '90px'}}>
-                                {userMode === 'host' && bottomsUpPhase === 'input' && (
-                                    <input
-                                        type="text"
-                                        value={bottomsUpHostInput}
-                                        onChange={(e) => setBottomsUpHostInput(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
-                                        className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
-                                        style={{width: '400px'}}
-                                        placeholder="Type team's answer..."
-                                        autoFocus
-                                    />
-                                )}
-                            </div>
-                        )}
 
                         {/* Powerups and Control Buttons */}
                         <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px', marginTop: shootoutBoxExpanded ? '-220px' : '0px', transition: 'margin-top 1s ease-in-out'}}>
