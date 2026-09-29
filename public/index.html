@@ -2238,12 +2238,17 @@
                 
                 const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
                 const typedNormalized = normalize(bottomsUpHostInput);
-                
+
                 const matches = activeBottomsUpQuestion.answers
                     .filter(answer => {
                         const answerNormalized = normalize(answer.text);
-                        return answerNormalized.includes(typedNormalized) || 
-                            typedNormalized.includes(answerNormalized);
+                        // Also check the second line (e.g. "(S22, 26, 34)" notes typed under the
+                        // answer in the Google Sheet cell) so a host can find/select an answer by
+                        // typing something that only appears in that second line, not just the name.
+                        const secondLineNormalized = answer.secondLine ? normalize(answer.secondLine) : '';
+                        return answerNormalized.includes(typedNormalized) ||
+                            typedNormalized.includes(answerNormalized) ||
+                            (secondLineNormalized && (secondLineNormalized.includes(typedNormalized) || typedNormalized.includes(secondLineNormalized)));
                     })
                     .map(answer => ({
                         ...answer,
@@ -4730,6 +4735,11 @@
                                                     className="text-white font-bold text-lg text-center transition hover:scale-105"
                                                 >
                                                     {match.text}
+                                                    {match.secondLine && (
+                                                        <span className="block text-gray-400 font-normal text-sm mt-1">
+                                                            {match.secondLine}
+                                                        </span>
+                                                    )}
                                                     {isExact && (
                                                         <span className="block text-green-400 text-xs mt-1">
                                                             ✓ Exact Match
