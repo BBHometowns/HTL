@@ -2698,13 +2698,21 @@
             // Active Bottoms Up question - uses tiebreaker version for round 14
             const activeBottomsUpQuestion = (currentRound === 14 ? tieBreakerBottomsUpQuestion : bottomsUpQuestion) || bottomsUpQuestion;
 
-            // Same idea as Shootout's shootoutBoxExpanded: while the host is typing a team's answer,
-            // the whole Question Display Area box grows a bit taller (animated, same as Shootout does)
-            // so the answer input has proper room inside the box, underneath the question - instead of
-            // floating outside/below it. bottomsUpPhase is already synced between Host and Stream via
-            // Firebase, so both screens grow/shrink the box at the same moment without needing a new
-            // synced flag of their own.
-            const bottomsUpBoxExpanded = (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && bottomsUpPhase === 'input';
+            // Same idea as Shootout's shootoutBoxExpanded: once the question is revealed, the whole
+            // Question Display Area box grows a bit taller (animated, same as Shootout does) so the
+            // answer input has proper room inside the box, underneath the question - instead of
+            // floating outside/below it. Unlike the earlier version of this, we do NOT tie this to
+            // bottomsUpPhase === 'input' anymore - that phase comes and goes on EVERY turn (each of
+            // the 5 turns per team cycles through 'ready' -> 'input' -> 'modal'/'animating' ->
+            // 'between'), which made the box grow and shrink over and over across a single round.
+            // Instead we key off bottomsUpPhase !== 'question': 'question' is only ever the phase
+            // before the round's question has been revealed AND the phase handleBottomsUpComplete()
+            // resets back to once the ENTIRE round (all turns, both teams) is finished. So the box
+            // now grows exactly once when the question is revealed and shrinks exactly once when the
+            // whole round ends - never in between. bottomsUpPhase is already synced between Host and
+            // Stream via Firebase, so both screens grow/shrink the box at the same moment without
+            // needing a new synced flag of their own.
+            const bottomsUpBoxExpanded = (currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && bottomsUpPhase !== 'question';
 
             // Shuffle shootout answers when match is selected - also re-shuffles
             // whenever a different Shootout question gets selected mid-match (e.g.
@@ -5331,23 +5339,29 @@
                                     {/* Bottoms Up host answer input - a sibling of the question box above (not
                                         nested inside it), sitting in the leftover room inside this same larger
                                         purple box, underneath the question. This slot is ALWAYS rendered during
-                                        a Bottoms Up round/tiebreaker (same height every phase) - only the
-                                        <input> itself inside it comes and goes with bottomsUpPhase, and the
-                                        purple box itself grows/shrinks by a fixed amount (bottomsUpBoxExpanded,
-                                        set up above near activeBottomsUpQuestion) to make room for it, same way
-                                        shootoutBoxExpanded does for the Shootout board. */}
+                                        a Bottoms Up round/tiebreaker (same height every phase). The <input> itself
+                                        now STAYS MOUNTED for the whole round too (as soon as bottomsUpPhase leaves
+                                        'question', matching bottomsUpBoxExpanded above) instead of being added/
+                                        removed from the page each turn - it just toggles between an active,
+                                        usable look (bottomsUpPhase === 'input', the actual "type an answer" turn)
+                                        and a dimmed, disabled look the rest of the time (between turns, while a
+                                        result modal is showing, etc.). The purple box itself grows/shrinks by a
+                                        fixed amount (bottomsUpBoxExpanded, set up above near
+                                        activeBottomsUpQuestion) to make room for it, same way shootoutBoxExpanded
+                                        does for the Shootout board. */}
                                     {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && (
                                         <div className="flex items-center justify-center" style={{height: '90px', marginTop: '16px'}}>
-                                            {userMode === 'host' && bottomsUpPhase === 'input' && (
+                                            {userMode === 'host' && bottomsUpPhase !== 'question' && (
                                                 <input
                                                     type="text"
                                                     value={bottomsUpHostInput}
                                                     onChange={(e) => setBottomsUpHostInput(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
-                                                    className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
-                                                    style={{width: '400px'}}
+                                                    onKeyPress={(e) => e.key === 'Enter' && bottomsUpPhase === 'input' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
+                                                    disabled={bottomsUpPhase !== 'input'}
+                                                    className={`text-center font-bold text-xl rounded-lg border-4 px-4 py-3 ${bottomsUpPhase === 'input' ? 'bg-gray-800 text-white border-purple-500' : 'bg-gray-900 text-gray-500 border-gray-700 opacity-50'}`}
+                                                    style={{width: '400px', transition: 'opacity 0.3s ease-in-out'}}
                                                     placeholder="Type team's answer..."
-                                                    autoFocus
+                                                    autoFocus={bottomsUpPhase === 'input'}
                                                 />
                                             )}
                                         </div>
