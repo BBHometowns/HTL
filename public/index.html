@@ -4840,12 +4840,14 @@
                             {/* Winner Announcement Overlay */}
                             <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                                 <div className="flex flex-col items-center">
-                                    {/* Final Score Text */}
+                                    {/* Final Score Text - pulled up further (was -250px) so it clears above
+                                        the huge team score digits instead of sitting on top of them. This
+                                        is the one number to adjust if it still overlaps or ends up too high. */}
                                     <div className="text-9xl font-black text-white mb-16" style={{
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-250px'
+                                        marginTop: '-480px'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -5211,20 +5213,23 @@
                                                 </p>
                                             ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
                                                 // Bottoms Up UI
+                                                // The host's "type team's answer" input used to live in here too, but that
+                                                // meant either it floated over the question text, or shrinking the question
+                                                // to make room moved/shrank text the host was used to seeing at full size.
+                                                // It now renders in the empty space below this whole question box instead
+                                                // (see the bottomsUp-specific block right after the closestTo/regular
+                                                // answer display further down) - so this box is just the question, same
+                                                // size as before, and the input never touches it.
                                                 <div className="w-full h-full flex flex-col items-center justify-center relative">
                                                     {/* bottomsUpQuestionBoxWidthPx/HeightPx describe the space this text has to
                                                         fit in (the gray box around it). If a real question still overflows,
                                                         those are the two numbers to widen/heighten. 36px is the size used
                                                         today (the ceiling - short questions still look like they used to);
                                                         16px is how small it's allowed to shrink before giving up. Measured
-                                                        with the [bracket] markers stripped out since those aren't shown.
-                                                        The height budget is smaller than the full box (380px minus its own
-                                                        padding) on purpose - it leaves room underneath for the host's
-                                                        "type team's answer" input, which now sits right below the question
-                                                        (see below) instead of floating over the bottom of it. */}
+                                                        with the [bracket] markers stripped out since those aren't shown. */}
                                                     {(() => {
                                                         const bottomsUpQuestionBoxWidthPx = 1150;
-                                                        const bottomsUpQuestionBoxHeightPx = 220;
+                                                        const bottomsUpQuestionBoxHeightPx = 290;
                                                         const rawQuestionText = (activeBottomsUpQuestion?.questionText || 'Loading...').replace(/[\[\]]/g, '');
                                                         const bottomsUpQuestionFontSize = fitMultilineFontSize(rawQuestionText, bottomsUpQuestionBoxWidthPx, bottomsUpQuestionBoxHeightPx, 36, 16, '400', 'Arial, sans-serif');
                                                         return (
@@ -5236,21 +5241,6 @@
                                                             </p>
                                                         );
                                                     })()}
-                                                    {userMode === 'host' && bottomsUpPhase === 'input' && (
-                                                        // Sits in normal flow right after the question text (not absolutely
-                                                        // positioned over it anymore), so it always lands below the question
-                                                        // no matter how many lines that question wrapped to.
-                                                        <input
-                                                            type="text"
-                                                            value={bottomsUpHostInput}
-                                                            onChange={(e) => setBottomsUpHostInput(e.target.value)}
-                                                            onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
-                                                            className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
-                                                            style={{width: '400px', marginTop: '24px', flexShrink: 0}}
-                                                            placeholder="Type team's answer..."
-                                                            autoFocus
-                                                        />
-                                                    )}
                                                 </div>
                                             ) : (
                                                 // Shootout UI
@@ -5391,6 +5381,25 @@
                                                     </p>
                                                 </>
                                             ) : null}
+                                        </div>
+                                    )}
+
+                                    {/* Bottoms Up host answer input - lives in this empty space below the
+                                        question box (same spot the closestTo/regular answer display above
+                                        uses) instead of inside the question box, so it never overlaps or
+                                        resizes the question text. */}
+                                    {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && userMode === 'host' && bottomsUpPhase === 'input' && (
+                                        <div className="flex items-center justify-center" style={{height: '120px'}}>
+                                            <input
+                                                type="text"
+                                                value={bottomsUpHostInput}
+                                                onChange={(e) => setBottomsUpHostInput(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
+                                                className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
+                                                style={{width: '400px'}}
+                                                placeholder="Type team's answer..."
+                                                autoFocus
+                                            />
                                         </div>
                                     )}
                             </div>
