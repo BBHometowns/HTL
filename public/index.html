@@ -4840,14 +4840,20 @@
                             {/* Winner Announcement Overlay */}
                             <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                                 <div className="flex flex-col items-center">
-                                    {/* Final Score Text - pulled up further (was -250px) so it clears above
-                                        the huge team score digits instead of sitting on top of them. This
-                                        is the one number to adjust if it still overlaps or ends up too high. */}
-                                    <div className="text-9xl font-black text-white mb-16" style={{
+                                    {/* Final Score Text - moved below the team score digits entirely (the
+                                        scores themselves, elsewhere, are untouched and stay right where they
+                                        are). top: '1180px' is measured from this overlay's own top (which
+                                        covers the whole screen), placing it just under the scores - the one
+                                        number to nudge if it needs to sit higher/lower. */}
+                                    <div className="text-9xl font-black text-white" style={{
                                         WebkitTextStroke: '4px black',
                                         textStroke: '4px black',
                                         animation: 'fadeIn 1s ease-in',
-                                        marginTop: '-480px'
+                                        position: 'absolute',
+                                        top: '1180px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        whiteSpace: 'nowrap'
                                     }}>
                                         FINAL SCORE
                                     </div>
@@ -5383,27 +5389,26 @@
                                             ) : null}
                                         </div>
                                     )}
-
-                                    {/* Bottoms Up host answer input - lives in this empty space below the
-                                        question box (same spot the closestTo/regular answer display above
-                                        uses) instead of inside the question box, so it never overlaps or
-                                        resizes the question text. */}
-                                    {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && userMode === 'host' && bottomsUpPhase === 'input' && (
-                                        <div className="flex items-center justify-center" style={{height: '120px'}}>
-                                            <input
-                                                type="text"
-                                                value={bottomsUpHostInput}
-                                                onChange={(e) => setBottomsUpHostInput(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
-                                                className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
-                                                style={{width: '400px'}}
-                                                placeholder="Type team's answer..."
-                                                autoFocus
-                                            />
-                                        </div>
-                                    )}
                             </div>
                         </div>
+
+                        {/* Bottoms Up host answer input - a completely separate element AFTER the whole
+                            question box above (not nested inside it), so it can never change that box's own
+                            size or position. It just appears in the normal empty space below it. */}
+                        {(currentRound === 7 || currentRound === 14) && (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' && userMode === 'host' && bottomsUpPhase === 'input' && (
+                            <div className="flex items-center justify-center mb-8" style={{height: '90px'}}>
+                                <input
+                                    type="text"
+                                    value={bottomsUpHostInput}
+                                    onChange={(e) => setBottomsUpHostInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && bottomsUpHostInput.trim() && handleBottomsUpSearch()}
+                                    className="bg-gray-800 text-white text-center font-bold text-xl rounded-lg border-4 border-purple-500 px-4 py-3"
+                                    style={{width: '400px'}}
+                                    placeholder="Type team's answer..."
+                                    autoFocus
+                                />
+                            </div>
+                        )}
 
                         {/* Powerups and Control Buttons */}
                         <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px', marginTop: shootoutBoxExpanded ? '-220px' : '0px', transition: 'margin-top 1s ease-in-out'}}>
