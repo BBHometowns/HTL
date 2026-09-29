@@ -345,6 +345,27 @@
             return parseFloat(cleaned);
         }
 
+        // --- Bottoms Up answer auto-fit helpers ---
+        // Measures how wide a piece of text would render at a given font size, using a hidden
+        // <canvas> (this never gets shown on screen, it's just used to measure text).
+        let _textMeasureCanvas = null;
+        const measureTextWidthPx = (text, fontSizePx, fontWeight, fontFamily) => {
+            if (!_textMeasureCanvas) {
+                _textMeasureCanvas = document.createElement('canvas');
+            }
+            const ctx = _textMeasureCanvas.getContext('2d');
+            ctx.font = `${fontWeight} ${fontSizePx}px ${fontFamily}`;
+            return ctx.measureText(text).width;
+        };
+        // Returns baseFontSizePx if `text` already fits inside maxWidthPx at that size, otherwise
+        // returns a smaller font size that makes it fit exactly.
+        const getFittedFontSize = (text, maxWidthPx, baseFontSizePx, fontWeight = '900', fontFamily = 'Arial, sans-serif') => {
+            if (!text) return baseFontSizePx;
+            const widthAtBase = measureTextWidthPx(text, baseFontSizePx, fontWeight, fontFamily);
+            if (widthAtBase <= maxWidthPx) return baseFontSizePx;
+            return Math.floor(baseFontSizePx * (maxWidthPx / widthAtBase));
+        };
+
         function TriviaGame() {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
@@ -1215,11 +1236,20 @@
                                 for (let row = 2; row < buRows.length; row++) {
                                     const cellValue = buRows[row]?.[col];
                                     if (cellValue && cellValue.trim() !== '') {
-                                        const tiedNames = cellValue.split(';').map(s => s.trim()).filter(s => s !== '');
+                                        // A cell can also hold a second line of text (e.g. typed with
+                                        // Alt+Enter in Google Sheets). The first line is the real answer
+                                        // (and is still what gets split on ";" for ties, above); any
+                                        // line(s) after it are stored as "secondLine" and shown smaller,
+                                        // underneath the answer, once it's revealed.
+                                        const cellLines = cellValue.split('\n').map(l => l.trim()).filter(l => l !== '');
+                                        const mainLine = cellLines[0] || cellValue.trim();
+                                        const secondLine = cellLines.slice(1).join(' ');
+                                        const tiedNames = mainLine.split(';').map(s => s.trim()).filter(s => s !== '');
                                         const sharedPointValue = rankCounter + 1;
                                         tiedNames.forEach(name => {
                                             answers.push({
                                                 text: name,
+                                                secondLine,
                                                 pointValue: sharedPointValue, // all tied names share this value
                                                 rowIndex: row + 1             // Actual Sheet row number for Last Used tracking
                                             });
@@ -2194,7 +2224,7 @@
             };
 
             const handleBottomsUpConfirm = (answer) => {
-                setBottomsUpConfirmedAnswer({...answer, text: answer.text.toUpperCase()});
+                setBottomsUpConfirmedAnswer({...answer, text: answer.text.toUpperCase(), secondLine: answer.secondLine ? answer.secondLine.toUpperCase() : ''});
                 setBottomsUpUsedAnswers(prev => [...prev, answer.pointValue]);
                 setBottomsUpShowModal(false);
                 setTimerRunning(false);
@@ -2645,7 +2675,24 @@
                     setShootoutShuffledAnswers(shuffled);
                 }
             }, [selectedMatch, currentRound, selectedShootoutQuestion?.colIndex, selectedTieBreakerShootoutQuestion?.colIndex]);
-            
+
+            // Host-only sorted view of the Shootout answers (numeric or alphabetical, filled row by row).
+            // This is ONLY used for what the Host screen displays - shootoutShuffledAnswers (above) is left
+            // completely alone, so the Stream screen keeps showing the random shuffled order it always has,
+            // and players still can't guess an answer's location.
+            const shootoutSortedAnswers = React.useMemo(() => {
+                return [...shootoutShuffledAnswers].sort((a, b) => {
+                    const aStr = String(a.answer).trim();
+                    const bStr = String(b.answer).trim();
+                    const aNum = parseFloat(aStr.replace(/[^0-9.\-]/g, ''));
+                    const bNum = parseFloat(bStr.replace(/[^0-9.\-]/g, ''));
+                    const aIsNumeric = /^[\-$]?[\d,]*\.?\d+/.test(aStr) && !isNaN(aNum);
+                    const bIsNumeric = /^[\-$]?[\d,]*\.?\d+/.test(bStr) && !isNaN(bNum);
+                    if (aIsNumeric && bIsNumeric) return aNum - bNum;
+                    return aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: 'base' });
+                });
+            }, [shootoutShuffledAnswers]);
+
             // Adjust index for rounds after bonus (round 8+ uses index 6+)
             const getRoundIndex = () => {
                 if (currentRound < 7) return currentRound - 1; // Rounds 1-6 use index 0-5
@@ -4500,22 +4547,47 @@
                             style={{backgroundColor: 'rgba(0,0,0,0.88)'}}>
 
                             {/* Answer Text */}
-                            {bottomsUpShowAnswer && bottomsUpConfirmedAnswer && (
-                                <div className="text-white font-black text-center fade-in"
-                                    style={{
-                                        position: 'absolute',
-                                        top: '25%',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '345px',
-                                        WebkitTextStroke: '3px black',
-                                        textStroke: '3px black',
-                                        whiteSpace: 'nowrap',
-                                        transition: 'opacity 0.4s ease-out'
-                                    }}>
-                                    {bottomsUpConfirmedAnswer.text}
-                                </div>
-                            )}
+                            {/* answerBoxMaxWidthPx is the width of the box the answer must stay inside (in
+                                canvas pixels, out of the 3200px-wide canvas). If a real answer still runs
+                                outside the boundary you want, this is the one number to change. */}
+                            {bottomsUpShowAnswer && bottomsUpConfirmedAnswer && (() => {
+                                const answerBoxMaxWidthPx = 2200;
+                                const mainFontSize = getFittedFontSize(bottomsUpConfirmedAnswer.text, answerBoxMaxWidthPx, 345, '900', 'Arial, sans-serif');
+                                const secondLineText = bottomsUpConfirmedAnswer.secondLine || '';
+                                const secondLineFontSize = secondLineText ? getFittedFontSize(secondLineText, answerBoxMaxWidthPx, 140, '700', 'Arial, sans-serif') : 0;
+                                return (
+                                    <div className="text-white font-black text-center fade-in"
+                                        style={{
+                                            position: 'absolute',
+                                            top: '25%',
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            width: `${answerBoxMaxWidthPx}px`,
+                                            transition: 'opacity 0.4s ease-out'
+                                        }}>
+                                        <div style={{
+                                            fontSize: `${mainFontSize}px`,
+                                            WebkitTextStroke: '3px black',
+                                            textStroke: '3px black',
+                                            whiteSpace: 'nowrap',
+                                            lineHeight: 1.05
+                                        }}>
+                                            {bottomsUpConfirmedAnswer.text}
+                                        </div>
+                                        {secondLineText && (
+                                            <div style={{
+                                                fontSize: `${secondLineFontSize}px`,
+                                                WebkitTextStroke: '2px black',
+                                                textStroke: '2px black',
+                                                whiteSpace: 'nowrap',
+                                                marginTop: '12px'
+                                            }}>
+                                                {secondLineText}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Counter and Flying Score - same element, same position */}
                             <div style={{
@@ -5036,11 +5108,20 @@
                         </div>
                         
                         {/* Question Display Area */}
+                        {/* When the Shootout board is expanded (shootoutBoxExpanded), this box grows 15%
+                            wider on each side and taller, reaching down far enough to overlap the
+                            powerups/progress bar area below it. It's given a z-index so it visually sits
+                            on top of that area (position: relative + zIndex is what makes that possible),
+                            and the "Powerups and Control Buttons" block right after it gets a matching
+                            negative top margin so it doesn't get pushed further down the screen - it just
+                            ends up sitting underneath this bigger box instead of being shoved down by it. */}
                         <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
-                            width: shootoutBoxExpanded ? '1750px' : '1400px',
-                            height: shootoutBoxExpanded ? '950px' : '650px',
+                            width: shootoutBoxExpanded ? '2275px' : '1400px',
+                            height: shootoutBoxExpanded ? '1170px' : '650px',
                             padding: '48px',
+                            position: shootoutBoxExpanded ? 'relative' : 'static',
+                            zIndex: shootoutBoxExpanded ? 45 : 'auto',
                             transition: 'width 1s ease-in-out, height 1s ease-in-out'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -5106,10 +5187,14 @@
                                                     <div className="w-full h-full flex flex-col" style={{gap: '8px'}}>
                                                         {(() => {
                                                             const cols = 5;
-                                                            const numRows = Math.ceil(shootoutShuffledAnswers.length / cols);
+                                                            // Host sees answers sorted (numeric/alphabetical, filled row by row) so they're
+                                                            // easier to find; Stream keeps the random shuffled order (shootoutShuffledAnswers)
+                                                            // untouched so players can't guess answer positions.
+                                                            const displayShootoutAnswers = userMode === 'host' ? shootoutSortedAnswers : shootoutShuffledAnswers;
+                                                            const numRows = Math.ceil(displayShootoutAnswers.length / cols);
                                                             return Array.from({ length: numRows }).map((_, rowIndex) => (
                                                                 <div key={rowIndex} className="flex flex-1" style={{gap: '8px'}}>
-                                                                    {shootoutShuffledAnswers.slice(rowIndex * cols, (rowIndex + 1) * cols).map((item, colIndex) => {
+                                                                    {displayShootoutAnswers.slice(rowIndex * cols, (rowIndex + 1) * cols).map((item, colIndex) => {
                                                                         const gridIndex = rowIndex * cols + colIndex;
                                                                         const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
                                                                         return (
@@ -5123,7 +5208,7 @@
                                                                                     fontSize: numRows <= 4 ? '22px' : numRows <= 5 ? '18px' : '14px'
                                                                                 }}
                                                                             >
-                                                                                <span style={{ color: 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
+                                                                                <span style={{ color: isRevealed ? 'black' : 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
                                                                                     {item.answer}
                                                                                 </span>
                                                                             </button>
@@ -5227,7 +5312,7 @@
                         </div>
 
                         {/* Powerups and Control Buttons */}
-                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px'}}>
+                        <div className={`mx-auto mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{width: '1400px', position: 'relative', minHeight: '100px', marginTop: shootoutBoxExpanded ? '-220px' : '0px', transition: 'margin-top 1s ease-in-out'}}>
                             <div className="relative flex items-center justify-center" style={{minHeight: '80px'}}>
                                 <div className="flex flex-col gap-2" style={{position: 'absolute', left: 0, zIndex: showImageOverlay ? 50 : 50}}>
                                     <div className="flex gap-6">
