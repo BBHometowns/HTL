@@ -366,6 +366,40 @@
             return Math.floor(baseFontSizePx * (maxWidthPx / widthAtBase));
         };
 
+        // Finds the largest font size (between minFontSizePx and maxFontSizePx) at which `text` -
+        // allowed to wrap onto multiple lines, same as it would in a normal paragraph - still ends up
+        // fitting inside a maxWidthPx x maxHeightPx box. Works by simulating the same greedy word-wrap
+        // a browser does (fit as many words per line as will fit), at each font size from the largest
+        // down, and checking whether the resulting number of lines still fits the height. Used for the
+        // Bottoms Up question text, which can be long enough in the Google Sheet to need shrinking to
+        // fit its box.
+        const fitMultilineFontSize = (text, maxWidthPx, maxHeightPx, maxFontSizePx, minFontSizePx, fontWeight = '400', fontFamily = 'Arial, sans-serif', lineHeightMultiplier = 1.6) => {
+            if (!text) return maxFontSizePx;
+            const words = text.split(/\s+/).filter(w => w !== '');
+            if (words.length === 0) return maxFontSizePx;
+            for (let fontSize = maxFontSizePx; fontSize >= minFontSizePx; fontSize -= 2) {
+                const spaceWidth = measureTextWidthPx(' ', fontSize, fontWeight, fontFamily);
+                let lines = 1;
+                let lineWidth = 0;
+                words.forEach(word => {
+                    const wordWidth = measureTextWidthPx(word, fontSize, fontWeight, fontFamily);
+                    if (lineWidth === 0) {
+                        lineWidth = wordWidth;
+                    } else if (lineWidth + spaceWidth + wordWidth <= maxWidthPx) {
+                        lineWidth += spaceWidth + wordWidth;
+                    } else {
+                        lines += 1;
+                        lineWidth = wordWidth;
+                    }
+                });
+                const totalHeight = lines * fontSize * lineHeightMultiplier;
+                if (totalHeight <= maxHeightPx) {
+                    return fontSize;
+                }
+            }
+            return minFontSizePx;
+        };
+
         function TriviaGame() {
             const [team1Score, setTeam1Score] = useState(0);
             const [team2Score, setTeam2Score] = useState(0);
@@ -2368,6 +2402,8 @@
                 setBottomsUpFlyingScore(false);
                 setBottomsUpAnimationValue(0);
 
+                // All the delays below are half of what they used to be, so the whole score
+                // reveal (count-up, glow, fly-to-score) plays out in about half the time.
                 if (!isCorrect || pointValue === 0) {
                     setTimeout(() => {
                         setBottomsUpAnimationValue(-1);
@@ -2375,28 +2411,28 @@
                             setBottomsUpAnimating(false);
                             setBottomsUpShowAnswer(false);
                             setBottomsUpPhase('between');
-                        }, 2000);
-                    }, 800);
+                        }, 1000);
+                    }, 400);
                     return;
                 }
 
                 let current = 0;
                 const getDelay = (step, total) => {
                     const progress = step / total;
-                    return Math.round(200 - (180 * progress));
+                    return Math.round(100 - (90 * progress));
                 };
 
                 const tick = (step) => {
                     if (step > pointValue) {
                         // Counter done - start glow phase
                         setBottomsUpGlowing(true);
-                        
-                        // After 2 seconds of glowing, start the fly phase
+
+                        // After 1 second of glowing, start the fly phase
                         setTimeout(() => {
                             setBottomsUpGlowing(false);
                             setBottomsUpShowAnswer(false);
                             setBottomsUpFlyingScore(true);
-                            
+
                             setTimeout(() => {
                                 if (activeTeamSnapshot === 1) {
                                     setBonusScore1(prev => prev + pointValue);
@@ -2406,15 +2442,15 @@
                                 setBottomsUpFlyingScore(false);
                                 setBottomsUpAnimating(false);
                                 setBottomsUpPhase('between');
-                            }, 1600);
-                        }, 2000);
+                            }, 800);
+                        }, 1000);
                         return;
                     }
                     setBottomsUpAnimationValue(step);
                     setTimeout(() => tick(step + 1), getDelay(step, pointValue));
                 };
 
-                setTimeout(() => tick(1), 800);
+                setTimeout(() => tick(1), 400);
             };
             
             const handleRevealShootoutBoard = () => {
@@ -4554,7 +4590,12 @@
                                 const answerBoxMaxWidthPx = 2200;
                                 const mainFontSize = getFittedFontSize(bottomsUpConfirmedAnswer.text, answerBoxMaxWidthPx, 345, '900', 'Arial, sans-serif');
                                 const secondLineText = bottomsUpConfirmedAnswer.secondLine || '';
-                                const secondLineFontSize = secondLineText ? getFittedFontSize(secondLineText, answerBoxMaxWidthPx, 140, '700', 'Arial, sans-serif') : 0;
+                                // The second line's starting size tracks the main answer's size (about 40% of
+                                // it), not a fixed number - so if a long answer already had to shrink, the
+                                // second line shrinks proportionally with it too, keeping the same visual gap
+                                // between "answer" and "sub-answer" instead of suddenly looking the same size.
+                                const secondLineBaseFontSize = Math.round(mainFontSize * 0.4);
+                                const secondLineFontSize = secondLineText ? getFittedFontSize(secondLineText, answerBoxMaxWidthPx, secondLineBaseFontSize, '700', 'Arial, sans-serif') : 0;
                                 return (
                                     <div className="text-white font-black text-center fade-in"
                                         style={{
@@ -4606,10 +4647,10 @@
                                     ? `0 0 40px ${bottomsUpActiveTeam === 1 ? selectedTeam1?.color : selectedTeam2?.color}, 0 0 80px ${bottomsUpActiveTeam === 1 ? selectedTeam1?.color : selectedTeam2?.color}`
                                     : 'none',
                                 transform: 'translateX(-50%)',
-                                animation: bottomsUpFlyingScore 
-                                    ? (bottomsUpActiveTeam === 1 ? 'flyToScoreLeft 1.5s ease-in forwards' : 'flyToScoreRight 1.5s ease-in forwards')
-                                    : bottomsUpGlowing 
-                                        ? 'bottomsUpPulse 0.5s ease-in-out'
+                                animation: bottomsUpFlyingScore
+                                    ? (bottomsUpActiveTeam === 1 ? 'flyToScoreLeft 0.75s ease-in forwards' : 'flyToScoreRight 0.75s ease-in forwards')
+                                    : bottomsUpGlowing
+                                        ? 'bottomsUpPulse 0.25s ease-in-out'
                                         : 'none',
                             }}>
                                 {bottomsUpAnimationValue === -1 ? 'X' : 
@@ -5110,18 +5151,21 @@
                         {/* Question Display Area */}
                         {/* When the Shootout board is expanded (shootoutBoxExpanded), this box grows 15%
                             wider on each side and taller, reaching down far enough to overlap the
-                            powerups/progress bar area below it. It's given a z-index so it visually sits
-                            on top of that area (position: relative + zIndex is what makes that possible),
-                            and the "Powerups and Control Buttons" block right after it gets a matching
-                            negative top margin so it doesn't get pushed further down the screen - it just
-                            ends up sitting underneath this bigger box instead of being shoved down by it. */}
+                            powerups/progress bar area below it. Its z-index (55) is higher than the team
+                            powerup icons and the host's control buttons (both z-index 50), so it visually
+                            covers them instead of them showing through on top of it. The "Powerups and
+                            Control Buttons" block right after it gets a matching negative top margin so it
+                            doesn't get pushed further down the screen - it just ends up sitting underneath
+                            this bigger box. The host's own control buttons (Reveal/Incorrect/Next) are then
+                            pulled back down from there to sit visibly just below the enlarged board - see
+                            the transform on that button row further down. */}
                         <div className={`bg-gray-900 rounded-3xl shadow-2xl mx-auto border-8 mb-8 ${showWinnerScreen ? 'hide-on-winner' : ''}`} style={{
                             borderColor: '#7d3ad4',
                             width: shootoutBoxExpanded ? '2275px' : '1400px',
                             height: shootoutBoxExpanded ? '1170px' : '650px',
                             padding: '48px',
                             position: shootoutBoxExpanded ? 'relative' : 'static',
-                            zIndex: shootoutBoxExpanded ? 45 : 'auto',
+                            zIndex: shootoutBoxExpanded ? 55 : 'auto',
                             transition: 'width 1s ease-in-out, height 1s ease-in-out'
                         }}>
                             <div className="text-center h-full flex flex-col">
@@ -5161,12 +5205,26 @@
                                             ) : (currentRound === 7 ? bonusType : tieBreakerType) === 'bottomsUp' ? (
                                                 // Bottoms Up UI
                                                 <div className="w-full h-full flex flex-col items-center justify-center relative">
-                                                    <p className="text-white leading-relaxed text-center fade-in" style={{
-                                                        fontSize: '36px',
-                                                        margin: 0
-                                                    }}>
-                                                        {renderQuestionText(activeBottomsUpQuestion?.questionText || 'Loading...', userMode === 'host')}
-                                                    </p>
+                                                    {/* bottomsUpQuestionBoxWidthPx/HeightPx describe the space this text has to
+                                                        fit in (the gray box around it). If a real question still overflows,
+                                                        those are the two numbers to widen/heighten. 36px is the size used
+                                                        today (the ceiling - short questions still look like they used to);
+                                                        16px is how small it's allowed to shrink before giving up. Measured
+                                                        with the [bracket] markers stripped out since those aren't shown. */}
+                                                    {(() => {
+                                                        const bottomsUpQuestionBoxWidthPx = 1150;
+                                                        const bottomsUpQuestionBoxHeightPx = 290;
+                                                        const rawQuestionText = (activeBottomsUpQuestion?.questionText || 'Loading...').replace(/[\[\]]/g, '');
+                                                        const bottomsUpQuestionFontSize = fitMultilineFontSize(rawQuestionText, bottomsUpQuestionBoxWidthPx, bottomsUpQuestionBoxHeightPx, 36, 16, '400', 'Arial, sans-serif');
+                                                        return (
+                                                            <p className="text-white leading-relaxed text-center fade-in" style={{
+                                                                fontSize: `${bottomsUpQuestionFontSize}px`,
+                                                                margin: 0
+                                                            }}>
+                                                                {renderQuestionText(activeBottomsUpQuestion?.questionText || 'Loading...', userMode === 'host')}
+                                                            </p>
+                                                        );
+                                                    })()}
                                                     {userMode === 'host' && bottomsUpPhase === 'input' && (
                                                         <input
                                                             type="text"
@@ -5197,6 +5255,18 @@
                                                                     {displayShootoutAnswers.slice(rowIndex * cols, (rowIndex + 1) * cols).map((item, colIndex) => {
                                                                         const gridIndex = rowIndex * cols + colIndex;
                                                                         const isRevealed = shootoutRevealedAnswers.includes(item.originalIndex);
+                                                                        // Answer text auto-sizing: baseFontSize is today's original size for this
+                                                                        // many rows - that's the FLOOR, it never goes smaller than this (a longer
+                                                                        // answer wraps onto a 2nd line instead of shrinking further). Shorter
+                                                                        // answers get to grow past that floor, up to maxFontSize, so they're more
+                                                                        // visible. tileWidthEstimate is roughly how wide one answer box is at 5
+                                                                        // columns on the enlarged board - change it if answers are fitted too
+                                                                        // loose/tight.
+                                                                        const baseFontSize = numRows <= 4 ? 22 : numRows <= 5 ? 18 : 14;
+                                                                        const maxFontSize = baseFontSize + 14;
+                                                                        const tileWidthEstimate = 400;
+                                                                        let tileFontSize = getFittedFontSize(String(item.answer), tileWidthEstimate * 0.9, maxFontSize, '700', 'Arial, sans-serif');
+                                                                        if (tileFontSize < baseFontSize) tileFontSize = baseFontSize;
                                                                         return (
                                                                             <button
                                                                                 key={gridIndex}
@@ -5205,7 +5275,8 @@
                                                                                 style={{
                                                                                     backgroundColor: isRevealed ? '#4ade80' : '#1f2937',
                                                                                     cursor: userMode === 'host' ? 'pointer' : 'default',
-                                                                                    fontSize: numRows <= 4 ? '22px' : numRows <= 5 ? '18px' : '14px'
+                                                                                    fontSize: `${tileFontSize}px`,
+                                                                                    lineHeight: 1.1
                                                                                 }}
                                                                             >
                                                                                 <span style={{ color: isRevealed ? 'black' : 'white', opacity: isRevealed ? 1 : (userMode === 'host' ? 0.15 : 0) }}>
@@ -5365,6 +5436,12 @@
                                     <div className="flex gap-4" style={{
                                         position: 'relative',
                                         zIndex: 50,
+                                        // While the Shootout board is expanded, this button row is pulled back
+                                        // down (240px = the 220px the board grew by, plus a small gap) so the
+                                        // Reveal/Incorrect/Next buttons land just below the bigger board instead
+                                        // of being hidden underneath it.
+                                        transform: shootoutBoxExpanded ? 'translateY(240px)' : 'translateY(0px)',
+                                        transition: 'transform 1s ease-in-out'
                                     }}>
                                         
                                         {(currentRound === 7 || currentRound === 14) ? (
@@ -5568,9 +5645,13 @@
                         </div>
 
                         {/* Soundbar - Host only, hidden once winner reveal begins */}
+                        {/* Visually hidden per request - not in use right now. Left fully in place (just
+                            display:'none') rather than deleted, so all of its functionality (audio
+                            playback, track/volume sync, etc.) still works underneath and this can be
+                            switched back on later just by removing the display:'none' below. */}
                         {userMode === 'host' && !showWinnerScreen && (
                             <div style={{
-                                display: 'flex',
+                                display: 'none',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '12px',
